@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+.vercel/
+
+# Secretos
+.env
+.env*.local
+
+# Datos del cliente y resultados de la evaluación: nunca al repo
+muestras/
+eval-out/
