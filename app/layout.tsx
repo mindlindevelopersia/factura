@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import { Sora } from "next/font/google";
+import "./globals.css";
+
+const sora = Sora({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-sora" });
 
 export const metadata: Metadata = {
   title: "Facturas de compra · Mindlin",
@@ -7,8 +11,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
-      <body style={{ fontFamily: "system-ui, sans-serif", margin: "2rem" }}>{children}</body>
+    <html lang="es" className={sora.variable}>
+      <body>{children}</body>
     </html>
   );
 }

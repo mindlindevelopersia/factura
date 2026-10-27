@@ -1,0 +1,250 @@
+/*
+ * Identidad visual tomada de mindlindevelopers.com:
+ * lima de marca sobre negro, tipografía Sora, botones en píldora y tarjetas redondeadas.
+ */
+:root {
+  --lima: #d2da4d; /* color del logo */
+  --lima-oscuro: #b9c13a;
+  --negro: #1a1a1a; /* fondos oscuros y footer */
+  --grafito: #303030; /* tarjetas sobre fondo oscuro */
+  --texto: #3d3d3d;
+  --texto-suave: #6b6b6b;
+  --gris-claro: #f6f6f6;
+  --borde: #d8dde6;
+  --blanco: #ffffff;
+  --verde: #366d53;
+  --rojo: #c23934;
+  --dudoso: #fff3b0; /* campos para revisar: amarillo, distinto del lima */
+  --dudoso-borde: #e0b400;
+
+  --radio-boton: 30px;
+  --radio-tarjeta: 16px;
+  --radio-campo: 8px;
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 16px rgb(0 0 0 / 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sora), Helvetica, sans-serif;
+  color: var(--texto);
+  background: var(--gris-claro);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--negro);
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0 0 0.5em;
+}
+
+h1 {
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+}
+
+a {
+  color: inherit;
+}
+
+/* Encabezado: barra negra con el logo, como la navegación del sitio */
+.app-header {
+  background: var(--negro);
+  color: var(--blanco);
+}
+
+.app-header__inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.app-header__logo {
+  display: block;
+  height: 44px;
+  width: auto;
+}
+
+.app-header__user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.875rem;
+  color: rgb(255 255 255 / 0.8);
+}
+
+@media (max-width: 560px) {
+  .app-header__user span {
+    display: none;
+  }
+  .app-header__logo {
+    height: 36px;
+  }
+}
+
+.app-main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 24px 64px;
+}
+
+/* Botones en píldora */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  line-height: 1;
+  padding: 14px 24px;
+  border-radius: var(--radio-boton);
+  border: 2px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn:focus-visible {
+  outline: 3px solid var(--lima);
+  outline-offset: 2px;
+}
+
+.btn--primario {
+  background: var(--lima);
+  color: var(--negro);
+}
+
+.btn--primario:hover {
+  background: var(--lima-oscuro);
+}
+
+.btn--borde-claro {
+  background: transparent;
+  color: var(--blanco);
+  border-color: var(--blanco);
+}
+
+.btn--borde-claro:hover {
+  background: var(--blanco);
+  color: var(--negro);
+}
+
+.btn--chico {
+  padding: 8px 16px;
+  font-size: 0.8125rem;
+}
+
+.card {
+  background: var(--blanco);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra);
+  padding: 32px;
+}
+
+.alerta {
+  border-radius: var(--radio-campo);
+  padding: 12px 16px;
+  font-size: 0.9375rem;
+}
+
+.alerta--error {
+  background: rgb(194 57 52 / 0.1);
+  color: var(--rojo);
+  border: 1px solid rgb(194 57 52 / 0.3);
+}
+
+/* Campos de formulario, para la ficha de revisión */
+.campo {
+  display: grid;
+  gap: 4px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  font: inherit;
+  font-weight: 400;
+  font-size: 0.9375rem;
+  color: var(--negro);
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo);
+  padding: 10px 12px;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  outline: none;
+  border-color: var(--verde);
+  box-shadow: 0 0 0 3px rgb(54 109 83 / 0.15);
+}
+
+.campo--dudoso input,
+.campo--dudoso select,
+.campo--dudoso textarea {
+  background: var(--dudoso);
+  border-color: var(--dudoso-borde);
+}
+
+/* Pantalla de login: fondo negro con el logo en lima */
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--negro);
+}
+
+.login__panel {
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  color: rgb(255 255 255 / 0.85);
+}
+
+.login__logo {
+  width: 220px;
+  max-width: 70%;
+  height: auto;
+  margin-bottom: 40px;
+}
+
+.login__panel h1 {
+  color: var(--blanco);
+  font-size: 1.75rem;
+}
+
+.login__panel p {
+  margin: 0 0 32px;
+}
+
+.login__panel .alerta {
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.login__panel .alerta--error {
+  background: rgb(194 57 52 / 0.15);
+  color: #ffb4b0;
+  border-color: rgb(194 57 52 / 0.5);
+}

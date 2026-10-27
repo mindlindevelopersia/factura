@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { signIn } from "@/auth";
 
 const ERRORES: Record<string, string> = {
@@ -25,17 +26,34 @@ export default async function LoginPage({
   const destino = rutaInterna(callbackUrl);
 
   return (
-    <main>
-      <h1>Lector de facturas de compra</h1>
-      {error && <p role="alert">{ERRORES[error] ?? "No se pudo iniciar sesión. Probá de nuevo."}</p>}
-      <form
-        action={async () => {
-          "use server";
-          await signIn("google", { redirectTo: destino });
-        }}
-      >
-        <button type="submit">Ingresar con Google</button>
-      </form>
+    <main className="login">
+      <div className="login__panel">
+        <Image
+          className="login__logo"
+          src="/brand/mindlin-logo.png"
+          alt="Mindlin Developers"
+          width={631}
+          height={219}
+          priority
+        />
+        <h1>Facturas de compra</h1>
+        <p>Ingresá con tu cuenta de Google habilitada.</p>
+        {error && (
+          <p role="alert" className="alerta alerta--error">
+            {ERRORES[error] ?? "No se pudo iniciar sesión. Probá de nuevo."}
+          </p>
+        )}
+        <form
+          action={async () => {
+            "use server";
+            await signIn("google", { redirectTo: destino });
+          }}
+        >
+          <button type="submit" className="btn btn--primario">
+            Ingresar con Google
+          </button>
+        </form>
+      </div>
     </main>
   );
 }

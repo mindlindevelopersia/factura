@@ -1,24 +1,18 @@
-import { signOut } from "@/auth";
+import { AppHeader } from "@/components/AppHeader";
 import { requireUser } from "@/lib/auth/session";
 
 export default async function Home() {
   const user = await requireUser();
 
   return (
-    <main>
-      <header style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-        <span>{user.email}</span>
-        <form
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/login" });
-          }}
-        >
-          <button type="submit">Salir</button>
-        </form>
-      </header>
-      <h1>Lector de facturas de compra</h1>
-      <p>En construcción. Todavía no hay carga de archivos.</p>
-    </main>
+    <>
+      <AppHeader email={user.email} />
+      <main className="app-main">
+        <h1>Facturas de compra</h1>
+        <div className="card">
+          <p>En construcción. Todavía no hay carga de archivos.</p>
+        </div>
+      </main>
+    </>
   );
 }

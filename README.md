@@ -43,6 +43,16 @@ Nada de esto va al repo. En local, en `.env.local`. En Vercel, en Settings > Env
 
 Las credenciales de Google pueden cambiar según cómo se resuelva la subida a Drive (ver Pendientes).
 
+## Estilo
+
+Tomado de mindlindevelopers.com. Los colores y estilos están como variables en `app/globals.css`:
+
+- Lima de marca `#D2DA4D` (el color del logo) y negro `#1A1A1A`. Botones principales en lima con texto negro.
+- Tipografía Sora (400 y 700), cargada con `next/font`.
+- Botones en píldora (radio de 30 px) y tarjetas con radio de 16 px.
+- Los campos dudosos van en amarillo (`--dudoso`), un tono distinto del lima para que no se confundan.
+- Logos en `public/brand/` y el ícono de la pestaña en `app/icon.png`, copiados del sitio.
+
 ## Login
 
 Auth.js (`next-auth` v5) con Google. Solo entran los mails de `ALLOWED_EMAILS`, y tienen que estar verificados por Google.
