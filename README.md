@@ -6,11 +6,11 @@ Iniciativa 1 de Mindlin Developers. La IA lee la factura de compra, propone rubr
 
 | Paso | Estado |
 |---|---|
-| Esqueleto Next.js + TypeScript | Hecho. Página vacía, sin login. |
+| Esqueleto Next.js + TypeScript | Hecho. |
 | Extractor con IA (`lib/invoice/extract.ts`) | Hecho. Probado con una API simulada, todavía no con facturas reales. |
 | Controles de CUIT, suma y QR (`lib/validation/`) | Hecho. Falta leer el QR de la imagen o del PDF. |
 | Script de evaluación (`scripts/eval/`) | Hecho. Espera el mes de muestra del cliente. |
-| Login con Google y lista de mails | Pendiente |
+| Login con Google y lista de mails | Hecho. Falta crear el cliente OAuth y hacer el primer deploy (ver abajo). |
 | Pantalla de carga, revisión y aprobación | Pendiente |
 | Escritura en la planilla, subida a Drive y control de duplicados | Pendiente. Ya está la clave de duplicado (`claveDuplicado`). |
 
@@ -42,6 +42,29 @@ Nada de esto va al repo. En local, en `.env.local`. En Vercel, en Settings > Env
 | `DRIVE_FOLDER_ID` | Carpeta donde se guardan los PDF. **Mientras se desarrolla, una de prueba.** | Drive |
 
 Las credenciales de Google pueden cambiar según cómo se resuelva la subida a Drive (ver Pendientes).
+
+## Login
+
+Auth.js (`next-auth` v5) con Google. Solo entran los mails de `ALLOWED_EMAILS`, y tienen que estar verificados por Google.
+
+- `auth.ts`: configuración. La sesión dura 12 horas.
+- `proxy.ts`: todo pedido sin sesión válida va a `/login`. La lista se vuelve a mirar en cada pedido, así que sacar un mail de `ALLOWED_EMAILS` (y volver a desplegar) le corta el acceso a esa persona en el momento, aunque tenga la sesión abierta.
+- `requireUser()` (`lib/auth/session.ts`): segunda barrera. Llamarlo al principio de cada página y ruta de API que toque datos.
+
+### Crear el cliente OAuth de Google
+
+1. En https://console.cloud.google.com, en el proyecto que se use para la app, ir a **APIs y servicios > Pantalla de consentimiento de OAuth** y completarla. Si el cliente tiene Google Workspace, conviene el tipo **Interno**: solo pueden entrar cuentas de su dominio.
+2. **APIs y servicios > Credenciales > Crear credenciales > ID de cliente de OAuth**, tipo **Aplicación web**.
+3. En **URI de redireccionamiento autorizados**, agregar:
+   - `http://localhost:3000/api/auth/callback/google`
+   - `https://<dominio de Vercel>/api/auth/callback/google`
+4. Copiar el ID y el secreto a `AUTH_GOOGLE_ID` y `AUTH_GOOGLE_SECRET`.
+
+### Deploy en Vercel
+
+1. En Vercel, **Add New > Project** e importar el repo `mindlindevelopersia/factura`. Vercel detecta Next.js solo.
+2. Cargar `AUTH_SECRET` (generado con `npx auth secret`), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` y `ALLOWED_EMAILS`. `ANTHROPIC_API_KEY` todavía no hace falta en Vercel.
+3. Desplegar y agregar el dominio que asigne Vercel en el paso 3 del cliente OAuth.
 
 ## Cómo funciona la extracción
 
