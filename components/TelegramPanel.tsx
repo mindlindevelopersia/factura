@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { leerJson } from "./formato";
+import { fechaHora, leerJson } from "./formato";
 
 interface Estado {
   configurado: boolean;
@@ -9,7 +9,7 @@ interface Estado {
   activo?: boolean;
   webhook?: string | null;
   ultimoError?: string | null;
-  conectadoComo?: string | null;
+  conectados?: { id: number; usuario: string; conectado: string }[];
   linkConectar?: string;
 }
 
@@ -30,7 +30,22 @@ export function TelegramPanel() {
 
   useEffect(() => {
     void cargar();
+    // El link de "Conectar" vence a la hora: se renueva solo si la página queda abierta.
+    const intervalo = setInterval(() => void cargar(), 20 * 60 * 1000);
+    return () => clearInterval(intervalo);
   }, [cargar]);
+
+  async function desconectar(id: number, usuario: string) {
+    if (!window.confirm(`¿Desconectar ${usuario}? Ese Telegram ya no va a poder mandar facturas.`)) return;
+    try {
+      await leerJson(
+        await fetch("/api/telegram", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ desconectar: id }) }),
+      );
+      await cargar();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
 
   async function activar() {
     setActivando(true);
@@ -71,16 +86,30 @@ export function TelegramPanel() {
             </div>
           )}
           {estado.activo && estado.ultimoError && <p className="factura__nota">Último error de Telegram: {estado.ultimoError}</p>}
-          {estado.conectadoComo ? (
-            <p className="alerta alerta--ok">Tu Telegram está conectado ({estado.conectadoComo}).</p>
-          ) : (
-            <p>
-              <a className="btn btn--borde" href={estado.linkConectar} target="_blank" rel="noreferrer">
-                Conectar mi Telegram
-              </a>{" "}
-              <span className="factura__nota">Abre el bot: tocá &quot;Iniciar&quot; y queda conectado a tu mail.</span>
-            </p>
+          {(estado.conectados?.length ?? 0) > 0 && (
+            <ul className="telegram__cuentas">
+              {estado.conectados!.map((c) => (
+                <li key={c.id}>
+                  <span>
+                    Conectado: <strong>{c.usuario}</strong>
+                    {c.conectado && <span className="factura__nota"> · desde {fechaHora(c.conectado)}</span>}
+                  </span>
+                  <button type="button" className="btn btn--borde btn--chico" onClick={() => desconectar(c.id, c.usuario)}>
+                    Desconectar
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
+          <p>
+            <a className="btn btn--borde" href={estado.linkConectar} target="_blank" rel="noreferrer">
+              {estado.conectados?.length ? "Conectar otro Telegram" : "Conectar mi Telegram"}
+            </a>{" "}
+            <span className="factura__nota">
+              Abrilo desde el teléfono con el Telegram que quieras conectar y tocá &quot;Iniciar&quot;. Queda conectado a tu mail. El
+              link dura una hora.
+            </span>
+          </p>
         </>
       )}
     </div>

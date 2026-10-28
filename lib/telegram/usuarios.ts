@@ -2,10 +2,18 @@ import type { PestaniaSimple } from "../google/pestania";
 
 export const COLUMNAS_USUARIOS_TELEGRAM = ["ID de Telegram", "Usuario", "Email", "Conectado"] as const;
 
+export interface CuentaTelegram {
+  id: number;
+  usuario: string;
+  /** Cuándo se conectó, ISO. */
+  conectado: string;
+}
+
 /**
  * Qué cuenta de Telegram corresponde a qué mail habilitado. Vive en una pestaña de la
- * planilla de la cola. El bot solo acepta comprobantes de cuentas conectadas a un mail que
- * siga en ALLOWED_EMAILS: sacar un mail de la lista también le corta el bot.
+ * planilla de la cola. Una cuenta de Telegram va a un solo mail; un mail puede tener varias.
+ * El bot solo acepta comprobantes de cuentas conectadas a un mail que siga en ALLOWED_EMAILS:
+ * sacar un mail de la lista también le corta el bot.
  */
 export class UsuariosTelegram {
   constructor(
@@ -18,10 +26,21 @@ export class UsuariosTelegram {
     return fila?.[2]?.trim() || null;
   }
 
-  async telegramDe(email: string): Promise<string | null> {
+  /** Las cuentas de Telegram conectadas a un mail. Una persona puede tener varias (dos teléfonos con cuentas distintas). */
+  async telegramsDe(email: string): Promise<CuentaTelegram[]> {
     const buscado = email.trim().toLowerCase();
-    const fila = (await this.pestania.filas()).find((f) => (f[2] ?? "").trim().toLowerCase() === buscado);
-    return fila ? fila[1] || fila[0] : null;
+    return (await this.pestania.filas())
+      .filter((f) => f[0] && (f[2] ?? "").trim().toLowerCase() === buscado)
+      .map((f) => ({ id: Number(f[0]), usuario: f[1] || f[0], conectado: f[3] ?? "" }));
+  }
+
+  /** Desconecta una cuenta de Telegram, solo si está conectada a ese mail. Devuelve false si no lo estaba. */
+  async desvincular(telegramId: number, email: string): Promise<boolean> {
+    const filas = await this.pestania.filas();
+    const i = filas.findIndex((f) => f[0] === String(telegramId) && (f[2] ?? "").trim().toLowerCase() === email.trim().toLowerCase());
+    if (i < 0) return false;
+    await this.pestania.escribir(i + 2, ["", "", "", ""]);
+    return true;
   }
 
   /** Conecta (o reconecta a otro mail) una cuenta de Telegram. */

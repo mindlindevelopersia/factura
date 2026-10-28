@@ -69,7 +69,7 @@ Tomado de mindlindevelopers.com. Los colores y estilos están como variables en 
 
 Auth.js (`next-auth` v5) con Google. Solo entran los mails de `ALLOWED_EMAILS`, y tienen que estar verificados por Google.
 
-- `auth.ts`: configuración. La sesión dura 12 horas.
+- `auth.ts`: configuración. La sesión dura 12 horas. Cada persona puede entrar desde todos los dispositivos y navegadores que quiera, a la vez: cada uno tiene su sesión.
 - `proxy.ts`: todo pedido sin sesión válida va a `/login`. La lista se vuelve a mirar en cada pedido, así que sacar un mail de `ALLOWED_EMAILS` (y volver a desplegar) le corta el acceso a esa persona en el momento, aunque tenga la sesión abierta.
 - `requireUser()` (`lib/auth/session.ts`): segunda barrera. Llamarlo al principio de cada página y ruta de API que toque datos.
 
@@ -106,7 +106,8 @@ La cola vive en una pestaña de la planilla `COLA_SHEET_ID`, una fila por compro
 ### Telegram
 
 - **Activar el bot**, una sola vez: en la web, pestaña "Subir", botón "Activar bot". Le dice a Telegram que mande los mensajes a `/api/telegram-webhook` de la dirección desde la que se toca (tiene que ser la de producción).
-- **Conectar a cada persona:** en la misma pestaña, "Conectar mi Telegram" abre el bot con un código firmado con `AUTH_SECRET`; al tocar "Iniciar", esa cuenta de Telegram queda conectada al mail con el que entró a la web (pestaña "Telegram" de la planilla de la cola).
+- **Conectar a cada persona:** en la misma pestaña, "Conectar mi Telegram" abre el bot con un código firmado con `AUTH_SECRET` que vence a la hora; al tocar "Iniciar", esa cuenta de Telegram queda conectada al mail con el que entró a la web (pestaña "Telegram" de la planilla de la cola).
+- **Varios teléfonos:** una misma cuenta de Telegram abierta en varios dispositivos (celular, compu) es una sola conexión. Si una persona usa dos cuentas de Telegram distintas, conecta cada una con "Conectar otro Telegram"; las dos quedan a su mail. La web lista las cuentas conectadas y deja desconectar cualquiera (por ejemplo, un teléfono perdido). Una cuenta de Telegram va a un solo mail: si se conecta con otro, pasa a ese.
 - El bot solo atiende chats privados de cuentas conectadas a un mail que siga en `ALLOWED_EMAILS`. A las demás les contesta cómo conectarse y no guarda nada de lo que mandaron.
 - Cada llamada de Telegram trae un secreto derivado del token (`secretoWebhook` en `lib/telegram/api.ts`): el webhook rechaza las que no lo traen. Es la única ruta fuera del login (`proxy.ts`).
 - Acepta PDF, JPG, PNG y WEBP como documento, y fotos (toma la de mayor resolución). Hasta 20 MB, el límite de Telegram para bots (5 MB para imágenes como documento: es el límite de Claude). Si Telegram reintenta un mensaje, no se carga dos veces.

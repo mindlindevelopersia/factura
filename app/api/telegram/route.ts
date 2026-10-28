@@ -21,14 +21,14 @@ export async function GET(req: Request) {
     const telegram = new TelegramApi(token);
     const [info, bot] = await Promise.all([telegram.infoWebhook(), telegram.yo()]);
     // Sin la planilla de la cola no hay dónde guardar las cuentas conectadas: se muestra igual el estado del bot.
-    const conectadoComo = faltantesCola().length === 0 ? await usuariosTelegramDesdeEnv().telegramDe(user.email) : null;
+    const conectados = faltantesCola().length === 0 ? await usuariosTelegramDesdeEnv().telegramsDe(user.email) : [];
     return NextResponse.json({
       configurado: true,
       bot: bot.username,
       activo: info.url === webhookDe(req),
       webhook: info.url || null,
       ultimoError: info.last_error_message ?? null,
-      conectadoComo,
+      conectados,
       linkConectar: `https://t.me/${bot.username}?start=${codigoVinculo(user.email, process.env.AUTH_SECRET ?? "")}`,
     });
   } catch (e) {
@@ -36,9 +36,23 @@ export async function GET(req: Request) {
   }
 }
 
-/** Activa el bot: le dice a Telegram que mande los mensajes a esta app. Se puede repetir. */
+/**
+ * POST sin cuerpo: activa el bot (le dice a Telegram que mande los mensajes a esta app; se
+ * puede repetir). POST { desconectar: <id de Telegram> }: desconecta una cuenta del usuario.
+ */
 export async function POST(req: Request) {
-  if (!(await getUser())) return NextResponse.json({ error: "Sesión vencida. Volvé a ingresar." }, { status: 401 });
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Sesión vencida. Volvé a ingresar." }, { status: 401 });
+  const cuerpo = (await req.json().catch(() => null)) as { desconectar?: number } | null;
+  if (cuerpo?.desconectar) {
+    try {
+      const ok = await usuariosTelegramDesdeEnv().desvincular(Number(cuerpo.desconectar), user.email);
+      if (!ok) return NextResponse.json({ error: "Esa cuenta de Telegram no está conectada a tu mail." }, { status: 404 });
+      return NextResponse.json({ ok: true });
+    } catch (e) {
+      return respuestaDeError(e);
+    }
+  }
   const token = tokenTelegram();
   if (!token) return NextResponse.json({ error: "Falta configurar TELEGRAM_API_KEY en el servidor." }, { status: 503 });
   try {

@@ -51,13 +51,20 @@ describe("adjuntoDe", () => {
 
 describe("vinculación", () => {
   const emails = ["tadeo@mindlin.com", "ana@x.com"];
-  it("el código identifica al mail y solo con el mismo secreto", () => {
-    const codigo = codigoVinculo("Tadeo@Mindlin.com ", "secreto");
-    expect(codigo).toMatch(/^[A-Za-z0-9_-]{32}$/); // lo que acepta el parámetro start de Telegram
-    expect(emailDeCodigo(codigo, emails, "secreto")).toBe("tadeo@mindlin.com");
-    expect(emailDeCodigo(codigo, emails, "otro")).toBeNull();
-    expect(emailDeCodigo(codigo, ["ana@x.com"], "secreto")).toBeNull();
-    expect(emailDeCodigo("corto", emails, "secreto")).toBeNull();
+  it("el código identifica al mail, solo con el mismo secreto y por una hora", () => {
+    const ahora = new Date("2026-10-29T15:00:00Z");
+    const codigo = codigoVinculo("Tadeo@Mindlin.com ", "secreto", ahora);
+    expect(codigo).toMatch(/^[A-Za-z0-9_-]{1,64}$/); // lo que acepta el parámetro start de Telegram
+    expect(emailDeCodigo(codigo, emails, "secreto", ahora)).toBe("tadeo@mindlin.com");
+    expect(emailDeCodigo(codigo, emails, "secreto", new Date("2026-10-29T15:59:00Z"))).toBe("tadeo@mindlin.com");
+    expect(emailDeCodigo(codigo, emails, "secreto", new Date("2026-10-29T16:01:00Z"))).toBeNull();
+    expect(emailDeCodigo(codigo, emails, "otro", ahora)).toBeNull();
+    expect(emailDeCodigo(codigo, ["ana@x.com"], "secreto", ahora)).toBeNull();
+    expect(emailDeCodigo("corto", emails, "secreto", ahora)).toBeNull();
+    // No se puede estirar el vencimiento: la firma lo incluye.
+    const firmaOriginal = codigo.slice(codigo.indexOf("_") + 1); // la firma también puede tener "_"
+    const estirado = `${(Math.floor(ahora.getTime() / 1000) + 86400).toString(36)}_${firmaOriginal}`;
+    expect(emailDeCodigo(estirado, emails, "secreto", ahora)).toBeNull();
   });
 
   it("el secreto del webhook sale del token", () => {

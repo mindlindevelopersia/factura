@@ -66,21 +66,34 @@ export function nombreDe(m: MensajeTelegram): string {
   return f.username ? `@${f.username}` : [f.first_name, f.last_name].filter(Boolean).join(" ") || String(f.id);
 }
 
-/**
- * Código para vincular una cuenta de Telegram a un mail habilitado. Va en el link
- * t.me/<bot>?start=<código> que muestra la web; Telegram lo manda al bot como "/start <código>".
- * Es una firma del mail con AUTH_SECRET: no hace falta guardarlo en ningún lado.
- */
-export function codigoVinculo(email: string, secreto: string): string {
-  return createHmac("sha256", secreto).update(`telegram:${email.trim().toLowerCase()}`).digest("base64url").slice(0, 32);
+/** Cuánto dura un link de "Conectar mi Telegram". */
+export const VIGENCIA_VINCULO_S = 60 * 60;
+
+function firma(email: string, vence: number, secreto: string): string {
+  return createHmac("sha256", secreto).update(`telegram:${email.trim().toLowerCase()}:${vence}`).digest("base64url").slice(0, 32);
 }
 
-/** El mail habilitado al que corresponde un código, o null. */
-export function emailDeCodigo(codigo: string, emails: readonly string[], secreto: string): string | null {
-  const recibido = Buffer.from(codigo);
+/**
+ * Código para conectar una cuenta de Telegram a un mail habilitado. Va en el link
+ * t.me/<bot>?start=<código> que muestra la web; Telegram lo manda al bot como "/start <código>".
+ * Es el vencimiento más una firma del mail con AUTH_SECRET, así que no hace falta guardarlo, y
+ * un link que se reenvía deja de servir a la hora. Entra en los 64 caracteres que acepta Telegram.
+ */
+export function codigoVinculo(email: string, secreto: string, ahora: Date = new Date()): string {
+  const vence = Math.floor(ahora.getTime() / 1000) + VIGENCIA_VINCULO_S;
+  return `${vence.toString(36)}_${firma(email, vence, secreto)}`;
+}
+
+/** El mail habilitado al que corresponde un código vigente, o null. */
+export function emailDeCodigo(codigo: string, emails: readonly string[], secreto: string, ahora: Date = new Date()): string | null {
+  const m = codigo.match(/^([0-9a-z]+)_([A-Za-z0-9_-]{32})$/);
+  if (!m) return null;
+  const vence = parseInt(m[1], 36);
+  if (!Number.isFinite(vence) || vence < ahora.getTime() / 1000) return null;
+  const recibida = Buffer.from(m[2]);
   for (const email of emails) {
-    const esperado = Buffer.from(codigoVinculo(email, secreto));
-    if (esperado.length === recibido.length && timingSafeEqual(esperado, recibido)) return email.trim().toLowerCase();
+    const esperada = Buffer.from(firma(email, vence, secreto));
+    if (esperada.length === recibida.length && timingSafeEqual(esperada, recibida)) return email.trim().toLowerCase();
   }
   return null;
 }
@@ -92,7 +105,7 @@ export const TEXTOS = {
   ayuda: "Mandame las facturas en PDF o como foto, una por mensaje. Las leo y quedan para revisar en la web.",
   noVinculado: (appUrl: string) =>
     `Hola, soy el bot de facturas de Mindlin. Para mandarme facturas, primero conectá este Telegram a tu mail: entrá a ${appUrl} , pestaña "Subir", y tocá "Conectar mi Telegram". Se abre este chat de nuevo; tocá "Iniciar" y listo.`,
-  codigoInvalido: "Ese link de conexión no sirve. Generá uno nuevo desde la web de facturas.",
+  codigoInvalido: "Ese link de conexión venció (duran una hora) o no sirve. Generá uno nuevo desde la web de facturas: pestaña \"Subir\", \"Conectar mi Telegram\".",
   vinculado: (email: string) => `Listo, este Telegram quedó conectado a ${email}. Ya podés mandarme facturas.`,
   recibida: "Recibida. La estoy leyendo…",
   noGuardada: (motivo: string) => `No pude guardar la factura: ${motivo}`,
