@@ -46,14 +46,13 @@ Ver [puesta-en-marcha.md](puesta-en-marcha.md): carpetas, script de Apps Script 
 ## Resueltas el 29/10/2026
 
 - [x] **Qué hoja replicar:** "Facturación de Egresos (Compras)" y "Facturación de Ingresos (Ventas)". Son las únicas que tienen las facturas de octubre, aparte de "Pagos por Inversor" (ver abajo). Detalle en [auditoria-octubre.md](auditoria-octubre.md).
-- [x] **Socios:** el único que la app reconoce como socio es Matías Mindlin (20-39801632-8, "Honorarios CEO"): factura honorarios todos los meses, aporta plata (en la caja figura "Plata que puso Mati Mindlin") y es el CEO, y "Honorarios de Administración" encaja con eso. Druck Micaela y Michelle Mindlin facturan honorarios de arquitectura con el mismo patrón (fijos por mes y sin pagar), pero la factura de octubre de Druck estaba en la carpeta de compras, así que se dejaron como compras. Se cambia en `config/empresa.json`, y la persona que revisa siempre puede elegir la categoría a mano.
+- [x] **Socios:** Matías Mindlin (20-39801632-8), Michelle Mindlin (24-36498888-1) y Micaela Druck (27-37423564-3), confirmados por el cliente. Sus facturas son honorarios de administración: van a la carpeta de honorarios y a la pestaña de egresos, como antes. Están en `config/empresa.json`.
 - [x] **Subcarpetas por mes:** dentro de la carpeta de cada categoría, por la fecha de la factura: "Facturas Compras Octubre 2026". El script las crea.
 - [x] **Clasificación de proveedores del documento (GPT):** está en `config/proveedores.json` (los 62). La app la propone como "rubro detallado" en la ficha y la IA la usa para los proveedores nuevos. La columna "Rubro / Descripción" sigue con la descripción fiscal, que es lo que usa la planilla. Si quieren el rubro detallado en la planilla, alcanza con agregar una columna "Rubro detallado" después de la Y: la app la completa sola.
 - [x] **Telegram:** bot @mindlindevelopers_factura_bot, con el token en Vercel como `TELEGRAM_API_KEY`. Cada persona se conecta desde la web con su mail.
 
 ## Preguntas para el cliente
 
-- [ ] **¿Michelle Mindlin y Micaela Druck son socias?** Si lo son, sus honorarios irían a la carpeta de honorarios. Hoy van a compras.
 - [ ] **"Pago?":** la app la deja vacía. ¿Conviene que ponga "No"?
 - [ ] **"Nota de Crédito":** el equipo la escribe sin letra; la app escribe "Nota de Crédito A". ¿Está bien?
 - [ ] **Error en ventas:** la fila 7 (factura 00002-00000006) dice $15.169.108,89 y la factura dice $15.169.108,98 (total $16.761.865,32 en lugar de $16.761.865,42). En "Pagos por Inversor" está bien. Avisarle a Tadeo.

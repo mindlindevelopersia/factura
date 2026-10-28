@@ -33,6 +33,8 @@ Para cada factura se armó la lectura que debería dar la IA, transcrita del PDF
 
 Todo lo demás coincide: categoría, tipo, número, razón social, rubro, CUIT, "corresponde a", moneda, importes y total, el cliente "MARTÍN MIRANDA", tipo de pago "Amortización" y depto "1 A" de la venta. El "Monto a Transferir" con la fórmula `=T-U` da lo mismo que la planilla. Ninguna factura aparece como duplicada antes de cargarse, y todas aparecen como duplicadas (con su fila) contra la planilla completa.
 
+La factura de Micaela Druck estaba en la carpeta de compras de la muestra, pero el cliente confirmó que es socia: la app la clasifica como honorarios (carpeta de honorarios, misma fila en egresos). Si se corre la evaluación con la carpeta de la muestra tal cual, esa factura va a figurar con la categoría distinta.
+
 En las dos de Costa Materiales, la lectura de referencia decía "HQ" en "corresponde a" a propósito (la factura tiene como lugar de entrega la oficina): el historial lo corrigió a "Lerma 439", como lo carga el equipo.
 
 **La auditoría encontró un error y se corrigió:** la regla de "concepto repetido" le habría puesto "2da certificación Septiembre" a la certificación de octubre de JH 94, porque las dos cargas anteriores lo repetían. Ahora no se aplica a conceptos de un período (certificaciones, cuotas, meses).

@@ -126,7 +126,7 @@ Si falta configurar algo, la web muestra qué (`lib/estado.ts`, `GET /api/estado
 
 ### Categoría e historial
 
-`lib/invoice/completar.ts`. La categoría sale del CUIT del emisor: si es el de Mindlin (`config/empresa.json`), es una venta; si es el de un socio (la lista `socios` del mismo archivo), son honorarios; si no, una compra. Hoy el único socio cargado es Matías Mindlin ("Honorarios CEO"); ver por qué en [pendientes](docs/pendientes.md#preguntas-para-el-cliente).
+`lib/invoice/completar.ts`. La categoría sale del CUIT del emisor: si es el de Mindlin (`config/empresa.json`), es una venta; si es el de un socio (la lista `socios` del mismo archivo), son honorarios; si no, una compra. Los socios, confirmados por el cliente el 29/10/2026, son Matías Mindlin, Michelle Mindlin y Micaela Druck.
 
 El equipo le compra casi siempre a los mismos proveedores, y la planilla ya dice cómo se anota cada uno. Por eso, si el CUIT ya tiene cargas:
 

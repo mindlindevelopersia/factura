@@ -1,5 +1,9 @@
 {
   "cuit": "30718811550",
-  "socios": [{ "cuit": "20398016328", "nombre": "MINDLIN MATIAS EZEQUIEL" }],
+  "socios": [
+    { "cuit": "20398016328", "nombre": "MINDLIN MATIAS EZEQUIEL" },
+    { "cuit": "24364988881", "nombre": "MINDLIN MICHELLE CAROLINA" },
+    { "cuit": "27374235643", "nombre": "DRUCK MICAELA" }
+  ],
   "corresponde_a": ["Lerma 439", "HQ"]
 }
