@@ -19,41 +19,7 @@ Nada de esto toca la planilla real del cliente: se trabaja sobre una copia.
 
 ## Prompt para computer use
 
-Hace los pasos 1 a 6. Reemplazá `<URL DE LA COPIA PARA IA>` por el link de la "Copia para IA de Administración Contable" que pasó el cliente.
-
-````
-Necesito dejar lista la configuración de la app "Facturas Mindlin" (https://mindlin-developers.vercel.app). Trabajá en Chrome con la cuenta de Google mindlindevelopers.ia@gmail.com. Si no está abierta, frená y preguntame.
-
-Reglas: no copies valores secretos (claves, tokens) en el informe. No borres nada. Si algo pide pagar o permisos de administrador, frená y preguntame. No toques la planilla original del cliente: solo una copia.
-
-1. Carpetas. En drive.google.com creá una carpeta "Facturas Mindlin" y adentro cuatro carpetas: "Pendientes", "Facturas de Compras", "Facturas de Honorarios de Administración" y "Facturas de Ventas". Anotá el ID de las cuatro (lo que está después de /folders/ en la URL).
-
-2. Script. Entrá a https://script.google.com y abrí el proyecto "Guardar facturas Mindlin" (ID 1gCnlM-tgv2n45WKKe4LEpq8jcI0TH7yakOJYd9Xkjj-3zP3wYuOHL2FJ).
-   a. Reemplazá todo el contenido de Código.gs por el archivo apps-script/guardar-factura.gs del repositorio mindlindevelopersia/factura (rama main). Tiene que empezar con "Guarda y ordena en Drive los comprobantes que manda la app (versión 2)". Guardá.
-   b. En "Configuración del proyecto > Propiedades del script", agregá CARPETA_PENDIENTES, CARPETA_COMPRAS, CARPETA_HONORARIOS y CARPETA_VENTAS con los ID del paso 1. No borres CARPETA_ID ni SECRET.
-   c. Volvé al editor, elegí la función "probar" y tocá "Ejecutar". Si pide permisos nuevos, aceptalos con mindlindevelopers.ia@gmail.com ("Configuración avanzada > Ir a Guardar facturas Mindlin"). En el registro tienen que aparecer cuatro "OK".
-   d. "Implementar > Administrar implementaciones", editá la implementación activa (el lápiz), en "Versión" elegí "Versión nueva" y tocá "Implementar". Confirmá que la URL de la aplicación web sigue siendo la misma que antes.
-
-3. Planilla de prueba. Abrí <URL DE LA COPIA PARA IA>. Si mindlindevelopers.ia@gmail.com no tiene acceso, frená y avisame. Si se abre como .xlsx, usá "Archivo > Guardar como Hojas de cálculo de Google"; si ya es de Google, "Archivo > Hacer una copia". Que la copia quede en "Mi unidad" de mindlindevelopers.ia@gmail.com con el nombre "[PRUEBA] Administración Contable - copia para la app". Anotá su ID (lo que está entre /d/ y /edit) y el nombre exacto, letra por letra, de las pestañas de facturación de compras y de ventas (empiezan con "Facturación de Egresos" y "Facturación de Ingresos").
-
-4. Planilla de la cola. Creá una hoja de cálculo nueva y vacía llamada "Facturas Mindlin - cola de la app". Anotá su ID. No le agregues nada: la app crea sus pestañas.
-
-5. Compartí las dos planillas (pasos 3 y 4) con facturas-app@mindlin-developers.iam.gserviceaccount.com como Editor, sin notificar.
-
-6. En vercel.com, en el proyecto de la app, "Settings > Environment Variables", para Production:
-   - SHEET_ID: el ID del paso 3 (reemplaza el valor actual).
-   - SHEET_TAB_EGRESOS y SHEET_TAB_INGRESOS: los nombres exactos de las pestañas del paso 3.
-   - COLA_SHEET_ID: el ID del paso 4.
-   Confirmá que TELEGRAM_API_KEY, APPS_SCRIPT_URL y APPS_SCRIPT_SECRET existen (sin mostrar sus valores). Después andá a "Deployments" y hacé "Redeploy" del último deploy de producción.
-
-INFORME FINAL (sin secretos)
-- ID de las cuatro carpetas.
-- Resultado de "probar" y confirmación de que la URL del script no cambió.
-- ID de la planilla de prueba y nombres exactos de las dos pestañas.
-- ID de la planilla de la cola y confirmación de que las dos planillas están compartidas con la cuenta de servicio.
-- Variables cargadas en Vercel y si el redeploy terminó bien.
-- Cualquier paso que no se pudo hacer, y por qué.
-````
+Los pasos 1 a 7, listos para pegarle a un agente con computer use (ChatGPT u otro), con el código del script incluido: [configurar-con-computer-use.md](configurar-con-computer-use.md).
 
 Después, actualizar [configuracion.md](configuracion.md) con los ID del informe.
 

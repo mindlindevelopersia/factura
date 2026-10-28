@@ -2,7 +2,7 @@
 
 Iniciativa 1 de Mindlin Developers. Las facturas llegan **por Telegram** (al bot @mindlindevelopers_factura_bot) o se suben **en la web**. La IA las lee, las clasifica en una de las tres carpetas del equipo (**compras**, **honorarios de administración**, que son las facturas que los socios le hacen a la sociedad, o **ventas**) y propone los datos como los carga el equipo. Quedan en una cola "Para revisar" en la web; una persona revisa y aprueba. Recién ahí la app agrega la fila en la planilla Administración Contable (compras y honorarios en "Facturación de Egresos (Compras)", ventas en "Facturación de Ingresos (Ventas)") y mueve el PDF a la carpeta de Drive de su categoría, en la subcarpeta del mes. No calcula retenciones (eso es la iniciativa 11).
 
-**Para ponerla en marcha** después de este cambio: [docs/puesta-en-marcha.md](docs/puesta-en-marcha.md).
+**Para ponerla en marcha** después de este cambio: [docs/puesta-en-marcha.md](docs/puesta-en-marcha.md). La configuración que falta, lista para pegarle a un agente con computer use: [docs/configurar-con-computer-use.md](docs/configurar-con-computer-use.md).
 
 ## Estado
 
