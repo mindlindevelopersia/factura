@@ -7,15 +7,17 @@ Iniciativa 1 de Mindlin Developers. La IA lee la factura de compra, propone rubr
 | Paso | Estado |
 |---|---|
 | Esqueleto Next.js + TypeScript | Hecho. |
-| Extractor con IA (`lib/invoice/extract.ts`) | Hecho. Probado con una API simulada, todavía no con facturas reales. |
+| Extractor con IA (`lib/invoice/extract.ts`) | Hecho. Probado en producción con la API real de Claude y comprobantes sintéticos en imagen y PDF. Falta medir con facturas reales del cliente. |
 | Controles de CUIT, suma y QR (`lib/validation/`) | Hecho. Falta leer el QR de la imagen o del PDF. |
 | Script de evaluación (`scripts/eval/`) | Hecho. Espera el mes de muestra del cliente. |
 | Login con Google y lista de mails | Hecho y desplegado en https://mindlin-developers.vercel.app |
-| Pantalla de carga, revisión y aprobación | Hecho. Probado de punta a punta con la IA simulada. |
+| Pantalla de carga, revisión y aprobación | Hecho. Probado de punta a punta con la API real, Drive y la planilla de prueba. |
 | Escritura en la planilla y control de duplicados | Hecho. Probado contra la planilla de prueba. |
-| Subida de los PDF a Drive | Hecho con Apps Script. Falta publicar el script (ver `apps-script/README.md`). |
+| Subida de los PDF a Drive | Script publicado, autorizado y conectado a Vercel. Guardado de imagen y PDF verificado en la carpeta de prueba. |
 
 Configuración actual de cada servicio: [docs/configuracion.md](docs/configuracion.md). Lo que falta: [docs/pendientes.md](docs/pendientes.md).
+
+**Se continúa trabajando en la planilla y carpeta de prueba**, por decisión del responsable del proyecto el 28/10/2026. La planilla real del cliente todavía no está disponible. Los resultados de las pruebas están en [docs/verificacion.md](docs/verificacion.md).
 
 ## Desarrollo
 

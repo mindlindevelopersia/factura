@@ -2,6 +2,8 @@
 
 La configuración actual de cada servicio está en [configuracion.md](configuracion.md).
 
+**Actualización del 28/10/2026:** el entorno de prueba ya tiene Anthropic, Drive y Sheets conectados. La prueba con la API real está registrada en [verificacion.md](verificacion.md). Se continúa con la planilla de prueba porque la real del cliente todavía no está disponible.
+
 ## Plan de trabajo (18 h)
 
 | Paso | Hs | Estado |
@@ -10,15 +12,16 @@ La configuración actual de cada servicio está en [configuracion.md](configurac
 | Extractor con IA y controles de CUIT, suma y QR | 4 | ✅ Hecho. Falta leer el QR de la imagen y probar con facturas reales |
 | Script de evaluación contra el mes de muestra | 2 | ✅ Hecho. Falta correrlo: esperamos los datos del cliente |
 | Pantalla de carga, revisión y aprobación | 4 | ✅ Hecho |
-| Escritura en la planilla, subida a Drive y control de duplicados | 3 | ✅ Hecho. Falta publicar el script de Apps Script |
+| Escritura en la planilla, subida a Drive y control de duplicados | 3 | ✅ Hecho. Script publicado e integración real probada con comprobantes sintéticos |
 | Ajustes después de medir y entrega | 3 | ⏳ Pendiente: depende de la evaluación |
 
 **Para que el cliente lo pueda usar** faltan, en este orden:
 
-1. Cargar `ANTHROPIC_API_KEY` en Vercel.
-2. Publicar el script de Apps Script en la cuenta dueña del Drive.
-3. Probar con un par de facturas reales.
-4. Pasar a la planilla real.
+1. Probar con facturas reales del cliente y confirmar las convenciones de importes.
+2. Validar la estructura de su planilla y decidir la cuenta propietaria de los archivos.
+3. Pasar a la planilla real cuando esté disponible y hayan pasado esas pruebas.
+
+La clave de Anthropic ya está cargada en Production y el script de Apps Script está publicado, autorizado y conectado a Vercel. El responsable indicó seguir trabajando con la planilla de prueba.
 
 El resto de esta lista mejora la precisión o es limpieza.
 
@@ -26,11 +29,11 @@ El resto de esta lista mejora la precisión o es limpieza.
 
 ### Dónde se guardan los PDF
 
-La cuenta de servicio no puede subir archivos a un Drive de Gmail ("Service Accounts do not have storage quota"), y Mindlin no tiene Google Workspace (su mail está en Zoho). Por eso la app guarda los archivos con un **script de Apps Script** publicado en la cuenta dueña de la carpeta. El código ya está hecho y probado con un script simulado: [`apps-script/`](../apps-script/README.md).
+La cuenta de servicio no puede subir archivos a un Drive de Gmail ("Service Accounts do not have storage quota"), y Mindlin no tiene Google Workspace (su mail está en Zoho). Por eso la app guarda los archivos con un **script de Apps Script** publicado en la cuenta dueña de la carpeta. El script real ya está publicado y probado desde la app: [`apps-script/`](../apps-script/README.md).
 
-- [ ] **Decidir de qué cuenta es el Drive.** Lo lógico es una cuenta del cliente (por ejemplo matimindlin111@gmail.com) y no axellaban@gmail.com, para que las facturas sigan siendo de Mindlin cuando termine el proyecto. Si se arranca con axellaban@gmail.com, después hay que mover la carpeta y publicar el script en la otra cuenta.
-- [ ] **Publicar el script** con el prompt de computer use de [`apps-script/README.md`](../apps-script/README.md) y cargar `APPS_SCRIPT_URL` y `APPS_SCRIPT_SECRET` en Vercel. Hasta entonces, las facturas se cargan en la planilla con el link vacío.
-- [ ] Pasarle la URL del script al desarrollador para verificar que responde.
+- [ ] **Definir la cuenta propietaria para la entrega al cliente.** Las pruebas usan axellaban@gmail.com y la carpeta existente "Facturas (prueba)", con autorización del responsable. Si se cambia de cuenta, hay que mover los archivos y publicar el script en la cuenta elegida.
+- [x] **Publicar el script** y cargar `APPS_SCRIPT_URL` y `APPS_SCRIPT_SECRET` en Production de Vercel. Hecho el 28/10/2026; redeploy finalizado y enlaces a Drive verificados en la planilla.
+- [x] Verificar la URL publicada: con secreto incorrecto rechaza la llamada; desde la app guarda los archivos correctamente.
 
 Alternativas descartadas por ahora: OAuth con una cuenta de Gmail (hay que publicar la app de OAuth, y el token vence si cambia la contraseña) o contratar Google Workspace para Mindlin (tiene costo mensual por usuario).
 
@@ -48,18 +51,19 @@ Alternativas descartadas por ahora: OAuth con una cuenta de Gmail (hay que publi
 
 ## Configuración (manual)
 
-- [ ] Cargar `ANTHROPIC_API_KEY` en Vercel (Production) cuando se defina de quién es la clave.
-- [ ] Confirmar que el secreto viejo del cliente OAuth "Facturas Mindlin" esté deshabilitado. Tiene que quedar activo solo el nuevo.
-- [ ] Corregir `GOOGLE_PRIVATE_KEY` en Preview y Development, o borrarla de esos entornos.
-- [ ] Mover los JSON de las claves (`mindlin-developers-3278eda011de.json` y `mindlin-developers-efd7e536b36d.json`) de Descargas a una carpeta segura.
+- [x] Cargar `ANTHROPIC_API_KEY` en Vercel (Production). Cargada por el responsable y verificada con llamadas reales desde la app.
+- [x] Confirmar que el secreto viejo del cliente OAuth "Facturas Mindlin" esté deshabilitado. Verificado: el anterior está inhabilitado y el nuevo habilitado.
+- [x] Corregir `GOOGLE_PRIVATE_KEY` en Preview y Development. Formato corregido con la clave principal.
+- [x] Mover los JSON de las claves de Descargas a una carpeta de credenciales fuera del repositorio y restringir sus permisos locales.
 - [ ] Opcional: rotar la clave `3278eda011de`. Apareció en la conversación de computer use.
-- [ ] **Antes de usar la planilla real:** borrar la clave `efd7e536…` de la cuenta de servicio (Google Cloud > Cuentas de servicio > facturas-app > Claves).
+- [x] Borrar la clave secundaria `efd7e536…` de la cuenta de servicio. Google confirmó su eliminación el 28/10/2026. La clave principal de Vercel permanece activa.
 - [ ] **Al pasar a la planilla real:** compartirla con la cuenta de servicio como Editor y cambiar `SHEET_ID` y `SHEET_TAB` en Vercel.
 - [ ] Cada persona nueva: agregar su mail en `ALLOWED_EMAILS` (Vercel, y después redeploy) y como usuario de prueba en la pantalla de consentimiento de OAuth.
 
 ## Desarrollo
 
-- [ ] **Probar con facturas reales en producción** apenas esté `ANTHROPIC_API_KEY`. Hasta ahora la pantalla se probó de punta a punta con la IA simulada; la extracción real todavía no corrió nunca.
+- [x] Probar el circuito completo en Production con la API real y comprobantes sintéticos: imagen en ARS, PDF de nota de crédito en USD y rechazo de duplicados. Ver [verificacion.md](verificacion.md).
+- [ ] **Probar con facturas reales del cliente.** La integración ya funciona, pero la precisión del extractor todavía no se midió con la muestra del cliente.
 - [ ] Correr la evaluación (`npm run eval`) con el mes de muestra del cliente y ajustar el prompt y los rubros según los resultados.
 - [ ] Leer el QR de ARCA de fotos y PDF. El validador ya existe, pero recibe el texto del QR.
 - [ ] Reglas de rubro por proveedor, si la evaluación muestra que hacen falta.
