@@ -58,7 +58,7 @@ Mindlin no tiene Google Workspace: el mail de mindlindevelopers.com está en Zoh
 | `SHEET_ID`, `SHEET_TAB` | ✅ | ✅ |
 | `SHEET_TAB_EGRESOS`, `SHEET_TAB_INGRESOS` | ❌ falta ([puesta en marcha](puesta-en-marcha.md)) | ❌ |
 | `COLA_SHEET_ID` | ❌ falta ([puesta en marcha](puesta-en-marcha.md)) | ❌ |
-| `TELEGRAM_API_KEY` | ✅ cargada el 29/10/2026 (bot @mindlindevelopers_factura_bot) | ❌ |
+| `TELEGRAM_API_KEY` | ✅ cargada el 29/10/2026. El usuario del bot lo pide la app a Telegram (`getMe`) y se ve en la web | ❌ |
 | `APPS_SCRIPT_URL`, `APPS_SCRIPT_SECRET` | ✅ | ❌ |
 | `ANTHROPIC_API_KEY` | ✅ | ❌ |
 

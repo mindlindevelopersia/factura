@@ -257,7 +257,7 @@ INFORME FINAL (sin valores secretos)
 Lo hace cada persona, con su cuenta, porque es su Telegram:
 
 1. Entrar a https://mindlin-developers.vercel.app con su mail (tiene que estar en `ALLOWED_EMAILS`).
-2. Pestaña "Subir" > "Conectar mi Telegram". Se abre el bot @mindlindevelopers_factura_bot: tocar "Iniciar". El bot contesta "Listo, este Telegram quedó conectado a ...".
+2. Pestaña "Subir" > "Conectar mi Telegram". Se abre el bot de facturas en Telegram: tocar "Iniciar". El bot contesta "Listo, este Telegram quedó conectado a ...".
 
 Y la prueba de punta a punta, con las facturas de octubre: [puesta-en-marcha.md](puesta-en-marcha.md#probar-de-punta-a-punta).
 

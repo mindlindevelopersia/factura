@@ -49,7 +49,7 @@ Ver [puesta-en-marcha.md](puesta-en-marcha.md): carpetas, script de Apps Script 
 - [x] **Socios:** Matías Mindlin (20-39801632-8), Michelle Mindlin (24-36498888-1) y Micaela Druck (27-37423564-3), confirmados por el cliente. Sus facturas son honorarios de administración: van a la carpeta de honorarios y a la pestaña de egresos, como antes. Están en `config/empresa.json`.
 - [x] **Subcarpetas por mes:** dentro de la carpeta de cada categoría, por la fecha de la factura: "Facturas Compras Octubre 2026". El script las crea.
 - [x] **Clasificación de proveedores del documento (GPT):** está en `config/proveedores.json` (los 62). La app la propone como "rubro detallado" en la ficha y la IA la usa para los proveedores nuevos. La columna "Rubro / Descripción" sigue con la descripción fiscal, que es lo que usa la planilla. Si quieren el rubro detallado en la planilla, alcanza con agregar una columna "Rubro detallado" después de la Y: la app la completa sola.
-- [x] **Telegram:** bot @mindlindevelopers_factura_bot, con el token en Vercel como `TELEGRAM_API_KEY`. Cada persona se conecta desde la web con su mail.
+- [x] **Telegram:** el bot de facturas, con el token en Vercel como `TELEGRAM_API_KEY`. Cada persona se conecta desde la web con su mail.
 
 ## Preguntas para el cliente
 

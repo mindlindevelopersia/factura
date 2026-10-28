@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     }
 
     const email = await usuarios.emailDe(m.from.id);
-    if (!email || !isAllowedEmail(email)) return (await responder(TEXTOS.noVinculado), ok());
+    if (!email || !isAllowedEmail(email)) return (await responder(TEXTOS.noVinculado(appUrl)), ok());
 
     const s = serviciosDesdeEnv(appUrl);
     const de = `${nombreDe(m)} (${email})`;

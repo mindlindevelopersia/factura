@@ -90,8 +90,8 @@ const pesos = (n: number, moneda: string) =>
 
 export const TEXTOS = {
   ayuda: "Mandame las facturas en PDF o como foto, una por mensaje. Las leo y quedan para revisar en la web.",
-  noVinculado:
-    "Todavía no conectaste tu Telegram. Entrá a la web de facturas con tu mail, tocá \"Conectar Telegram\" y volvé acá.",
+  noVinculado: (appUrl: string) =>
+    `Hola, soy el bot de facturas de Mindlin. Para mandarme facturas, primero conectá este Telegram a tu mail: entrá a ${appUrl} , pestaña "Subir", y tocá "Conectar mi Telegram". Se abre este chat de nuevo; tocá "Iniciar" y listo.`,
   codigoInvalido: "Ese link de conexión no sirve. Generá uno nuevo desde la web de facturas.",
   vinculado: (email: string) => `Listo, este Telegram quedó conectado a ${email}. Ya podés mandarme facturas.`,
   recibida: "Recibida. La estoy leyendo…",

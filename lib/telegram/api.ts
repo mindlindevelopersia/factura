@@ -1,8 +1,5 @@
 import { createHash } from "node:crypto";
 
-/** Nombre del bot, para los links de vinculación. */
-export const BOT_TELEGRAM = "mindlindevelopers_factura_bot";
-
 /** El token del bot (en Vercel, TELEGRAM_API_KEY), o null si no está. */
 export function tokenTelegram(): string | null {
   return process.env.TELEGRAM_API_KEY || process.env.TELEGRAM_BOT_TOKEN || null;
@@ -79,5 +76,10 @@ export class TelegramApi {
 
   infoWebhook(): Promise<InfoWebhook> {
     return this.llamar<InfoWebhook>("getWebhookInfo");
+  }
+
+  /** El bot: su nombre de usuario (para los links t.me/...) sale de acá, no se escribe a mano. */
+  yo(): Promise<{ username: string; first_name: string }> {
+    return this.llamar("getMe");
   }
 }

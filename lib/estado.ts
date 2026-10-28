@@ -144,9 +144,10 @@ async function telegram(origin: string): Promise<Chequeo> {
   const token = tokenTelegram();
   if (!token) return { titulo, ok: false, detalle: "Falta TELEGRAM_API_KEY." };
   try {
-    const info = await conTiempo(new TelegramApi(token).infoWebhook());
-    if (info.url === `${origin}/api/telegram-webhook`) return { titulo, ok: true, detalle: "Activo: los mensajes llegan a esta app." };
-    return { titulo, ok: false, detalle: 'El token funciona, pero falta activarlo: pestaña "Subir", botón "Activar bot".' };
+    const telegram = new TelegramApi(token);
+    const [info, bot] = await conTiempo(Promise.all([telegram.infoWebhook(), telegram.yo()]));
+    if (info.url === `${origin}/api/telegram-webhook`) return { titulo, ok: true, detalle: `@${bot.username}, activo: los mensajes llegan a esta app.` };
+    return { titulo, ok: false, detalle: `El token de @${bot.username} funciona, pero falta activarlo: pestaña "Subir", botón "Activar bot".` };
   } catch (e) {
     return { titulo, ok: false, detalle: `TELEGRAM_API_KEY no funciona: ${mensaje(e)}` };
   }

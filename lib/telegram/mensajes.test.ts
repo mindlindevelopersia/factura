@@ -65,6 +65,10 @@ describe("vinculación", () => {
     expect(secretoWebhook("123:abc")).not.toBe(secretoWebhook("123:abd"));
   });
 
+  it("a quien no está conectado le explica cómo hacerlo, con el link a la web", () => {
+    expect(TEXTOS.noVinculado("https://mindlin-developers.vercel.app")).toContain('https://mindlin-developers.vercel.app , pestaña "Subir"');
+  });
+
   it("nombre de quien manda", () => {
     expect(nombreDe(base)).toBe("@tadeo");
     expect(nombreDe({ ...base, from: { id: 1, first_name: "Ana", last_name: "Pérez" } })).toBe("Ana Pérez");
