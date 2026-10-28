@@ -2,6 +2,26 @@
 
 La configuración actual de cada servicio está en [configuracion.md](configuracion.md).
 
+## Plan de trabajo (18 h)
+
+| Paso | Hs | Estado |
+|---|---|---|
+| Repo, Next.js, login y deploy en Vercel | 2 | ✅ Hecho y desplegado |
+| Extractor con IA y controles de CUIT, suma y QR | 4 | ✅ Hecho. Falta leer el QR de la imagen y probar con facturas reales |
+| Script de evaluación contra el mes de muestra | 2 | ✅ Hecho. Falta correrlo: esperamos los datos del cliente |
+| Pantalla de carga, revisión y aprobación | 4 | ✅ Hecho |
+| Escritura en la planilla, subida a Drive y control de duplicados | 3 | ✅ Hecho. Falta publicar el script de Apps Script |
+| Ajustes después de medir y entrega | 3 | ⏳ Pendiente: depende de la evaluación |
+
+**Para que el cliente lo pueda usar** faltan, en este orden:
+
+1. Cargar `ANTHROPIC_API_KEY` en Vercel.
+2. Publicar el script de Apps Script en la cuenta dueña del Drive.
+3. Probar con un par de facturas reales.
+4. Pasar a la planilla real.
+
+El resto de esta lista mejora la precisión o es limpieza.
+
 ## Decisiones
 
 ### Dónde se guardan los PDF
