@@ -206,6 +206,181 @@ a {
   border-color: var(--dudoso-borde);
 }
 
+.btn--borde {
+  background: transparent;
+  color: var(--negro);
+  border-color: var(--negro);
+}
+
+.btn--borde:hover {
+  background: var(--negro);
+  color: var(--blanco);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.alerta--aviso {
+  background: var(--dudoso);
+  color: #5c4a00;
+  border: 1px solid var(--dudoso-borde);
+  margin: 0 0 16px;
+  padding-left: 32px;
+}
+
+.alerta--ok {
+  background: rgb(54 109 83 / 0.1);
+  color: var(--verde);
+  border: 1px solid rgb(54 109 83 / 0.3);
+}
+
+.app-main__intro {
+  max-width: 720px;
+  margin: 0 0 24px;
+}
+
+/* Carga de facturas */
+.zona-carga {
+  border: 2px dashed var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--blanco);
+  padding: 40px 24px;
+  text-align: center;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.zona-carga--activa {
+  border-color: var(--lima-oscuro);
+  background: #fbfce9;
+}
+
+.zona-carga p {
+  margin: 0 0 16px;
+}
+
+.carga__resumen {
+  margin: 24px 0 8px;
+  font-size: 0.875rem;
+  color: var(--texto-suave);
+}
+
+.factura {
+  margin-top: 16px;
+  padding: 24px;
+}
+
+.factura__encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.factura__encabezado h2 {
+  font-size: 1rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.factura .alerta {
+  margin: 8px 0 16px;
+}
+
+.estado {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--radio-boton);
+  background: var(--gris-claro);
+  color: var(--texto-suave);
+}
+
+.estado--revision {
+  background: var(--dudoso);
+  color: #5c4a00;
+}
+
+.estado--guardada {
+  background: var(--lima);
+  color: var(--negro);
+}
+
+.estado--error {
+  background: rgb(194 57 52 / 0.12);
+  color: var(--rojo);
+}
+
+.factura__cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.factura__vista {
+  position: sticky;
+  top: 16px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo);
+  overflow: hidden;
+  background: var(--gris-claro);
+}
+
+.factura__vista iframe,
+.factura__vista img {
+  display: block;
+  width: 100%;
+  height: 70vh;
+  border: 0;
+  object-fit: contain;
+}
+
+.factura__nota {
+  font-size: 0.875rem;
+  color: var(--texto-suave);
+  margin: 0 0 16px;
+}
+
+.factura__campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.campo--ancho {
+  grid-column: 1 / -1;
+}
+
+.campo input,
+.campo select {
+  width: 100%;
+  min-width: 0;
+}
+
+.factura__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+@media (max-width: 820px) {
+  .factura__cuerpo {
+    grid-template-columns: 1fr;
+  }
+  .factura__vista {
+    position: static;
+  }
+  .factura__vista iframe,
+  .factura__vista img {
+    height: 50vh;
+  }
+}
+
 /* Pantalla de login: fondo negro con el logo en lima */
 .login {
   min-height: 100vh;

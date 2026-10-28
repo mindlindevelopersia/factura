@@ -10,9 +10,12 @@ Iniciativa 1 de Mindlin Developers. La IA lee la factura de compra, propone rubr
 | Extractor con IA (`lib/invoice/extract.ts`) | Hecho. Probado con una API simulada, todavía no con facturas reales. |
 | Controles de CUIT, suma y QR (`lib/validation/`) | Hecho. Falta leer el QR de la imagen o del PDF. |
 | Script de evaluación (`scripts/eval/`) | Hecho. Espera el mes de muestra del cliente. |
-| Login con Google y lista de mails | Hecho. Falta crear el cliente OAuth y hacer el primer deploy (ver abajo). |
-| Pantalla de carga, revisión y aprobación | Pendiente |
-| Escritura en la planilla, subida a Drive y control de duplicados | Pendiente. Ya está la clave de duplicado (`claveDuplicado`). |
+| Login con Google y lista de mails | Hecho y desplegado en https://mindlin-developers.vercel.app |
+| Pantalla de carga, revisión y aprobación | Hecho. Probado de punta a punta con la IA simulada. |
+| Escritura en la planilla y control de duplicados | Hecho. Probado contra la planilla de prueba. |
+| Subida de los PDF a Drive | Hecho con Apps Script. Falta publicar el script (ver `apps-script/README.md`). |
+
+Configuración actual de cada servicio: [docs/configuracion.md](docs/configuracion.md). Lo que falta: [docs/pendientes.md](docs/pendientes.md).
 
 ## Desarrollo
 
@@ -37,11 +40,9 @@ Nada de esto va al repo. En local, en `.env.local`. En Vercel, en Settings > Env
 | `AUTH_SECRET` | Firmar las sesiones de Auth.js (`npx auth secret`) | Login |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Cliente OAuth de Google para el login | Login |
 | `ALLOWED_EMAILS` | Mails que pueden entrar, separados por coma | Login |
-| `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY` | Cuenta de servicio para Sheets y Drive | Planilla y Drive |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY` | Cuenta de servicio para la planilla. La clave va como en el JSON, con los `\n` escritos | Planilla |
 | `SHEET_ID`, `SHEET_TAB` | Planilla y pestaña donde se agregan las filas. **Mientras se desarrolla, una copia.** | Planilla |
-| `DRIVE_FOLDER_ID` | Carpeta donde se guardan los PDF. **Mientras se desarrolla, una de prueba.** | Drive |
-
-Las credenciales de Google pueden cambiar según cómo se resuelva la subida a Drive (ver Pendientes).
+| `APPS_SCRIPT_URL`, `APPS_SCRIPT_SECRET` | Script que guarda los PDF en Drive (`apps-script/`) | Archivos. Sin esto, las facturas se cargan sin link |
 
 ## Estilo
 
@@ -76,6 +77,33 @@ Auth.js (`next-auth` v5) con Google. Solo entran los mails de `ALLOWED_EMAILS`, 
 2. Cargar `AUTH_SECRET` (generado con `npx auth secret`), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` y `ALLOWED_EMAILS`. `ANTHROPIC_API_KEY` todavía no hace falta en Vercel.
 3. Desplegar y agregar el dominio que asigne Vercel en el paso 3 del cliente OAuth.
 
+## Carga y revisión
+
+La pantalla principal (`components/CargaFacturas.tsx`) funciona así:
+
+1. La persona arrastra las facturas, en PDF o en foto. Las fotos se comprimen en el navegador (`lib/client/comprimir.ts`), porque Vercel acepta hasta 4,5 MB por pedido.
+2. Cada archivo va a `POST /api/facturas/extraer`, que lo lee con la IA, corre los controles y se fija si ya está en la planilla. No guarda nada. Se leen de a dos facturas a la vez.
+3. Se muestra la ficha editable al lado del archivo:
+   - En amarillo, lo que la IA marcó como dudoso y lo que falla un control.
+   - Un campo dudoso deja de estar en amarillo cuando la persona pasa por él. Los controles se recalculan mientras se edita.
+4. Al aprobar, `POST /api/facturas/aprobar`:
+   - Vuelve a validar y a controlar duplicados (si está repetida, responde 409).
+   - Guarda el archivo con un nombre estándar.
+   - Agrega la fila con estado "En revisión".
+
+## Planilla
+
+`lib/sheets/`. Las columnas y su orden están en `columnas.ts`: primero las de la ficha P02, después las que agrega la app (proyecto, estado, IVA otras alícuotas, otros tributos, tipo de cambio, CAE, cargado por y la clave de duplicado, que va en la última columna).
+
+- Si la pestaña está vacía, la app escribe los encabezados. Si tiene menos columnas que las necesarias, las agrega.
+- Las fechas y los importes se escriben como fechas y números. Las notas de crédito van en negativo.
+- El texto que viene de la factura y empieza con `=`, `+`, `-` o `@` se fuerza a texto, para que una factura no pueda meter una fórmula.
+- La escritura está detrás de la interfaz `Planilla`: si el cliente usa Excel, se cambia la implementación.
+
+## Archivos
+
+`lib/storage/archivos.ts`. Los PDF se guardan en Drive a través de un script de Apps Script publicado en la cuenta dueña de la carpeta (ver `apps-script/README.md`), porque la cuenta de servicio no tiene espacio en un Drive de Gmail. El nombre estándar es `AAAA-MM-DD Razón social - Tipo N°.pdf`.
+
 ## Cómo funciona la extracción
 
 `extractInvoice(file)` manda el PDF (como bloque `document`) o la foto (como bloque `image`) a `claude-opus-5-5` y devuelve los campos de la planilla P02 según el esquema zod de `lib/invoice/schema.ts`:
@@ -103,10 +131,4 @@ Rubros: si `config/rubros.json` tiene una lista, la IA tiene que elegir uno de a
 
 ## Pendientes
 
-- **Excel o Google Sheets**: definir con el cliente, y conocer la estructura exacta de las columnas. La escritura conviene aislarla detrás de una interfaz.
-- **Subida a Drive**: una cuenta de servicio no tiene espacio propio. Hace falta una unidad compartida de Google Workspace o OAuth con un usuario de administración (refresh token).
-- **Clave de la API**: a nombre del cliente (lo ideal) o la del consultor durante el desarrollo.
-- **Leer el QR** de fotos y PDF (por ejemplo con `jsqr`, renderizando el PDF a imagen).
-- **Tamaño de archivo**: Vercel acepta hasta 4,5 MB por envío. Comprimir las fotos en el navegador y configurar `maxDuration` en las rutas que llamen a la IA.
-- **Reglas de rubro por proveedor**, si la evaluación muestra que hacen falta.
-- Controlar que el CUIT receptor sea el de Mindlin.
+En [docs/pendientes.md](docs/pendientes.md).
