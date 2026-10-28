@@ -1,4 +1,6 @@
-# Configuración que falta (para hacer con computer use)
+# Configuración con computer use
+
+**Ejecutado el 28/10/2026.** Los recursos y las variables ya están configurados; la app y el bot fueron verificados. Ver [informe](informe-configuracion-2026-10-28.md) y [configuración vigente](configuracion.md). Este documento conserva el procedimiento original como referencia; verificar el estado antes de repetirlo.
 
 Lo que queda por configurar para que la app reciba facturas, armado para que lo haga un agente con computer use (ChatGPT u otro). **Copiá todo el bloque de "Prompt" y pegalo en el agente.** Cuando termine, pasale el informe final a Claude para seguir.
 
