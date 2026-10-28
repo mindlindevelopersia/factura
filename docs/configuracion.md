@@ -1,6 +1,6 @@
 # Configuración actual
 
-Estado de los servicios verificado el 28/10/2026. Acá no hay valores secretos: los secretos de la app están en Vercel y el del script también en sus propiedades privadas.
+Estado de los servicios verificado el 28/10/2026, con lo que cambió el 29/10/2026 (ver [puesta en marcha](puesta-en-marcha.md)). Acá no hay valores secretos: los secretos de la app están en Vercel y el del script también en sus propiedades privadas.
 
 Se sigue usando la planilla y la carpeta de **prueba**, por decisión del responsable del proyecto. La planilla real del cliente todavía no está disponible.
 
@@ -56,7 +56,9 @@ Mindlin no tiene Google Workspace: el mail de mindlindevelopers.com está en Zoh
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | ✅ | ✅ |
 | `GOOGLE_PRIVATE_KEY` | ✅ | ✅ formato corregido |
 | `SHEET_ID`, `SHEET_TAB` | ✅ | ✅ |
-| `SHEET_TAB_EGRESOS`, `SHEET_TAB_INGRESOS` | ❌ falta (cambios del 29/10) | ❌ |
+| `SHEET_TAB_EGRESOS`, `SHEET_TAB_INGRESOS` | ❌ falta ([puesta en marcha](puesta-en-marcha.md)) | ❌ |
+| `COLA_SHEET_ID` | ❌ falta ([puesta en marcha](puesta-en-marcha.md)) | ❌ |
+| `TELEGRAM_API_KEY` | ✅ cargada el 29/10/2026 (bot @mindlindevelopers_factura_bot) | ❌ |
 | `APPS_SCRIPT_URL`, `APPS_SCRIPT_SECRET` | ✅ | ❌ |
 | `ANTHROPIC_API_KEY` | ✅ | ❌ |
 

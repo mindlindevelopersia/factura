@@ -1,5 +1,6 @@
 import rubros from "@/config/rubros.json";
 import { EMPRESA } from "@/lib/empresa";
+import { RUBROS_DETALLE } from "@/lib/invoice/proveedores";
 import { CAMPOS_IMPORTE, FacturaSchema, LETRAS, MONEDAS, type Categoria, type Factura } from "@/lib/invoice/schema";
 
 /** Campos de la ficha de revisión. Los que no están (código ARCA, vencimiento del CAE...) se conservan como los leyó la IA. */
@@ -73,6 +74,7 @@ export const CAMPOS: DefCampo[] = [
   rubros.length > 0
     ? { campo: "rubro", etiqueta: "Rubro", tipo: "opciones", opciones: lista(rubros), solo: EGRESOS }
     : { campo: "rubro", etiqueta: "Rubro", tipo: "texto", solo: EGRESOS },
+  { campo: "rubro_detalle", etiqueta: "Rubro detallado", tipo: "opciones", opciones: lista(RUBROS_DETALLE), solo: EGRESOS },
   { campo: "corresponde_a", etiqueta: "Corresponde a", tipo: "opciones", opciones: lista(EMPRESA.corresponde_a), solo: EGRESOS },
   { campo: "moneda", etiqueta: "Moneda", tipo: "opciones", opciones: MONEDAS.map((m) => ({ valor: m, texto: m === "otra" ? "Otra" : m })) },
   ...Object.entries(ETIQUETAS_IMPORTE).map(([campo, etiqueta]) => ({ campo: campo as CampoEditable, etiqueta, tipo: "importe" as const })),
@@ -100,6 +102,7 @@ const NULABLES = new Set<CampoEditable>([
   "cuit_receptor",
   "cae",
   "rubro",
+  "rubro_detalle",
   "corresponde_a",
   "cliente",
   "tipo_pago",

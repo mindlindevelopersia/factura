@@ -1,42 +1,9 @@
+import { facturaDePrueba } from "@/test/fixtures";
 import { describe, expect, it } from "vitest";
 import type { Factura } from "@/lib/invoice/schema";
 import { aFactura, aValores, camposDe } from "./formulario";
 
-const invoice: Factura = {
-  fecha_factura: "2026-09-15",
-  tipo_comprobante: "factura",
-  letra: "A",
-  codigo_arca: 1,
-  punto_venta: 3,
-  numero: 1234,
-  razon_social: "Corralón Ejemplo S.A.",
-  cuit: "33693450239",
-  cuit_receptor: "20123456786",
-  razon_social_receptor: null,
-  concepto: "Cemento",
-  moneda: "ARS",
-  tipo_cambio: null,
-  neto_gravado: 1000,
-  no_gravado: 0,
-  iva_21: 210,
-  iva_10_5: 0,
-  iva_otras: 0,
-  percepcion_iva: 0,
-  percepcion_iibb_caba: 0,
-  percepcion_iibb_pba: 0,
-  otros_tributos: 0,
-  total: 1210,
-  cae: null,
-  cae_vencimiento: "2026-09-25",
-  rubro: null,
-  corresponde_a: null,
-  campos_dudosos: ["total"],
-  observaciones: null,
-  categoria: "compra",
-  cliente: null,
-  tipo_pago: null,
-  depto: null,
-};
+const invoice: Factura = facturaDePrueba({ cuit_receptor: "20123456786", rubro: null, rubro_detalle: null, corresponde_a: null, campos_dudosos: ["total"], neto_gravado: 1000, iva_21: 210, total: 1210, cae: null });
 
 describe("formulario de revisión", () => {
   it("ida y vuelta sin cambios devuelve la misma factura", () => {

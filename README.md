@@ -1,6 +1,8 @@
 # Lector de facturas
 
-Iniciativa 1 de Mindlin Developers. La IA lee el comprobante y lo clasifica en una de las tres carpetas del equipo: **compras**, **honorarios de administración** (las facturas que los socios le hacen a la sociedad) o **ventas**. Propone los datos como los carga el equipo y la persona revisa y aprueba. Después la app guarda el PDF en la carpeta de Drive de su categoría y agrega la fila en la planilla Administración Contable: compras y honorarios en "Facturación de Egresos (Compras)", ventas en "Facturación de Ingresos (Ventas)". No calcula retenciones (eso es la iniciativa 11).
+Iniciativa 1 de Mindlin Developers. Las facturas llegan **por Telegram** (al bot @mindlindevelopers_factura_bot) o se suben **en la web**. La IA las lee, las clasifica en una de las tres carpetas del equipo (**compras**, **honorarios de administración**, que son las facturas que los socios le hacen a la sociedad, o **ventas**) y propone los datos como los carga el equipo. Quedan en una cola "Para revisar" en la web; una persona revisa y aprueba. Recién ahí la app agrega la fila en la planilla Administración Contable (compras y honorarios en "Facturación de Egresos (Compras)", ventas en "Facturación de Ingresos (Ventas)") y mueve el PDF a la carpeta de Drive de su categoría, en la subcarpeta del mes. No calcula retenciones (eso es la iniciativa 11).
+
+**Para ponerla en marcha** después de este cambio: [docs/puesta-en-marcha.md](docs/puesta-en-marcha.md).
 
 ## Estado
 
@@ -10,7 +12,8 @@ Iniciativa 1 de Mindlin Developers. La IA lee el comprobante y lo clasifica en u
 | Extractor con IA (`lib/invoice/extract.ts`) | Hecho. Probado en producción con la API real de Claude y comprobantes sintéticos en imagen y PDF. Falta medir con facturas reales del cliente. |
 | Controles de CUIT, suma y QR (`lib/validation/`) | Hecho. Falta leer el QR de la imagen o del PDF. |
 | Script de evaluación (`scripts/eval/`) | Hecho y adaptado a la planilla real. Falta correrlo con octubre de 2026 (ver [pendientes](docs/pendientes.md)). |
-| Tres categorías y columnas de la planilla real | Hecho en el código (29/10/2026). Falta publicar el script nuevo de Apps Script y configurar las pestañas (ver [pendientes](docs/pendientes.md)). |
+| Tres categorías y columnas de la planilla real | Hecho (29/10/2026). Auditado contra octubre: ver [docs/auditoria-octubre.md](docs/auditoria-octubre.md). |
+| Cola de pendientes, web (revisar, subir, historial) y bot de Telegram | Hecho (29/10/2026). Falta la [puesta en marcha](docs/puesta-en-marcha.md): carpetas, script v2, planilla de la cola y variables. |
 | Login con Google y lista de mails | Hecho y desplegado en https://mindlin-developers.vercel.app |
 | Pantalla de carga, revisión y aprobación | Hecho. Probado de punta a punta con la API real, Drive y la planilla de prueba. |
 | Escritura en la planilla y control de duplicados | Hecho. Probado contra la planilla de prueba. |
@@ -47,7 +50,10 @@ Nada de esto va al repo. En local, en `.env.local`. En Vercel, en Settings > Env
 | `SHEET_ID` | Planilla Administración Contable. **Mientras se desarrolla, una copia.** | Planilla |
 | `SHEET_TAB_EGRESOS` | Pestaña de compras y honorarios. Si no está, se usa `SHEET_TAB` (el nombre anterior) | Planilla |
 | `SHEET_TAB_INGRESOS` | Pestaña de ventas. Sin esto, la app no carga ventas | Ventas |
-| `APPS_SCRIPT_URL`, `APPS_SCRIPT_SECRET` | Script que guarda los PDF en Drive (`apps-script/`) | Archivos. Sin esto, las facturas se cargan sin link |
+| `APPS_SCRIPT_URL`, `APPS_SCRIPT_SECRET` | Script que guarda y ordena los PDF en Drive (`apps-script/`, versión 2) | Siempre: la cola guarda cada archivo al llegar |
+| `COLA_SHEET_ID` | Planilla aparte para la cola y las cuentas de Telegram conectadas. **No** la de Administración Contable. La app crea sus pestañas | Siempre |
+| `COLA_TAB`, `COLA_TAB_TELEGRAM` | Nombres de esas pestañas. Por defecto, "Cola" y "Telegram" | Opcional |
+| `TELEGRAM_API_KEY` | Token del bot de Telegram (de BotFather). También se acepta `TELEGRAM_BOT_TOKEN` | Telegram |
 
 ## Estilo
 
@@ -82,30 +88,40 @@ Auth.js (`next-auth` v5) con Google. Solo entran los mails de `ALLOWED_EMAILS`, 
 2. Cargar `AUTH_SECRET` (generado con `npx auth secret`), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` y `ALLOWED_EMAILS`. `ANTHROPIC_API_KEY` todavía no hace falta en Vercel.
 3. Desplegar y agregar el dominio que asigne Vercel en el paso 3 del cliente OAuth.
 
-## Carga y revisión
+## Cola, revisión y Telegram
 
-La pantalla principal (`components/CargaFacturas.tsx`) funciona así:
+Todo comprobante, llegue por donde llegue, pasa por la misma cola (`lib/cola/`):
 
-1. La persona arrastra las facturas, en PDF o en foto. Las fotos se comprimen en el navegador (`lib/client/comprimir.ts`), porque Vercel acepta hasta 4,5 MB por pedido.
-2. Cada archivo va a `POST /api/facturas/extraer`, que lo lee con la IA, lo clasifica, completa lo que sale de la carga anterior de la misma contraparte (ver abajo), corre los controles y se fija si ya está en la planilla. No guarda nada. Se leen de a dos facturas a la vez.
-3. Se muestra la ficha editable al lado del archivo. La categoría se puede cambiar, y cambia los campos: las compras y los honorarios piden razón social, CUIT, rubro y "corresponde a"; las ventas, cliente, tipo de pago y depto.
-   - En amarillo, lo que la IA marcó como dudoso y lo que falla un control.
-   - Un campo dudoso deja de estar en amarillo cuando la persona pasa por él. Los controles se recalculan mientras se edita.
-4. Al aprobar, `POST /api/facturas/aprobar`:
-   - Vuelve a validar y a controlar duplicados (si está repetida, responde 409).
-   - Guarda el archivo con un nombre estándar en la carpeta de su categoría.
-   - Agrega la fila en la pestaña que corresponde.
+1. **Llega.** Por la web (`POST /api/cola`, pestaña "Subir") o por Telegram (`POST /api/telegram-webhook`). Se guarda enseguida en la carpeta de pendientes de Drive, así no se pierde aunque falle algo después, y entra en la cola con estado "leyendo".
+2. **Se lee.** La IA lo lee, la app lo clasifica y completa lo que sale de la carga anterior de la misma contraparte (ver abajo). Queda "pendiente", o "error" si no se pudo leer (se puede reintentar). Si llegó por Telegram, el bot le avisa a quien lo mandó con un resumen y el link para revisarlo.
+3. **Se revisa** en la web, pestaña "Para revisar" (`components/FichaRevision.tsx`): el archivo al lado de los datos editables.
+   - En amarillo, lo que la IA marcó como dudoso y lo que falla un control. Un campo dudoso deja de estar en amarillo cuando la persona pasa por él; los controles se recalculan mientras se edita.
+   - La categoría se puede cambiar, y cambia los campos: compras y honorarios piden razón social, CUIT, rubro, rubro detallado y "corresponde a"; las ventas, cliente, tipo de pago y depto.
+   - Si la factura ya está en la planilla (cargada a mano o por otra persona), lo dice con el número de fila.
+4. **Se aprueba** (`POST /api/cola/<id>/aprobar`): se vuelve a controlar duplicados, el PDF se mueve a la carpeta de su categoría y a la subcarpeta del mes ("Facturas Compras Octubre 2026") con el nombre estándar, y se agrega la fila en la planilla. Si algo falla a mitad de camino, el comprobante sigue pendiente y se puede volver a aprobar sin duplicar nada. O **se descarta**: el archivo va a la papelera de Drive.
+5. **Historial:** la pestaña "Historial" muestra lo aprobado (con su fila y el link al archivo) y lo descartado, con quién y cuándo.
+
+La cola vive en una pestaña de la planilla `COLA_SHEET_ID`, una fila por comprobante, con la lectura completa en JSON y columnas legibles (contraparte, comprobante, total, estado). La web la vuelve a consultar cada 20 segundos, así aparece lo que llega por Telegram.
+
+### Telegram
+
+- **Activar el bot**, una sola vez: en la web, pestaña "Subir", botón "Activar bot". Le dice a Telegram que mande los mensajes a `/api/telegram-webhook` de la dirección desde la que se toca (tiene que ser la de producción).
+- **Conectar a cada persona:** en la misma pestaña, "Conectar mi Telegram" abre el bot con un código firmado con `AUTH_SECRET`; al tocar "Iniciar", esa cuenta de Telegram queda conectada al mail con el que entró a la web (pestaña "Telegram" de la planilla de la cola).
+- El bot solo atiende chats privados de cuentas conectadas a un mail que siga en `ALLOWED_EMAILS`. A las demás les contesta cómo conectarse y no guarda nada de lo que mandaron.
+- Cada llamada de Telegram trae un secreto derivado del token (`secretoWebhook` en `lib/telegram/api.ts`): el webhook rechaza las que no lo traen. Es la única ruta fuera del login (`proxy.ts`).
+- Acepta PDF, JPG, PNG y WEBP como documento, y fotos (toma la de mayor resolución). Hasta 20 MB, el límite de Telegram para bots. Si Telegram reintenta un mensaje, no se carga dos veces.
+- Avisa cuando lee la factura (con un aviso si ya está cargada), si no la pudo leer, y cuando alguien la aprueba o la descarta en la web.
 
 ### Categoría e historial
 
-`lib/invoice/completar.ts`. La categoría sale del CUIT del emisor: si es el de Mindlin (`config/empresa.json`), es una venta; si es el de un socio (la lista `socios` del mismo archivo), son honorarios; si no, una compra.
+`lib/invoice/completar.ts`. La categoría sale del CUIT del emisor: si es el de Mindlin (`config/empresa.json`), es una venta; si es el de un socio (la lista `socios` del mismo archivo), son honorarios; si no, una compra. Hoy el único socio cargado es Matías Mindlin ("Honorarios CEO"); ver por qué en [pendientes](docs/pendientes.md#preguntas-para-el-cliente).
 
 El equipo le compra casi siempre a los mismos proveedores, y la planilla ya dice cómo se anota cada uno. Por eso, si el CUIT ya tiene cargas:
 
-- **Compras y honorarios:** razón social, rubro y "corresponde a" como en la última carga de ese CUIT. El concepto, solo si las dos últimas cargas lo repiten (un abono, por ejemplo); si no, el que propone la IA.
+- **Compras y honorarios:** razón social, rubro y "corresponde a" como en la última carga de ese CUIT. El concepto, solo si las tres últimas cargas lo repiten, no es de un período (una certificación o una cuota cambian cada vez) y el proveedor no es de materiales; si no, el que propone la IA. El rubro detallado sale de la clasificación de proveedores de las notas del cliente (`config/proveedores.json`).
 - **Ventas**, por CUIT del receptor: cliente, tipo de pago y depto. Por ejemplo, las ventas a JH 94 Constructora se anotan a nombre de Martín Miranda, por la unidad 1 A, como "Amortización".
 
-La ficha avisa de qué fila tomó los datos.
+La ficha avisa de qué fila tomó los datos. Medido sobre las 218 filas de egresos de la planilla real, con lo cargado antes de cada una: rubro 97%, "corresponde a" 98%, razón social 96% y concepto 95% de aciertos ([auditoría](docs/auditoria-octubre.md)).
 
 ## Planilla
 
@@ -117,14 +133,20 @@ La ficha avisa de qué fila tomó los datos.
 - Moneda como en la planilla ("Pesos", "Dólares"). Las notas de crédito van en negativo. Los importes en 0 quedan vacíos.
 - Los importes van como los dice la factura, no con fórmulas: el equipo calcula el IVA con `=M*0,21`, y eso puede diferir en centavos de lo facturado.
 - La planilla no tiene columnas para el IVA a otras alícuotas ni para otros tributos (ni, en ventas, para percepciones). Si una factura los tiene, quedan dentro del total y la ficha lo avisa.
-- **Duplicados:** se buscan en lo que ya está cargado, también a mano, por CUIT del proveedor + tipo (factura, nota de crédito o de débito) + punto de venta + número. En ventas, sin el CUIT, porque el emisor siempre es Mindlin (`lib/sheets/registros.ts`).
+- **Duplicados:** se buscan en lo que ya está cargado, también a mano, por CUIT del proveedor + tipo (factura, nota de crédito o de débito) + punto de venta + número; en ventas, sin el CUIT, porque el emisor siempre es Mindlin. Si además coincide el total (±$1), es la misma factura y no se deja cargar. Si el número coincide pero el total no, se avisa y se deja: Banco Nación repite el número de liquidación de un mes a otro (`lib/sheets/registros.ts`).
+- **Rubro detallado:** la planilla no tiene esa columna. Si el equipo agrega una columna titulada "Rubro detallado" después de la Y, la app la completa (`COLUMNAS_OPCIONALES` en `columnas.ts`).
 - Si la pestaña está vacía (una planilla de prueba nueva), la app escribe los encabezados.
 - El texto que viene de la factura y empieza con `=`, `+`, `-` o `@` se fuerza a texto, para que una factura no pueda meter una fórmula.
 - La escritura está detrás de la interfaz `Planilla`: si el cliente usa Excel, se cambia la implementación.
 
 ## Archivos
 
-`lib/storage/archivos.ts`. Los PDF se guardan en Drive a través de un script de Apps Script publicado en la cuenta dueña de las carpetas (ver `apps-script/README.md`), porque la cuenta de servicio no tiene espacio en un Drive de Gmail. Cada categoría va a su carpeta: compras, honorarios o ventas. El nombre estándar es `AAAA-MM-DD Razón social - Tipo N°.pdf`; en las ventas, con el cliente en lugar de la razón social.
+`lib/storage/archivos.ts`. Los PDF se guardan en Drive a través de un script de Apps Script publicado en la cuenta dueña de las carpetas (ver `apps-script/README.md`), porque la cuenta de servicio no tiene espacio en un Drive de Gmail.
+
+- Al llegar, van a la carpeta de pendientes, con el nombre original.
+- Al aprobarlos, el mismo archivo se mueve a la carpeta de su categoría (compras, honorarios o ventas), dentro de la subcarpeta del mes de la factura ("Facturas Compras Octubre 2026", como las arma el equipo, con el año), y se renombra: `AAAA-MM-DD Razón social - Tipo N°.pdf`; en las ventas, con el cliente en lugar de la razón social. El script crea la subcarpeta si no existe.
+- Al descartarlos, van a la papelera de Drive.
+- El script solo toca archivos que estén en sus carpetas.
 
 ## Cómo funciona la extracción
 

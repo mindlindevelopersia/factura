@@ -69,6 +69,7 @@ export const CAMPOS_FACTURA = [
   "cae",
   "cae_vencimiento",
   "rubro",
+  "rubro_detalle",
   "corresponde_a",
 ] as const;
 export type CampoFactura = (typeof CAMPOS_FACTURA)[number];
@@ -110,6 +111,7 @@ export const InvoiceSchema = z.object({
   cae: z.string().nullable().describe("CAE o CAI, solo dígitos. null si no figura."),
   cae_vencimiento: z.string().nullable().describe("Vencimiento del CAE en formato AAAA-MM-DD. null si no figura."),
   rubro: z.string().nullable().describe("Rubro de gasto propuesto. null en las ventas."),
+  rubro_detalle: z.string().nullable().describe("Rubro detallado del proveedor. null en las ventas."),
   corresponde_a: z
     .string()
     .nullable()
@@ -131,10 +133,19 @@ function deLaLista(valores: readonly string[], libre: z.ZodNullable<z.ZodString>
     .describe(descripcion);
 }
 
-/** Esquema para la IA, con el rubro y "corresponde a" limitados a sus listas cuando las hay. */
-export function buildInvoiceSchema(rubros: readonly string[] = [], correspondeA: readonly string[] = []) {
+/** Esquema para la IA, con el rubro, el rubro detallado y "corresponde a" limitados a sus listas cuando las hay. */
+export function buildInvoiceSchema(
+  rubros: readonly string[] = [],
+  correspondeA: readonly string[] = [],
+  rubrosDetalle: readonly string[] = [],
+) {
   return InvoiceSchema.extend({
     rubro: deLaLista(rubros, InvoiceSchema.shape.rubro, "Rubro de gasto, de la lista. null en las ventas o si ninguno corresponde."),
+    rubro_detalle: deLaLista(
+      rubrosDetalle,
+      InvoiceSchema.shape.rubro_detalle,
+      "Rubro detallado del proveedor, de la lista. null en las ventas o si ninguno corresponde.",
+    ),
     corresponde_a: deLaLista(
       correspondeA,
       InvoiceSchema.shape.corresponde_a,

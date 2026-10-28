@@ -104,6 +104,34 @@ export const COLUMNAS_INGRESOS: Columna[] = [
 
 export type Pestania = "egresos" | "ingresos";
 
+/**
+ * Columnas que no están en la planilla pero que la app completa si alguien las agrega, en
+ * cualquier lugar después de las fijas. Se reconocen por el título de la fila 1.
+ */
+export const COLUMNAS_OPCIONALES: Record<Pestania, Columna[]> = {
+  egresos: [{ titulo: "Rubro detallado", valor: (d) => texto(d.factura.rubro_detalle) }],
+  ingresos: [],
+};
+
+const normalizarTitulo = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+
+/**
+ * La fila para la planilla. Con los encabezados de la pestaña, agrega las columnas
+ * opcionales que encuentre después de las fijas (el resto queda en null: no se toca).
+ */
+export function filaConOpcionales(d: DatosFila, encabezados: string[]): Celda[] {
+  const pestania = pestaniaDe(d.factura);
+  const fila = filaPlanilla(d);
+  const fijas = COLUMNAS[pestania].length;
+  for (const columna of COLUMNAS_OPCIONALES[pestania]) {
+    const i = encabezados.findIndex((t, j) => j >= fijas && normalizarTitulo(t) === normalizarTitulo(columna.titulo));
+    if (i < 0) continue;
+    while (fila.length < i) fila.push(null);
+    fila[i] = columna.valor(d);
+  }
+  return fila;
+}
+
 export function pestaniaDe(f: Pick<Factura, "categoria">): Pestania {
   return f.categoria === "venta" ? "ingresos" : "egresos";
 }

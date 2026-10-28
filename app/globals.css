@@ -423,3 +423,189 @@ a {
   color: #ffb4b0;
   border-color: rgb(194 57 52 / 0.5);
 }
+
+/* Secciones de la pantalla principal */
+.pestanias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.pestania {
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  padding: 8px 20px;
+  border-radius: var(--radio-boton);
+  border: 1px solid var(--borde);
+  background: var(--blanco);
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.pestania--activa {
+  background: var(--negro);
+  border-color: var(--negro);
+  color: var(--blanco);
+}
+
+.pestania:focus-visible {
+  outline: 2px solid var(--lima-oscuro);
+  outline-offset: 2px;
+}
+
+.vacio {
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.factura__origen {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.factura--resaltada {
+  outline: 3px solid var(--lima);
+}
+
+.estado--leyendo {
+  background: var(--gris-claro);
+  color: var(--texto-suave);
+}
+
+.subidas {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: grid;
+  gap: 8px;
+}
+
+.subidas__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  background: var(--blanco);
+  border-radius: var(--radio-campo);
+  border: 1px solid var(--borde);
+}
+
+.subidas__nombre {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.subidas__detalle {
+  flex-basis: 100%;
+  font-size: 0.8125rem;
+  color: var(--rojo);
+}
+
+.telegram {
+  margin-top: 24px;
+  padding: 24px;
+}
+
+.telegram h2 {
+  font-size: 1.125rem;
+}
+
+.tabla-contenedor {
+  overflow-x: auto;
+  padding: 8px;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.tabla th,
+.tabla td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.tabla th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-suave);
+}
+
+.tabla__numero {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tabla__sub {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.telegram__activar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-left: 16px;
+}
+
+@media (max-width: 640px) {
+  .pestania {
+    padding: 6px 14px;
+    font-size: 0.875rem;
+  }
+
+  /* El historial, como tarjetas: cada celda con su título. */
+  .tabla thead {
+    display: none;
+  }
+  .tabla,
+  .tabla tbody,
+  .tabla tr,
+  .tabla td {
+    display: block;
+    width: 100%;
+  }
+  .tabla tr {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--borde);
+  }
+  .tabla td {
+    display: flex;
+    gap: 12px;
+    padding: 4px 8px;
+    border: 0;
+    text-align: left;
+  }
+  .tabla td::before {
+    content: attr(data-etiqueta);
+    flex: 0 0 96px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--texto-suave);
+  }
+  .tabla td:empty {
+    display: none;
+  }
+  .tabla td {
+    flex-wrap: wrap;
+  }
+  .tabla__sub {
+    flex-basis: 100%;
+    padding-left: 108px;
+  }
+}

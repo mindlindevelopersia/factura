@@ -1,67 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { Factura } from "../invoice/schema";
-import { nombreArchivo } from "../storage/archivos";
-import { COLUMNAS_EGRESOS, COLUMNAS_INGRESOS, filaPlanilla, importesSinColumna, letraColumna, type Celda } from "./columnas";
+import { facturaDePrueba, ventaDePrueba } from "../../test/fixtures";
+import { nombreArchivo, subcarpetaDe } from "../storage/archivos";
+import { COLUMNAS_EGRESOS, COLUMNAS_INGRESOS, filaConOpcionales, filaPlanilla, importesSinColumna, letraColumna, type Celda } from "./columnas";
 
-// Como la fila 214 de la planilla: Costa Materiales, 1/10/2026.
-const compra: Factura = {
-  fecha_factura: "2026-10-01",
-  tipo_comprobante: "factura",
-  letra: "A",
-  codigo_arca: 1,
-  punto_venta: 5,
-  numero: 25853,
-  razon_social: "COSTA MATERIALES S.A.",
-  cuit: "30716418150",
-  cuit_receptor: "30718811550",
-  razon_social_receptor: "MINDLIN DEVELOPERS SA",
-  concepto: "Cemento",
-  moneda: "ARS",
-  tipo_cambio: null,
-  neto_gravado: 37306.01,
-  no_gravado: 0,
-  iva_21: 7834.26,
-  iva_10_5: 0,
-  iva_otras: 0,
-  percepcion_iva: 0,
-  percepcion_iibb_caba: 0,
-  percepcion_iibb_pba: 0,
-  otros_tributos: 0,
-  total: 45140.27,
-  cae: "86405562470534",
-  cae_vencimiento: "2026-10-11",
-  rubro: "Materiales",
-  corresponde_a: "Lerma 439",
-  campos_dudosos: [],
-  observaciones: null,
-  categoria: "compra",
-  cliente: null,
-  tipo_pago: null,
-  depto: null,
-};
-
-// Como la fila 7 de ventas: certificación 15, canje de la unidad 1-A.
-const venta: Factura = {
-  ...compra,
-  fecha_factura: "2026-10-06",
-  punto_venta: 2,
-  numero: 6,
-  razon_social: "MINDLIN DEVELOPERS",
-  cuit: "30718811550",
-  cuit_receptor: "30718277929",
-  razon_social_receptor: "JH 94 CONSTRUCTORA S.R.L.",
-  concepto: "Certificación 15",
-  neto_gravado: 15169108.98,
-  iva_21: 0,
-  iva_10_5: 1592756.44,
-  total: 16761865.42,
-  rubro: null,
-  corresponde_a: null,
-  categoria: "venta",
-  cliente: "MARTÍN MIRANDA",
-  tipo_pago: "Amortización",
-  depto: "1 A",
-};
+const compra = facturaDePrueba();
+const venta = ventaDePrueba();
 
 const datos = { fechaRegistro: "2026-10-01", link: "https://drive.google.com/x" };
 
@@ -80,9 +23,9 @@ describe("filaPlanilla", () => {
       "Fecha de Registro": "2026-10-01",
       "Tipo de Comprobante": "Factura A",
       "Nº Comprobante / Operación": "00005-00025853",
-      "Razón Social": "COSTA MATERIALES S.A.",
+      "Razón Social": "Corralón Ejemplo S.A.",
       "Rubro / Descripción": "Materiales",
-      CUIT: "30-71641815-0",
+      CUIT: "33-69345023-9",
       Concepto: "Cemento",
       "Corresponde a": "Lerma 439",
       "Forma de Pago": null,
@@ -117,9 +60,9 @@ describe("filaPlanilla", () => {
       "Fecha de Registro": "2026-10-01",
       Tipo: "Factura A",
       "Nº Comprobante": "00002-00000006",
-      "Cliente / Inversor / Razón Social": "MARTÍN MIRANDA",
+      "Cliente / Inversor / Razón Social": "INVERSOR EJEMPLO",
       "Tipo de Pago": "Amortización",
-      "CUIT Receptor": "30-71827792-9",
+      "CUIT Receptor": "30-71234567-1",
       "Depto adquirido": "1 A",
       Moneda: "Pesos",
       Importe: 15169108.98,
@@ -133,7 +76,7 @@ describe("filaPlanilla", () => {
 
   it("sin cliente, en ventas va el receptor del comprobante", () => {
     const fila = porTitulo(filaPlanilla({ ...datos, factura: { ...venta, cliente: null } }), COLUMNAS_INGRESOS);
-    expect(fila["Cliente / Inversor / Razón Social"]).toBe("JH 94 CONSTRUCTORA S.R.L.");
+    expect(fila["Cliente / Inversor / Razón Social"]).toBe("Constructora Ejemplo S.R.L.");
   });
 
   it("pone las notas de crédito en negativo y la moneda como en la planilla", () => {
@@ -169,12 +112,38 @@ describe("letraColumna", () => {
 
 describe("nombreArchivo", () => {
   it("arma el nombre estándar sin caracteres inválidos", () => {
-    expect(nombreArchivo({ ...compra, razon_social: "Costa / Materiales: S.A." }, "application/pdf")).toBe(
-      "2026-10-01 Costa Materiales S.A. - Factura A 00005-00025853.pdf",
+    expect(nombreArchivo({ ...compra, razon_social: "Corralón / Ejemplo: S.A." }, "application/pdf")).toBe(
+      "2026-10-01 Corralón Ejemplo S.A. - Factura A 00005-00025853.pdf",
     );
     expect(nombreArchivo(compra, "image/jpeg")).toMatch(/\.jpg$/);
   });
   it("en las ventas usa el cliente", () => {
-    expect(nombreArchivo(venta, "application/pdf")).toBe("2026-10-06 MARTÍN MIRANDA - Factura A 00002-00000006.pdf");
+    expect(nombreArchivo(venta, "application/pdf")).toBe("2026-10-06 INVERSOR EJEMPLO - Factura A 00002-00000006.pdf");
+  });
+});
+
+describe("subcarpetaDe", () => {
+  it("arma la subcarpeta del mes de la factura, por categoría", () => {
+    expect(subcarpetaDe(compra)).toBe("Facturas Compras Octubre 2026");
+    expect(subcarpetaDe({ categoria: "honorarios", fecha_factura: "2026-01-31" })).toBe("Facturas Honorarios Enero 2026");
+    expect(subcarpetaDe(venta)).toBe("Facturas Ventas Octubre 2026");
+    expect(subcarpetaDe({ categoria: "compra", fecha_factura: "" })).toBe("Facturas Compras Sin fecha");
+  });
+});
+
+describe("filaConOpcionales", () => {
+  const titulos = COLUMNAS_EGRESOS.map((c) => c.titulo);
+  it("sin columnas extra, es la fila de siempre", () => {
+    expect(filaConOpcionales({ ...datos, factura: compra }, titulos)).toEqual(filaPlanilla({ ...datos, factura: compra }));
+  });
+  it("completa el rubro detallado si la pestaña tiene esa columna, donde esté", () => {
+    const fila = filaConOpcionales({ ...datos, factura: compra }, [...titulos, "Notas", "rubro  DETALLADO"]);
+    expect(fila).toHaveLength(27);
+    expect(fila[25]).toBeNull();
+    expect(fila[26]).toBe("Materiales de construcción");
+  });
+  it("no la busca entre las columnas fijas", () => {
+    const fila = filaConOpcionales({ ...datos, factura: compra }, ["Rubro detallado", ...titulos.slice(1)]);
+    expect(fila).toHaveLength(25);
   });
 });

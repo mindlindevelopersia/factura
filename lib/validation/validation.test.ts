@@ -1,39 +1,10 @@
+import { invoiceDePrueba } from "../../test/fixtures";
 import { describe, expect, it } from "vitest";
 import type { Invoice } from "../invoice/schema";
 import { claveDuplicado, codigoArca, familiaDeTexto, formatTipo, parseNumero } from "../invoice/tipos";
 import { checkSum, compareWithQr, isValidCuit, parseArcaQr, validateInvoice } from "./index";
 
-const factura: Invoice = {
-  fecha_factura: "2026-09-15",
-  tipo_comprobante: "factura",
-  letra: "A",
-  codigo_arca: null,
-  punto_venta: 3,
-  numero: 1234,
-  razon_social: "Corralón Ejemplo S.A.",
-  cuit: "33693450239",
-  cuit_receptor: "30718811550",
-  razon_social_receptor: null,
-  concepto: "Cemento y arena",
-  moneda: "ARS",
-  tipo_cambio: null,
-  neto_gravado: 1000,
-  no_gravado: 0,
-  iva_21: 210,
-  iva_10_5: 0,
-  iva_otras: 0,
-  percepcion_iva: 30,
-  percepcion_iibb_caba: 0,
-  percepcion_iibb_pba: 25.5,
-  otros_tributos: 0,
-  total: 1265.5,
-  cae: "75123456789012",
-  cae_vencimiento: "2026-09-25",
-  rubro: "Materiales",
-  corresponde_a: "Lerma 439",
-  campos_dudosos: [],
-  observaciones: null,
-};
+const factura: Invoice = invoiceDePrueba({ codigo_arca: null, punto_venta: 3, numero: 1234, fecha_factura: "2026-09-15", concepto: "Cemento y arena", neto_gravado: 1000, iva_21: 210, percepcion_iva: 30, percepcion_iibb_pba: 25.5, total: 1265.5, cae: "75123456789012", cae_vencimiento: "2026-09-25" });
 
 function qrUrl(data: object): string {
   return `https://www.afip.gob.ar/fe/qr/?p=${Buffer.from(JSON.stringify(data)).toString("base64")}`;

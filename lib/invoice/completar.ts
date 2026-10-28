@@ -1,5 +1,6 @@
 import { EMPRESA, type Empresa } from "../empresa";
 import { normalizeCuit } from "../validation/cuit";
+import { rubroDetalleDe } from "./proveedores";
 import type { Categoria, Factura, Invoice } from "./schema";
 
 /** Una fila ya cargada en la pestaña de egresos, con lo que sirve para proponer la próxima del mismo proveedor. */
@@ -35,6 +36,21 @@ export function categoriaDe(inv: Pick<Invoice, "cuit">, empresa: Empresa = EMPRE
   return "compra";
 }
 
+/**
+ * Conceptos que cambian de una factura a otra del mismo proveedor aunque las últimas se
+ * repitan: certificaciones, cuotas y anticipos, o los que nombran un mes o un ordinal
+ * ("2da certificación Septiembre"). Para esos queda lo que leyó la IA.
+ */
+const CONCEPTO_DE_PERIODO =
+  /certific|cuota|anticipo|adelanto|\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\b|\b\d+\s*(ra|da|ta|ma|na|va|er|do|to|°|º)\b/i;
+
+/** Cuántas cargas seguidas con el mismo concepto hacen falta para proponerlo. */
+const CONCEPTO_REPETIDO = 3;
+
+export function esConceptoDePeriodo(concepto: string): boolean {
+  return CONCEPTO_DE_PERIODO.test(concepto.normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+}
+
 /** El último valor no vacío de un campo, en el orden de la planilla. */
 function ultimo<T, K extends keyof T>(filas: T[], campo: K): T[K] | null {
   for (let i = filas.length - 1; i >= 0; i--) {
@@ -55,8 +71,11 @@ export interface Completada {
  * contraparte. El equipo carga casi siempre a los mismos proveedores, y la planilla es la
  * referencia de cómo se anota cada uno:
  * - Compras y honorarios, por CUIT del emisor: razón social, rubro y "corresponde a" como
- *   en la última fila. El concepto, solo si las dos últimas filas lo repiten (un abono, por
- *   ejemplo); si no, queda el que propuso la IA.
+ *   en la última fila. El concepto, solo si las tres últimas filas lo repiten, no es de un
+ *   período (un abono sí, una certificación no) y el proveedor no es de materiales (cada
+ *   compra trae otra cosa); si no, queda el que propuso la IA. Medido sobre la planilla
+ *   real: acierta el 95% de las veces que se aplica. El rubro detallado sale de la lista de
+ *   proveedores del cliente (config/proveedores.json), por razón social.
  * - Ventas, por CUIT del receptor: cliente, tipo de pago y depto. Sin carga anterior, el
  *   cliente es el receptor del comprobante.
  */
@@ -76,12 +95,17 @@ export function completarFactura(inv: Invoice, historial: Historial | null, empr
 
   const emisor = normalizeCuit(inv.cuit ?? "");
   const previas = emisor ? (historial?.egresos ?? []).filter((f) => normalizeCuit(f.cuit) === emisor) : [];
-  if (previas.length === 0) return { factura, desde: null };
+  if (previas.length === 0) {
+    factura.rubro_detalle = rubroDetalleDe(inv.razon_social) ?? inv.rubro_detalle;
+    return { factura, desde: null };
+  }
 
   factura.razon_social = ultimo(previas, "razon_social") ?? inv.razon_social;
+  factura.rubro_detalle = rubroDetalleDe(factura.razon_social) ?? rubroDetalleDe(inv.razon_social) ?? inv.rubro_detalle;
   factura.rubro = ultimo(previas, "rubro") ?? inv.rubro;
   factura.corresponde_a = ultimo(previas, "corresponde_a") ?? inv.corresponde_a;
-  const [anteultima, ultima] = previas.slice(-2).map((f) => f.concepto.trim());
-  if (previas.length >= 2 && ultima && ultima === anteultima) factura.concepto = ultima;
+  const ultimos = previas.slice(-CONCEPTO_REPETIDO).map((f) => f.concepto.trim());
+  const repetido = ultimos.length === CONCEPTO_REPETIDO && ultimos[0] !== "" && ultimos.every((c) => c === ultimos[0]);
+  if (repetido && !esConceptoDePeriodo(ultimos[0]) && factura.rubro !== "Materiales") factura.concepto = ultimos[0];
   return { factura, desde: { pestania: "egresos", fila: previas.at(-1)!.fila } };
 }

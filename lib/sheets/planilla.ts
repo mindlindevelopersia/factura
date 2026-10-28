@@ -1,6 +1,6 @@
 import type { JWT } from "google-auth-library";
 import { googleClient } from "../google/auth";
-import { COLUMNAS, filaPlanilla, indiceColumna, letraColumna, pestaniaDe, type DatosFila, type Pestania } from "./columnas";
+import { COLUMNAS, filaConOpcionales, indiceColumna, letraColumna, pestaniaDe, type DatosFila, type Pestania } from "./columnas";
 import { leerRegistros, RANGO_EGRESOS, RANGO_INGRESOS, type Registros } from "./registros";
 
 /** Dónde se registran las facturas. Hoy Google Sheets; si el cliente usa Excel, otra implementación. */
@@ -24,7 +24,7 @@ const SHEETS = "https://sheets.googleapis.com/v4/spreadsheets";
 
 export class GoogleSheetsPlanilla implements Planilla {
   private ids: Promise<Map<string, number>> | null = null;
-  private readonly preparadas = new Set<string>();
+  private readonly encabezados = new Map<string, string[]>();
 
   constructor(
     private readonly client: JWT,
@@ -62,20 +62,26 @@ export class GoogleSheetsPlanilla implements Planilla {
     });
   }
 
-  /** Si la pestaña está vacía (una planilla de prueba nueva), escribe los títulos en la fila 1. */
-  private async asegurarEncabezados(pestania: string, tipo: Pestania) {
-    if (this.preparadas.has(pestania)) return;
-    const columnas = COLUMNAS[tipo];
-    const fila1 = this.rango(pestania, `A1:${letraColumna(columnas.length - 1)}1`);
+  /**
+   * Los títulos de la fila 1, para encontrar las columnas opcionales. Si la pestaña está vacía
+   * (una planilla de prueba nueva), primero los escribe.
+   */
+  private async leerEncabezados(pestania: string, tipo: Pestania): Promise<string[]> {
+    const guardados = this.encabezados.get(pestania);
+    if (guardados) return guardados;
+    const fila1 = this.rango(pestania, "1:1");
     const r = await this.client.request<{ values?: string[][] }>({ url: this.valores(fila1) });
-    if (!r.data.values?.[0]?.some((v) => v !== "")) {
+    let titulos = r.data.values?.[0] ?? [];
+    if (!titulos.some((v) => v !== "")) {
+      titulos = COLUMNAS[tipo].map((c) => c.titulo);
       await this.client.request({
-        url: `${this.valores(fila1)}?valueInputOption=RAW`,
+        url: `${this.valores(this.rango(pestania, "A1"))}?valueInputOption=RAW`,
         method: "PUT",
-        data: { values: [columnas.map((c) => c.titulo)] },
+        data: { values: [titulos] },
       });
     }
-    this.preparadas.add(pestania);
+    this.encabezados.set(pestania, titulos);
+    return titulos;
   }
 
   async registros(): Promise<Registros> {
@@ -84,8 +90,8 @@ export class GoogleSheetsPlanilla implements Planilla {
     const ingresos = this.pestanias.ingresos;
     const rangos = [this.rango(egresos, RANGO_EGRESOS), ...(ingresos ? [this.rango(ingresos, RANGO_INGRESOS)] : [])];
     const query = rangos.map((r) => `ranges=${encodeURIComponent(r)}`).join("&");
-    const r = await this.client.request<{ valueRanges: { values?: string[][] }[] }>({
-      url: `${SHEETS}/${this.sheetId}/values:batchGet?${query}`,
+    const r = await this.client.request<{ valueRanges: { values?: (string | number | boolean)[][] }[] }>({
+      url: `${SHEETS}/${this.sheetId}/values:batchGet?${query}&valueRenderOption=UNFORMATTED_VALUE`,
     });
     const [e, i] = r.data.valueRanges;
     return leerRegistros(e?.values ?? [], i?.values ?? []);
@@ -95,15 +101,14 @@ export class GoogleSheetsPlanilla implements Planilla {
     const tipo = pestaniaDe(datos.factura);
     const pestania = this.pestanias[tipo];
     if (!pestania) throw new PestaniaSinConfigurar(tipo);
-    await this.asegurarEncabezados(pestania, tipo);
-
-    const ultima = letraColumna(COLUMNAS[tipo].length - 1);
+    const valores = filaConOpcionales(datos, await this.leerEncabezados(pestania, tipo));
+    const ultima = letraColumna(valores.length - 1);
     // OVERWRITE escribe en la primera fila vacía debajo de los datos, como cuando se carga a mano.
     // Las celdas en null (forma de pago, banco, retención...) no se tocan.
     const r = await this.client.request<{ updates?: { updatedRange?: string } }>({
       url: `${this.valores(this.rango(pestania, `A1:${ultima}1`))}:append?valueInputOption=USER_ENTERED&insertDataOption=OVERWRITE`,
       method: "POST",
-      data: { values: [filaPlanilla(datos)] },
+      data: { values: [valores] },
     });
     const n = r.data.updates?.updatedRange?.match(/!A(\d+):/)?.[1];
     const fila = n ? Number(n) : null;
