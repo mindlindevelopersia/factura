@@ -18,7 +18,7 @@ La configuración actual de cada servicio está en [configuracion.md](configurac
 **Para que el cliente lo pueda usar** faltan, en este orden:
 
 1. Probar con facturas reales del cliente y confirmar las convenciones de importes.
-2. Validar la estructura de su planilla y decidir la cuenta propietaria de los archivos.
+2. Validar la estructura de su planilla. La cuenta propietaria elegida es mindlindevelopers.ia@gmail.com.
 3. Pasar a la planilla real cuando esté disponible y hayan pasado esas pruebas.
 
 La clave de Anthropic ya está cargada en Production y el script de Apps Script está publicado, autorizado y conectado a Vercel. El responsable indicó seguir trabajando con la planilla de prueba.
@@ -31,9 +31,9 @@ El resto de esta lista mejora la precisión o es limpieza.
 
 La cuenta de servicio no puede subir archivos a un Drive de Gmail ("Service Accounts do not have storage quota"), y Mindlin no tiene Google Workspace (su mail está en Zoho). Por eso la app guarda los archivos con un **script de Apps Script** publicado en la cuenta dueña de la carpeta. El script real ya está publicado y probado desde la app: [`apps-script/`](../apps-script/README.md).
 
-- [ ] **Definir la cuenta propietaria para la entrega al cliente.** Las pruebas usan axellaban@gmail.com y la carpeta existente "Facturas (prueba)", con autorización del responsable. Si se cambia de cuenta, hay que mover los archivos y publicar el script en la cuenta elegida.
+- [x] **Definir la cuenta propietaria para la entrega al cliente.** El responsable eligió mindlindevelopers.ia@gmail.com. Se crearon allí la carpeta, una copia de la planilla de prueba y el script, publicado para ejecutarse como esa cuenta. Ver [configuracion.md](configuracion.md).
 - [x] **Publicar el script** y cargar `APPS_SCRIPT_URL` y `APPS_SCRIPT_SECRET` en Production de Vercel. Hecho el 28/10/2026; redeploy finalizado y enlaces a Drive verificados en la planilla.
-- [x] Verificar la URL publicada: con secreto incorrecto rechaza la llamada; desde la app guarda los archivos correctamente.
+- [x] Verificar la URL publicada: con secreto incorrecto rechaza la llamada; desde la app guarda los archivos correctamente. Se repitió la prueba después de migrar a Mindlin y se archivó la implementación anterior de Axel.
 
 Alternativas descartadas por ahora: OAuth con una cuenta de Gmail (hay que publicar la app de OAuth, y el token vence si cambia la contraseña) o contratar Google Workspace para Mindlin (tiene costo mensual por usuario).
 
@@ -68,5 +68,6 @@ Alternativas descartadas por ahora: OAuth con una cuenta de Gmail (hay que publi
 - [ ] Leer el QR de ARCA de fotos y PDF. El validador ya existe, pero recibe el texto del QR.
 - [ ] Reglas de rubro por proveedor, si la evaluación muestra que hacen falta.
 - [ ] Controlar que el CUIT receptor sea el de Mindlin (falta saber sus CUIT).
+- [ ] Aplicar automáticamente formato de fecha a las filas nuevas de Sheets: `INSERT_ROWS` puede insertar celdas sin formato. En las dos filas de la prueba se corrigió la presentación de `A2:B3`; los valores se conservan como fechas numéricas.
 - [ ] Si dos personas aprueban la misma factura en el mismo segundo, las dos pueden pasar el control de duplicados. Con el volumen esperado es muy improbable; si pasa, se borra una fila a mano.
 - [ ] Las facturas en revisión viven solo en la pestaña del navegador: si se cierra antes de aprobar, hay que volver a cargarlas (y se vuelve a pagar la lectura).

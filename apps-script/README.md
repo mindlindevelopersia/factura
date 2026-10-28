@@ -2,6 +2,8 @@
 
 La cuenta de servicio no puede guardar archivos en un Drive de Gmail. Por eso la app los manda a este script, que se publica como web app en la cuenta dueña de la carpeta y guarda los archivos a nombre de esa cuenta. La app lo usa cuando están cargadas `APPS_SCRIPT_URL` y `APPS_SCRIPT_SECRET`. Si no están, carga las facturas en la planilla con el link vacío.
 
+La cuenta elegida para este proyecto es **mindlindevelopers.ia@gmail.com**. La carpeta, la planilla y el script deben pertenecer a esa cuenta. Los identificadores y el estado verificado están en [la configuración actual](../docs/configuracion.md).
+
 El código es [`guardar-factura.gs`](guardar-factura.gs). Si se cambia, hay que pegarlo de nuevo en el editor de Apps Script y publicar una versión nueva (Implementar > Administrar implementaciones > editar > Versión nueva). La URL se mantiene.
 
 ## Prompt para computer use
@@ -13,7 +15,7 @@ Necesito publicar un script de Google Apps Script que guarda en Drive los PDF de
 
 Reglas: no escribas la clave secreta en el informe final ni en ningún otro lado que no sean los dos campos indicados. Si algo pide pagar o permisos de administrador, frená y preguntame.
 
-1. En drive.google.com, con <CUENTA>, creá una carpeta "Facturas Mindlin". Si la cuenta es axellaban@gmail.com y ya existe "Facturas (prueba)", usá esa. Anotá el ID de la carpeta: lo que está después de /folders/ en la URL.
+1. En drive.google.com, con <CUENTA>, creá una carpeta "Facturas Mindlin". Para este proyecto usá mindlindevelopers.ia@gmail.com y la carpeta "Facturas Mindlin (prueba)" indicada en docs/configuracion.md; no uses el script anterior de Axel. Anotá el ID de la carpeta: lo que está después de /folders/ en la URL.
 
 2. Abrí una terminal y generá una clave con: openssl rand -hex 24
    Es la clave secreta: la vas a pegar en los pasos 5 y 8.

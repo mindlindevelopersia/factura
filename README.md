@@ -17,7 +17,7 @@ Iniciativa 1 de Mindlin Developers. La IA lee la factura de compra, propone rubr
 
 Configuración actual de cada servicio: [docs/configuracion.md](docs/configuracion.md). Lo que falta: [docs/pendientes.md](docs/pendientes.md).
 
-**Se continúa trabajando en la planilla y carpeta de prueba**, por decisión del responsable del proyecto el 28/10/2026. La planilla real del cliente todavía no está disponible. Los resultados de las pruebas están en [docs/verificacion.md](docs/verificacion.md).
+**Se continúa trabajando en la planilla y carpeta de prueba de mindlindevelopers.ia@gmail.com**, por decisión del responsable del proyecto el 28/10/2026. La planilla real del cliente todavía no está disponible. Los resultados de las pruebas están en [docs/verificacion.md](docs/verificacion.md).
 
 ## Desarrollo
 
