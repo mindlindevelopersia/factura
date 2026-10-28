@@ -102,5 +102,6 @@ Cada persona debe usar **Subir → Conectar mi Telegram → Iniciar** en su tel�
 - Código actualizado `941e13a`: **110 tests en 11 archivos pasan**, y `npm run typecheck` pasa.
 - La primera ejecución local de TypeScript encontró tipos generados de rutas eliminadas de la versión anterior; `next typegen` los regeneró y la revisión posterior pasó. No se cambió código para resolverlo.
 - Los chequeos de configuración, permisos y publicación confirman la conexión de los servicios. No equivalen a medir precisión con las facturas reales de octubre ni a una prueba funcional de recepción, aprobación y archivado desde un Telegram personal.
-- La vinculación personal, la evaluación de octubre y la prueba funcional contra la copia siguen como pasos separados en `puesta-en-marcha.md` y `pendientes.md`.
+- **Prueba web realizada después de la configuración:** cuatro PDF reales leídos y clasificados, duplicados detectados y bloqueados, rechazo del mismo archivo y aprobación de una imagen ficticia en la fila 230 de la copia, con fórmula, enlace y archivado mensual en Mindlin. Los registros previos comprobados quedaron sin cambios. Ver [prueba web](prueba-web-2026-10-28.md).
+- La vinculación y prueba personal de Telegram y la evaluación completa de octubre siguen como pasos separados en `puesta-en-marcha.md` y `pendientes.md`.
 - No se solicitó tarjeta ni activar facturación de Google durante esta configuración. Anthropic mantiene su clave existente.

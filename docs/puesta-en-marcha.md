@@ -4,6 +4,8 @@ El código nuevo (cola de pendientes, web para revisar y subir, bot de Telegram,
 
 Nada de esto toca la planilla real del cliente: se trabaja sobre una copia.
 
+**Prueba web completada el 28/10/2026:** cuatro PDF reales leídos y clasificados, duplicados bloqueados y una imagen ficticia aprobada en la fila 230 de la copia, con formato, fórmula y archivo en la carpeta mensual de Mindlin. Ver [resultados y alcance](prueba-web-2026-10-28.md). La prueba personal de Telegram sigue pendiente. No borrar registros existentes para repetir la prueba.
+
 ## Qué hay que hacer
 
 | # | Dónde | Qué | Quién |
@@ -29,8 +31,8 @@ La copia de la planilla ya tiene cargado octubre, así que sirve para probar con
 
 1. Entrar a la app, pestaña "Subir": tocar "Activar bot" y "Conectar mi Telegram" (abre el bot; tocar "Iniciar"). El bot contesta "Listo, este Telegram quedó conectado a ...".
 2. Mandarle al bot uno de los PDF de octubre (por ejemplo FC 25853 de Costa Materiales). El bot contesta "Recibida", y al rato "Leída: ... Ojo: parece que ya está cargada en la planilla" con el link. En la web aparece en "Para revisar" con el aviso de duplicada y la fila (214).
-3. En la copia, borrar las filas de octubre de la pestaña de compras (214 a 229) y de ventas (7 y 8). Volver a la web y recargar: el aviso de duplicada ya no está.
-4. Revisar y aprobar. La fila tiene que quedar igual a la que estaba (salvo la fecha de registro, el concepto si el equipo lo abrevia, y las columnas que completa el equipo: forma de pago, banco, retención, "Pago?"), con "Monto a Transferir" como fórmula y el link como "Link". El PDF tiene que estar en "Facturas de Compras / Facturas Compras Octubre 2026" con el nombre estándar, y el bot avisa "Cargada en la planilla".
+3. Conservar las filas existentes. Para probar la aprobación, elegir una factura realmente nueva o un comprobante ficticio con número único, rotulado sin valor fiscal y reservado a la copia de prueba. No alterar la identidad de un documento real para evitar el control de duplicados.
+4. Revisar y aprobar ese comprobante de prueba. Debe agregarse una fila con "Monto a Transferir" como fórmula y el link como "Link", con la fecha de registro actual. El archivo tiene que estar en "Facturas de Compras / Facturas Compras Octubre 2026" con el nombre estándar; si vino por Telegram, el bot debe avisar "Cargada en la planilla".
 5. Subir por la web el PDF de la venta (30718811550_001_00002_00000006.pdf): tiene que proponer cliente "MARTÍN MIRANDA", tipo de pago "Amortización" y depto "1 A", e ir a la pestaña de ventas y a "Facturas de Ventas".
 6. Descartar uno: el archivo va a la papelera de Drive y queda en "Historial".
 7. Mandar al bot una factura con un texto en la foto ("es de la oficina") y después un audio: los dos aparecen en la ficha como comentarios. Volver a mandar el mismo PDF: el bot contesta que ya lo tiene y no aparece dos veces.

@@ -2,7 +2,7 @@
 
 La configuración actual de cada servicio está en [configuracion.md](configuracion.md).
 
-**Configuración completada el 28/10/2026:** carpetas, Apps Script v2, copia contable nativa, cola, permisos y variables de Production aplicados. La app confirma todas las integraciones y el bot activo. Ver [informe](informe-configuracion-2026-10-28.md). Quedan la vinculación personal de Telegram y la prueba funcional con los comprobantes del cliente.
+**Configuración y prueba web completadas el 28/10/2026:** carpetas, Apps Script v2, copia contable nativa, cola, permisos y variables de Production aplicados. La app confirma todas las integraciones y el bot activo. Se cargaron desde Chrome cuatro PDF reales, se verificaron lectura, categorías y duplicados, y se aprobó una imagen ficticia en la fila 230 de la copia con archivado mensual en Mindlin. Ver [informe](informe-configuracion-2026-10-28.md) y [prueba web](prueba-web-2026-10-28.md). Quedan la vinculación y prueba personal de Telegram y la evaluación completa de octubre.
 
 **Actualización del 29/10/2026:** llegaron los datos del cliente (ver abajo, "Datos de octubre"). La app ya está adaptada a su planilla y a sus tres carpetas, tiene la cola de pendientes, la web para revisar y subir y el bot de Telegram, y está en `main`. Falta la [puesta en marcha](puesta-en-marcha.md) y medir la lectura de la IA con octubre.
 
@@ -21,7 +21,7 @@ La configuración actual de cada servicio está en [configuracion.md](configurac
 
 **Para que el cliente lo pueda usar** faltan, en este orden:
 
-1. Vincular el Telegram de cada persona y hacer la prueba de punta a punta contra la copia de la planilla. La configuración de la [puesta en marcha](puesta-en-marcha.md) ya está hecha.
+1. Vincular el Telegram de cada persona y probar ese canal contra la copia de la planilla. La configuración de la [puesta en marcha](puesta-en-marcha.md) y el circuito web ya están probados.
 2. Correr la evaluación de la IA con octubre y ajustar el prompt según lo que salga.
 3. Pasar a la planilla real.
 
@@ -99,6 +99,7 @@ Alternativas descartadas por ahora: OAuth con una cuenta de Gmail (hay que publi
 ## Desarrollo
 
 - [x] Probar el circuito completo en Production con la API real y comprobantes sintéticos: imagen en ARS, PDF de nota de crédito en USD y rechazo de duplicados. Ver [verificacion.md](verificacion.md).
+- [x] Probar desde la web con computer use cuatro PDF reales (compra, honorarios, venta y nota de crédito), duplicados por planilla y archivo, y aprobación/archivado de una imagen ficticia en la copia contable actual. Ver [prueba web del 28/10/2026](prueba-web-2026-10-28.md).
 - [ ] **Correr la evaluación con octubre** (`scripts/eval/README.md`, "Octubre de 2026") y ajustar el prompt según los resultados. Necesita `ANTHROPIC_API_KEY` donde se corra.
 - [ ] Leer el QR de ARCA de fotos y PDF. El validador ya existe, pero recibe el texto del QR.
 - [x] Reglas de rubro por proveedor: salen de la carga anterior del mismo CUIT (`lib/invoice/completar.ts`).
