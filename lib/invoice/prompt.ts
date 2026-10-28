@@ -22,10 +22,15 @@ Cómo se anota en la planilla:
 - rubro_detalle, solo en compras: qué vende o qué servicio presta el proveedor, de la lista del esquema (por ejemplo Materiales de construcción, Seguridad e higiene, Ejecución de obra). En las ventas, null.
 - corresponde_a, solo en compras: Lerma 439 si el gasto es de la obra de Lerma 439 (materiales, trabajos y servicios en la obra, o el comprobante la menciona). HQ si es de la oficina o la administración (honorarios de los socios y de profesionales, contador, licencias, bancos). En las ventas, null.`;
 
-export function userPrompt(rubros: readonly string[]): string {
+export function userPrompt(rubros: readonly string[], comentario?: string): string {
   const rubro =
     rubros.length > 0
       ? ""
       : " Proponé un rubro de gasto corto y genérico (por ejemplo: Materiales, Servicios de Terceros).";
-  return `Extraé los datos de este comprobante.${rubro}`;
+  // El comentario puede aclarar lo que el comprobante no dice (a qué obra corresponde, qué se compró),
+  // pero los datos impresos mandan.
+  const nota = comentario?.trim()
+    ? `\n\nQuien mandó el comprobante escribió esto:\n"""\n${comentario.trim().slice(0, 2000)}\n"""\nUsalo solo para lo que el comprobante no dice (por ejemplo concepto o corresponde_a), nunca para cambiar datos impresos. Si contradice al comprobante, mencionalo en observaciones.`
+      : "";
+  return `Extraé los datos de este comprobante.${rubro}${nota}`;
 }

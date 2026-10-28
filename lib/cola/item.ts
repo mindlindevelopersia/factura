@@ -27,6 +27,18 @@ export interface Resultado {
   link: string | null;
 }
 
+/**
+ * Un comentario de quien mandó el comprobante: el texto que acompaña al archivo, un mensaje
+ * que llegó después o un audio (guardado en Drive junto al comprobante).
+ */
+export interface Nota {
+  tipo: "texto" | "audio";
+  texto?: string;
+  audio?: { driveId: string; url: string; mediaType: string; nombre: string };
+  de: string;
+  fecha: string;
+}
+
 export interface ItemCola {
   id: string;
   recibida: string;
@@ -41,6 +53,9 @@ export interface ItemCola {
   resultado: Resultado | null;
   /** Mensaje de Telegram con el que llegó, para contestarle al que lo mandó. */
   telegram: { chat: number; mensaje: number } | null;
+  /** SHA-256 del archivo: el mismo archivo no entra dos veces en la cola. */
+  huella: string;
+  notas: Nota[];
 }
 
 /**
@@ -66,6 +81,9 @@ export const COLUMNAS_COLA = [
   "Resuelta por",
   "Resultado (JSON)",
   "Telegram",
+  "Huella",
+  "Comentarios",
+  "Comentarios (JSON)",
 ] as const;
 
 export function contraparte(f: Factura): string {
@@ -98,6 +116,9 @@ export function aFilaCola(item: ItemCola): string[] {
     item.resueltaPor ?? "",
     item.resultado ? JSON.stringify(item.resultado) : "",
     item.telegram ? `${item.telegram.chat}:${item.telegram.mensaje}` : "",
+    item.huella,
+    item.notas.map((n) => (n.tipo === "audio" ? `[audio] ${n.audio?.url ?? ""}` : n.texto)).join(" | "),
+    item.notas.length ? JSON.stringify(item.notas) : "",
   ];
 }
 
@@ -134,5 +155,7 @@ export function deFilaCola(fila: string[]): ItemCola | null {
     resueltaPor: c(15) || null,
     resultado: json<Resultado>(c(16), (v) => v as Resultado),
     telegram: Number.isFinite(chat) && Number.isFinite(mensaje) && c(17) ? { chat, mensaje } : null,
+    huella: c(18),
+    notas: json<Nota[]>(c(20), (v) => (Array.isArray(v) ? (v as Nota[]) : null)) ?? [],
   };
 }

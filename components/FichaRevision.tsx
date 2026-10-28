@@ -120,6 +120,11 @@ export function FichaRevision({
           </div>
 
           <div className="factura__datos">
+            {item.repetida && (
+              <p className="alerta alerta--error">
+                Esta factura ya la habían mandado: {item.repetida.descripcion}. Si es la misma, descartá esta.
+              </p>
+            )}
             {item.cargada?.tipo === "duplicada" && (
               <p className="alerta alerta--error">
                 Esta factura ya está cargada en la planilla, en la fila {item.cargada.fila} (mismo CUIT, tipo, número y total).
@@ -150,6 +155,26 @@ export function FichaRevision({
               </p>
             )}
             {original?.observaciones && <p className="factura__nota">IA: {original.observaciones}</p>}
+            {item.notas.length > 0 && (
+              <ul className="notas" aria-label="Comentarios de quien la mandó">
+                {item.notas.map((n, i) => (
+                  <li key={i} className="notas__item">
+                    {n.tipo === "audio" ? (
+                      <audio controls preload="none" src={`/api/cola/${item.id}/nota?n=${i}`}>
+                        <a href={n.audio?.url} target="_blank" rel="noreferrer">
+                          Escuchar en Drive
+                        </a>
+                      </audio>
+                    ) : (
+                      <span className="notas__texto">{n.texto}</span>
+                    )}
+                    <span className="notas__de">
+                      {n.de} · {fechaHora(n.fecha)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
 
             {valores && (
               <div className="factura__campos">

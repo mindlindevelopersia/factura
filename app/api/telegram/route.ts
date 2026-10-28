@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth/session";
-import { respuestaDeError, usuariosTelegramDesdeEnv } from "@/lib/cola/env";
+import { faltantesCola, respuestaDeError, usuariosTelegramDesdeEnv } from "@/lib/cola/env";
 import { BOT_TELEGRAM, TelegramApi, tokenTelegram } from "@/lib/telegram/api";
 import { codigoVinculo } from "@/lib/telegram/mensajes";
 
@@ -19,7 +19,8 @@ export async function GET(req: Request) {
   if (!token) return NextResponse.json({ configurado: false });
   try {
     const info = await new TelegramApi(token).infoWebhook();
-    const conectadoComo = await usuariosTelegramDesdeEnv().telegramDe(user.email);
+    // Sin la planilla de la cola no hay dónde guardar las cuentas conectadas: se muestra igual el estado del bot.
+    const conectadoComo = faltantesCola().length === 0 ? await usuariosTelegramDesdeEnv().telegramDe(user.email) : null;
     return NextResponse.json({
       configurado: true,
       bot: BOT_TELEGRAM,

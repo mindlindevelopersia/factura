@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { ItemCola } from "@/lib/cola/item";
 import type { Pendiente } from "@/lib/cola/servicio";
 import { FichaRevision } from "./FichaRevision";
-import { leerJson } from "./formato";
+import { EstadoConfiguracion } from "./EstadoConfiguracion";
+import { ErrorRespuesta, leerJson } from "./formato";
 import { Historial } from "./Historial";
 import { Subir } from "./Subir";
 import { TelegramPanel } from "./TelegramPanel";
@@ -21,6 +22,8 @@ const REFRESCO_MS = 20_000;
 export function Bandeja({ revisar }: { revisar?: string }) {
   const [datos, setDatos] = useState<{ pendientes: Pendiente[]; historial: ItemCola[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [faltaConfigurar, setFaltaConfigurar] = useState(false);
+  const [verEstado, setVerEstado] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [vista, setVista] = useState<Vista>("revisar");
 
@@ -28,8 +31,10 @@ export function Bandeja({ revisar }: { revisar?: string }) {
     try {
       setDatos(await leerJson(await fetch("/api/cola", { cache: "no-store" })));
       setError(null);
+      setFaltaConfigurar(false);
     } catch (e) {
       setError((e as Error).message);
+      setFaltaConfigurar(e instanceof ErrorRespuesta && e.status === 503);
     }
   }, []);
 
@@ -69,6 +74,7 @@ export function Bandeja({ revisar }: { revisar?: string }) {
           {error}
         </p>
       )}
+      {faltaConfigurar && <EstadoConfiguracion />}
       {aviso && (
         <p role="status" className="alerta alerta--ok">
           {aviso}
@@ -110,6 +116,16 @@ export function Bandeja({ revisar }: { revisar?: string }) {
             }}
           />
           <TelegramPanel />
+          {!faltaConfigurar &&
+            (verEstado ? (
+              <EstadoConfiguracion />
+            ) : (
+              <p className="carga__resumen">
+                <button type="button" className="btn btn--borde btn--chico" onClick={() => setVerEstado(true)}>
+                  Revisar la configuración
+                </button>
+              </p>
+            ))}
         </section>
       )}
 

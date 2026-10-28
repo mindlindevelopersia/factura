@@ -9,6 +9,7 @@ export function fechaHora(iso: string | null): string {
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    hourCycle: "h23",
   }).format(d);
 }
 
@@ -18,11 +19,21 @@ export function importe(n: number | undefined, moneda = "ARS"): string {
   return moneda === "ARS" ? `$ ${texto}` : `${moneda} ${texto}`;
 }
 
+/** Un error del servidor, con su código: 503 quiere decir que falta configurar algo. */
+export class ErrorRespuesta extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
+
 export async function leerJson<T = unknown>(res: Response): Promise<T> {
   if (!res.headers.get("content-type")?.includes("application/json")) {
     throw new Error("La sesión venció o el servidor no respondió. Recargá la página.");
   }
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error ?? `Error ${res.status}`);
+  if (!res.ok) throw new ErrorRespuesta(data.error ?? `Error ${res.status}`, res.status);
   return data as T;
 }

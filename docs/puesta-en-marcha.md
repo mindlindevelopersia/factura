@@ -67,8 +67,11 @@ La copia de la planilla ya tiene cargado octubre, así que sirve para probar con
 4. Revisar y aprobar. La fila tiene que quedar igual a la que estaba (salvo la fecha de registro, el concepto si el equipo lo abrevia, y las columnas que completa el equipo: forma de pago, banco, retención, "Pago?"), con "Monto a Transferir" como fórmula y el link como "Link". El PDF tiene que estar en "Facturas de Compras / Facturas Compras Octubre 2026" con el nombre estándar, y el bot avisa "Cargada en la planilla".
 5. Subir por la web el PDF de la venta (30718811550_001_00002_00000006.pdf): tiene que proponer cliente "MARTÍN MIRANDA", tipo de pago "Amortización" y depto "1 A", e ir a la pestaña de ventas y a "Facturas de Ventas".
 6. Descartar uno: el archivo va a la papelera de Drive y queda en "Historial".
+7. Mandar al bot una factura con un texto en la foto ("es de la oficina") y después un audio: los dos aparecen en la ficha como comentarios. Volver a mandar el mismo PDF: el bot contesta que ya lo tiene y no aparece dos veces.
 
 ## Si algo falla
+
+La web muestra sola el **estado de la configuración** cuando falta algo (también en "Subir > Revisar la configuración"): cada pieza con ✓ o ✗ y qué hacer. Por ejemplo, si la clave de Anthropic funciona, qué pestañas tiene la planilla, si el script es la versión 2 y qué carpetas le faltan.
 
 | Mensaje | Qué falta |
 |---|---|

@@ -31,6 +31,8 @@ export interface ExtractOptions {
   correspondeA?: readonly string[];
   /** Rubros detallados. Por defecto, los de config/proveedores.json. */
   rubrosDetalle?: readonly string[];
+  /** Lo que escribió quien mandó el comprobante. Puede aclarar a qué corresponde o el concepto. */
+  comentario?: string;
 }
 
 export interface ExtractionResult {
@@ -84,7 +86,7 @@ export async function extractInvoice(file: InvoiceFile, options: ExtractOptions 
     fallbacks: "default",
     output_config: { effort: "low", format: { type: "json_schema", schema: toOutputSchema(schema) } },
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: [fileBlock(file), { type: "text", text: userPrompt(rubros) }] }],
+    messages: [{ role: "user", content: [fileBlock(file), { type: "text", text: userPrompt(rubros, options.comentario) }] }],
   });
 
   if (response.stop_reason === "refusal") {

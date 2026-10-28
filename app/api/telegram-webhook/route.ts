@@ -2,9 +2,9 @@ import { timingSafeEqual } from "node:crypto";
 import { after, NextResponse } from "next/server";
 import { isAllowedEmail } from "@/lib/auth/allowed";
 import { serviciosDesdeEnv, usuariosTelegramDesdeEnv } from "@/lib/cola/env";
-import { ingresar } from "@/lib/cola/servicio";
+import { agregarNota, ArchivoRepetido, ingresar, ultimoDelChat } from "@/lib/cola/servicio";
 import { secretoWebhook, TelegramApi, tokenTelegram, type MensajeTelegram } from "@/lib/telegram/api";
-import { adjuntoDe, emailDeCodigo, nombreDe, TEXTOS } from "@/lib/telegram/mensajes";
+import { adjuntoDe, audioDe, emailDeCodigo, nombreDe, TEXTOS } from "@/lib/telegram/mensajes";
 
 // Bajar el archivo, guardarlo y leerlo con la IA sigue después de contestarle a Telegram.
 export const maxDuration = 120;
@@ -28,6 +28,11 @@ function emailsHabilitados(): string[] {
 /**
  * Webhook del bot. Solo atiende chats privados de cuentas conectadas a un mail habilitado.
  * A las demás les contesta cómo conectarse y no guarda nada de lo que mandaron.
+ *
+ * - Un PDF o una foto: entra en la cola. El texto que lo acompaña queda como comentario y la
+ *   IA lo usa de contexto.
+ * - Un texto o un audio: se anota como comentario en la última factura que mandó ese chat en
+ *   la última media hora. Los audios se guardan en Drive junto a la factura.
  */
 export async function POST(req: Request) {
   const token = tokenTelegram();
@@ -57,11 +62,31 @@ export async function POST(req: Request) {
     const email = await usuarios.emailDe(m.from.id);
     if (!email || !isAllowedEmail(email)) return (await responder(TEXTOS.noVinculado), ok());
 
-    const adjunto = adjuntoDe(m);
-    if (!adjunto) return (await responder(TEXTOS.ayuda), ok());
-    if ("error" in adjunto) return (await responder(adjunto.error), ok());
-
     const s = serviciosDesdeEnv(appUrl);
+    const de = `${nombreDe(m)} (${email})`;
+    const fecha = new Date().toISOString();
+
+    const adjunto = adjuntoDe(m);
+    if (adjunto && "error" in adjunto) return (await responder(adjunto.error), ok());
+    if (!adjunto) {
+      // Un comentario suelto: texto o audio, para la última factura de este chat.
+      const audio = audioDe(m);
+      const texto = m.text?.trim();
+      if (!audio && (!texto || texto.startsWith("/"))) return (await responder(TEXTOS.ayuda), ok());
+      if (audio && "error" in audio) return (await responder(audio.error), ok());
+      const ultima = await ultimoDelChat(s, m.chat.id);
+      if (!ultima) return (await responder(TEXTOS.sinFacturaParaNota), ok());
+      if (audio) {
+        const data = await telegram.bajar(audio.fileId);
+        const guardado = await s.almacen.guardarPendiente({ nombre: audio.nombre, mediaType: audio.mediaType, data });
+        const nota = { tipo: "audio" as const, audio: { ...guardado, driveId: guardado.id, mediaType: audio.mediaType, nombre: audio.nombre }, de, fecha };
+        const conNota = await agregarNota(s, ultima.id, nota);
+        return (await responder(TEXTOS.notaAgregada(conNota)), ok());
+      }
+      const conNota = await agregarNota(s, ultima.id, { tipo: "texto", texto, de, fecha });
+      return (await responder(TEXTOS.notaAgregada(conNota)), ok());
+    }
+
     // Si Telegram reintenta el mismo mensaje, no se carga dos veces.
     const repetido = (await s.cola.listar()).some((i) => i.telegram?.chat === m.chat.id && i.telegram?.mensaje === m.message_id);
     if (repetido) return ok();
@@ -74,10 +99,15 @@ export async function POST(req: Request) {
         await ingresar(s, {
           archivo: { nombre: adjunto.nombre, mediaType: adjunto.mediaType, data },
           origen: "telegram",
-          enviadaPor: `${nombreDe(m)} (${email})`,
+          enviadaPor: de,
           telegram: { chat: m.chat.id, mensaje: m.message_id },
+          comentario: m.caption,
         });
       } catch (e) {
+        if (e instanceof ArchivoRepetido) {
+          await responder(TEXTOS.repetida(e.existente)).catch(() => {});
+          return;
+        }
         console.error("No se pudo ingresar el comprobante de Telegram", e);
         await responder(TEXTOS.noGuardada(e instanceof Error ? e.message : String(e))).catch(() => {});
       }

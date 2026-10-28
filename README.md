@@ -109,8 +109,20 @@ La cola vive en una pestaña de la planilla `COLA_SHEET_ID`, una fila por compro
 - **Conectar a cada persona:** en la misma pestaña, "Conectar mi Telegram" abre el bot con un código firmado con `AUTH_SECRET`; al tocar "Iniciar", esa cuenta de Telegram queda conectada al mail con el que entró a la web (pestaña "Telegram" de la planilla de la cola).
 - El bot solo atiende chats privados de cuentas conectadas a un mail que siga en `ALLOWED_EMAILS`. A las demás les contesta cómo conectarse y no guarda nada de lo que mandaron.
 - Cada llamada de Telegram trae un secreto derivado del token (`secretoWebhook` en `lib/telegram/api.ts`): el webhook rechaza las que no lo traen. Es la única ruta fuera del login (`proxy.ts`).
-- Acepta PDF, JPG, PNG y WEBP como documento, y fotos (toma la de mayor resolución). Hasta 20 MB, el límite de Telegram para bots. Si Telegram reintenta un mensaje, no se carga dos veces.
-- Avisa cuando lee la factura (con un aviso si ya está cargada), si no la pudo leer, y cuando alguien la aprueba o la descarta en la web.
+- Acepta PDF, JPG, PNG y WEBP como documento, y fotos (toma la de mayor resolución). Hasta 20 MB, el límite de Telegram para bots (5 MB para imágenes como documento: es el límite de Claude). Si Telegram reintenta un mensaje, no se carga dos veces.
+- Avisa cuando lee la factura (con un aviso si ya está cargada o si ya la habían mandado), si no la pudo leer, y cuando alguien la aprueba o la descarta en la web.
+- **Comentarios:** el texto que acompaña a la foto o al PDF queda guardado con la factura y la IA lo usa de contexto (sirve para lo que el comprobante no dice, como a qué obra corresponde; nunca cambia datos impresos). Un texto o un audio mandado después se anota en la última factura de ese chat de la última media hora; si no hay ninguna, el bot pide mandar primero la factura. Los audios se guardan en Drive y se escuchan en la ficha; al aprobar, quedan en la misma carpeta que la factura ("... - comentario 1.ogg"). No se transcriben: Claude no lee audio.
+- En la web, al subir, también se puede escribir un comentario.
+
+### La misma factura más de una vez
+
+- **El mismo archivo** (misma huella SHA-256) no entra dos veces en la cola, venga por donde venga: no se guarda ni se lee de nuevo, y se le dice a quien lo mandó dónde está ("llegó el 29/10, 14:32 y está para revisar", "ya está cargado en la fila 230"). Si el anterior se descartó, sí se puede volver a mandar.
+- **El mismo comprobante en otro archivo** (una foto y después el PDF): se lee, pero la ficha avisa que ya lo habían mandado y el bot también. Se reconoce por proveedor, tipo, punto de venta, número y total.
+- **Ya cargado en la planilla** (a mano o desde la app): la ficha lo dice con la fila y no se deja aprobar.
+
+### Estado de la configuración
+
+Si falta configurar algo, la web muestra qué (`lib/estado.ts`, `GET /api/estado`): la clave de Anthropic (la prueba contra la API), las planillas y sus pestañas (con los nombres que tiene la planilla, para copiarlos), la planilla de la cola, el script de Drive (versión y carpetas) y el bot. También se ve desde "Subir > Revisar la configuración".
 
 ### Categoría e historial
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { facturaDePrueba } from "../../test/fixtures";
 import type { ItemCola } from "../cola/item";
 import { secretoWebhook } from "./api";
-import { adjuntoDe, codigoVinculo, emailDeCodigo, nombreDe, textoAviso } from "./mensajes";
+import { adjuntoDe, audioDe, codigoVinculo, emailDeCodigo, nombreDe, TEXTOS, textoAviso } from "./mensajes";
 
 const base = { message_id: 7, chat: { id: 1, type: "private" }, from: { id: 99, username: "tadeo" } };
 
@@ -34,6 +34,18 @@ describe("adjuntoDe", () => {
 
   it("un mensaje de texto no trae comprobante", () => {
     expect(adjuntoDe({ ...base, text: "hola" })).toBeNull();
+  });
+
+  it("reconoce notas de voz y archivos de audio", () => {
+    expect(audioDe({ ...base, voice: { file_id: "v", mime_type: "audio/ogg", duration: 12 } })).toEqual({
+      fileId: "v",
+      nombre: "audio-7.ogg",
+      mediaType: "audio/ogg",
+    });
+    expect(audioDe({ ...base, audio: { file_id: "a", mime_type: "audio/mpeg", file_name: "explicacion.mp3" } })).toMatchObject({
+      nombre: "explicacion.mp3",
+    });
+    expect(audioDe({ ...base, text: "hola" })).toBeNull();
   });
 });
 
@@ -73,11 +85,23 @@ describe("textoAviso", () => {
     resueltaPor: null,
     resultado: { pestania: "Facturación de Egresos (Compras)", fila: 230, link: "u" },
     telegram: { chat: 1, mensaje: 7 },
+    huella: "h",
+    notas: [],
   };
 
   it("resume la factura y deja el link para revisarla", () => {
-    expect(textoAviso(item, "leida", "https://app", true)).toBe(
+    expect(textoAviso(item, "leida", "https://app", { duplicado: true, repetida: null })).toBe(
       "Leída: Corralón Ejemplo S.A. · Factura A 00005-00025853 · $45.140,27.\nOjo: parece que ya está cargada en la planilla.\nQuedó para revisar: https://app/?revisar=abc",
+    );
+  });
+
+  it("avisa si ya la habían mandado", () => {
+    const antes = { ...item, id: "otra", enviadaPor: "@juan", recibida: "2026-10-29T13:00:00Z" };
+    expect(textoAviso(item, "leida", "https://app", { duplicado: false, repetida: antes })).toContain(
+      "Ojo: esta factura ya la habían mandado: llegó el 29/10, 10:00 (lo mandó @juan) y está para revisar.",
+    );
+    expect(TEXTOS.repetida({ ...antes, estado: "aprobada", resultado: { pestania: "x", fila: 230, link: null } })).toBe(
+      "Esta factura ya la tengo: ya está cargado en la fila 230 (lo mandó @juan). No la cargo de nuevo.",
     );
   });
 

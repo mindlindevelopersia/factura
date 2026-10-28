@@ -59,6 +59,16 @@ describe("extractInvoice", () => {
     });
   });
 
+  it("le pasa a la IA el comentario de quien mandó la factura", async () => {
+    const { client, pedidos } = fakeClient(mensaje({}));
+    await extractInvoice(pdf, { client, comentario: "es de la oficina, ya está pagada" });
+    const texto = pedidos[0].body.messages[0].content[1].text;
+    expect(texto).toContain("es de la oficina, ya está pagada");
+    expect(texto).toContain("nunca para cambiar datos impresos");
+    await extractInvoice(pdf, { client });
+    expect(pedidos[1].body.messages[0].content[1].text).toBe("Extraé los datos de este comprobante.");
+  });
+
   it("falla con un error claro si el modelo rechaza", async () => {
     const { client } = fakeClient(
       mensaje({ content: [], stop_reason: "refusal", stop_details: { type: "refusal", category: null, explanation: null } }),

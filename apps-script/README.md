@@ -42,6 +42,7 @@ Reglas: no escribas la clave secreta en el informe final ni en ningún otro lado
  *   leer      { id } -> { nombre, mimeType, base64 }
  *   archivar  { id, carpeta, subcarpeta, nombre } -> { url }  (mueve y renombra)
  *   descartar { id }  (a la papelera)
+ *   version   {} -> { carpetas: { pendientes, compra, honorarios, venta } }  (qué carpetas están configuradas)
  * Solo toca archivos que estén en las carpetas configuradas o en sus subcarpetas.
  */
 var VERSION = 2;
@@ -60,6 +61,13 @@ function doPost(e) {
       return responder({ ok: false, error: 'No autorizado' });
     }
     var accion = body.accion || 'guardar';
+    if (accion === 'version') {
+      var carpetas = {};
+      Object.keys(CARPETAS).forEach(function (k) {
+        carpetas[k] = !!(props.getProperty(CARPETAS[k]) || props.getProperty('CARPETA_ID'));
+      });
+      return responder({ ok: true, carpetas: carpetas });
+    }
     if (accion === 'guardar') {
       var blob = Utilities.newBlob(Utilities.base64Decode(body.base64), body.mimeType, body.nombre);
       var nuevo = carpetaPara(body.carpeta, body.subcarpeta).createFile(blob);

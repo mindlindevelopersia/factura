@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { comprobante, contraparte, type ItemCola } from "../cola/item";
+import { descripcionEstado, type ExtraAviso } from "../cola/servicio";
 import type { MensajeTelegram } from "./api";
 
 /** Telegram deja bajar hasta 20 MB a los bots. */
@@ -36,6 +37,26 @@ export function adjuntoDe(m: MensajeTelegram): Adjunto | null {
     return { fileId: foto.file_id, nombre: `foto-${m.message_id}.jpg`, mediaType: "image/jpeg" };
   }
   return null;
+}
+
+const EXTENSIONES_AUDIO: Record<string, string> = {
+  "audio/ogg": "ogg",
+  "audio/mpeg": "mp3",
+  "audio/mp4": "m4a",
+  "audio/x-m4a": "m4a",
+  "audio/aac": "aac",
+  "audio/wav": "wav",
+  "audio/webm": "webm",
+};
+
+/** Un audio (nota de voz o archivo de audio) que comenta un comprobante. null si el mensaje no trae audio. */
+export function audioDe(m: MensajeTelegram): Adjunto | null {
+  const a = m.voice ?? m.audio;
+  if (!a) return null;
+  if ((a.file_size ?? 0) > TAMANIO_MAXIMO_TELEGRAM) return { error: "El audio pesa más de 20 MB." };
+  const mediaType = a.mime_type ?? "audio/ogg";
+  const nombre = m.audio?.file_name ?? `audio-${m.message_id}.${EXTENSIONES_AUDIO[mediaType] ?? "ogg"}`;
+  return { fileId: a.file_id, nombre, mediaType };
 }
 
 /** Cómo se muestra quién mandó el mensaje: "@usuario" o el nombre. */
@@ -75,6 +96,10 @@ export const TEXTOS = {
   vinculado: (email: string) => `Listo, este Telegram quedó conectado a ${email}. Ya podés mandarme facturas.`,
   recibida: "Recibida. La estoy leyendo…",
   noGuardada: (motivo: string) => `No pude guardar la factura: ${motivo}`,
+  repetida: (existente: ItemCola) => `Esta factura ya la tengo: ${descripcionEstado(existente)}. No la cargo de nuevo.`,
+  notaAgregada: (item: ItemCola) => `Anotado en ${resumen(item)}.`,
+  sinFacturaParaNota:
+    "No tengo una factura tuya de la última media hora para anotarle esto. Mandá primero la factura y después el comentario, o escribilo como texto de la foto o del archivo.",
 };
 
 function resumen(item: ItemCola): string {
@@ -84,13 +109,19 @@ function resumen(item: ItemCola): string {
 }
 
 /** El aviso al que mandó el comprobante, según cómo terminó. */
-export function textoAviso(item: ItemCola, aviso: "leida" | "error" | "aprobada" | "descartada", appUrl: string, duplicado = false): string {
+export function textoAviso(
+  item: ItemCola,
+  aviso: "leida" | "error" | "aprobada" | "descartada",
+  appUrl: string,
+  extra: ExtraAviso = { duplicado: false, repetida: null },
+): string {
   const link = `${appUrl}/?revisar=${item.id}`;
   switch (aviso) {
     case "leida":
       return [
         `Leída: ${resumen(item)}.`,
-        duplicado ? "Ojo: parece que ya está cargada en la planilla." : null,
+        extra.duplicado ? "Ojo: parece que ya está cargada en la planilla." : null,
+        !extra.duplicado && extra.repetida ? `Ojo: esta factura ya la habían mandado: ${descripcionEstado(extra.repetida)}.` : null,
         `Quedó para revisar: ${link}`,
       ]
         .filter(Boolean)

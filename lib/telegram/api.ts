@@ -24,6 +24,10 @@ export interface MensajeTelegram {
   caption?: string;
   document?: { file_id: string; file_name?: string; mime_type?: string; file_size?: number };
   photo?: { file_id: string; width: number; height: number; file_size?: number }[];
+  /** Nota de voz. */
+  voice?: { file_id: string; mime_type?: string; file_size?: number; duration?: number };
+  /** Archivo de audio. */
+  audio?: { file_id: string; mime_type?: string; file_name?: string; file_size?: number; duration?: number };
 }
 
 export interface InfoWebhook {

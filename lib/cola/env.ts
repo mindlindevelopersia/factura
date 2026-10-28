@@ -38,14 +38,14 @@ export function serviciosDesdeEnv(appUrl: string): Servicios {
     cola: new ColaSheets(pestaniaCola(process.env.COLA_TAB || "Cola", COLUMNAS_COLA)),
     almacen: almacenDesdeEnv()!,
     planilla: planillaDesdeEnv(),
-    extraer: (archivo) => {
+    extraer: (archivo, contexto) => {
       if (!process.env.ANTHROPIC_API_KEY) throw new Error("Falta configurar ANTHROPIC_API_KEY en el servidor.");
-      return extractInvoice(archivo);
+      return extractInvoice(archivo, { comentario: contexto?.comentario });
     },
     avisar: telegram
-      ? async (item, aviso, { duplicado }) => {
+      ? async (item, aviso, extra) => {
           if (!item.telegram) return;
-          await telegram.enviar(item.telegram.chat, textoAviso(item, aviso, appUrl, duplicado), item.telegram.mensaje);
+          await telegram.enviar(item.telegram.chat, textoAviso(item, aviso, appUrl, extra), item.telegram.mensaje);
         }
       : undefined,
   };

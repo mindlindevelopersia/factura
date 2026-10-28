@@ -609,3 +609,93 @@ a {
     padding-left: 108px;
   }
 }
+
+/* Estado de la configuración */
+.estado-config {
+  margin-top: 16px;
+  padding: 24px;
+}
+
+.estado-config h2 {
+  font-size: 1.125rem;
+}
+
+.estado-config__lista {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+  display: grid;
+  gap: 12px;
+}
+
+.estado-config__lista li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.estado-config__lista li > span {
+  flex: 0 0 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.estado-config__ok > span {
+  background: var(--lima);
+  color: var(--negro);
+}
+
+.estado-config__falta > span {
+  background: rgb(194 57 52 / 0.12);
+  color: var(--rojo);
+}
+
+.estado-config__detalle {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}
+
+/* Comentarios de quien mandó la factura */
+.notas {
+  list-style: none;
+  padding: 12px 16px;
+  margin: 0 0 16px;
+  display: grid;
+  gap: 10px;
+  background: var(--gris-claro);
+  border-radius: var(--radio-campo);
+}
+
+.notas__item {
+  display: grid;
+  gap: 2px;
+}
+
+.notas__texto {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.notas__item audio {
+  width: 100%;
+  max-width: 360px;
+}
+
+.notas__de {
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+}
+
+.subir__comentario {
+  margin-bottom: 16px;
+}
+
+.subidas__detalle--aviso {
+  color: var(--texto-suave);
+}
