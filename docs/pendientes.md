@@ -2,6 +2,8 @@
 
 La configuración actual de cada servicio está en [configuracion.md](configuracion.md).
 
+**Configuración completada el 28/10/2026:** carpetas, Apps Script v2, copia contable nativa, cola, permisos y variables de Production aplicados. La app confirma todas las integraciones y el bot activo. Ver [informe](informe-configuracion-2026-10-28.md). Quedan la vinculación personal de Telegram y la prueba funcional con los comprobantes del cliente.
+
 **Actualización del 29/10/2026:** llegaron los datos del cliente (ver abajo, "Datos de octubre"). La app ya está adaptada a su planilla y a sus tres carpetas, tiene la cola de pendientes, la web para revisar y subir y el bot de Telegram, y está en `main`. Falta la [puesta en marcha](puesta-en-marcha.md) y medir la lectura de la IA con octubre.
 
 **Actualización del 28/10/2026:** el entorno de prueba ya tiene Anthropic, Drive y Sheets conectados. La prueba con la API real está registrada en [verificacion.md](verificacion.md). Se continúa con la planilla de prueba porque la real del cliente todavía no está disponible.
@@ -19,7 +21,7 @@ La configuración actual de cada servicio está en [configuracion.md](configurac
 
 **Para que el cliente lo pueda usar** faltan, en este orden:
 
-1. Hacer la [puesta en marcha](puesta-en-marcha.md) y la prueba de punta a punta contra la copia de la planilla.
+1. Vincular el Telegram de cada persona y hacer la prueba de punta a punta contra la copia de la planilla. La configuración de la [puesta en marcha](puesta-en-marcha.md) ya está hecha.
 2. Correr la evaluación de la IA con octubre y ajustar el prompt según lo que salga.
 3. Pasar a la planilla real.
 
@@ -41,7 +43,7 @@ El cliente pasó una carpeta de Drive con la "Copia para IA de Administración C
 
 ## Puesta en marcha de la cola, la web y Telegram
 
-Ver [puesta-en-marcha.md](puesta-en-marcha.md): carpetas, script de Apps Script en versión 2, planilla de prueba con la estructura real, planilla de la cola, variables en Vercel y prueba de punta a punta. Hasta hacerla, la app desplegada no puede recibir comprobantes.
+Ver [puesta-en-marcha.md](puesta-en-marcha.md): carpetas, script de Apps Script en versión 2, planilla de prueba con la estructura real, planilla de la cola, variables en Vercel y prueba de punta a punta. La configuración ya fue completada y verificada; la prueba con comprobantes reales de octubre se mantiene como paso separado.
 
 ## Resueltas el 29/10/2026
 

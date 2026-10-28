@@ -2,7 +2,7 @@
 
 Iniciativa 1 de Mindlin Developers. Las facturas llegan **por Telegram** (al bot de facturas; su usuario aparece en la web, pestaña "Subir") o se suben **en la web**. La IA las lee, las clasifica en una de las tres carpetas del equipo (**compras**, **honorarios de administración**, que son las facturas que los socios le hacen a la sociedad, o **ventas**) y propone los datos como los carga el equipo. Quedan en una cola "Para revisar" en la web; una persona revisa y aprueba. Recién ahí la app agrega la fila en la planilla Administración Contable (compras y honorarios en "Facturación de Egresos (Compras)", ventas en "Facturación de Ingresos (Ventas)") y mueve el PDF a la carpeta de Drive de su categoría, en la subcarpeta del mes. No calcula retenciones (eso es la iniciativa 11).
 
-**Para ponerla en marcha** después de este cambio: [docs/puesta-en-marcha.md](docs/puesta-en-marcha.md). La configuración que falta, lista para pegarle a un agente con computer use: [docs/configurar-con-computer-use.md](docs/configurar-con-computer-use.md).
+**Configuración completada el 28/10/2026:** copia contable nativa, cola, carpetas, Apps Script v2 y variables de Production conectados. La app confirma todos los servicios y el bot activo. IDs y resultados en [el informe de configuración](docs/informe-configuracion-2026-10-28.md); vinculación personal de Telegram y prueba con las facturas del cliente en [puesta en marcha](docs/puesta-en-marcha.md).
 
 ## Estado
 
@@ -13,7 +13,7 @@ Iniciativa 1 de Mindlin Developers. Las facturas llegan **por Telegram** (al bot
 | Controles de CUIT, suma y QR (`lib/validation/`) | Hecho. Falta leer el QR de la imagen o del PDF. |
 | Script de evaluación (`scripts/eval/`) | Hecho y adaptado a la planilla real. Falta correrlo con octubre de 2026 (ver [pendientes](docs/pendientes.md)). |
 | Tres categorías y columnas de la planilla real | Hecho (29/10/2026). Auditado contra octubre: ver [docs/auditoria-octubre.md](docs/auditoria-octubre.md). |
-| Cola de pendientes, web (revisar, subir, historial) y bot de Telegram | Hecho (29/10/2026). Falta la [puesta en marcha](docs/puesta-en-marcha.md): carpetas, script v2, planilla de la cola y variables. |
+| Cola de pendientes, web (revisar, subir, historial) y bot de Telegram | Configurado y verificado el 28/10/2026: carpetas, script v2, copia contable, cola y variables. Cada usuario conecta su Telegram desde la web. |
 | Login con Google y lista de mails | Hecho y desplegado en https://mindlin-developers.vercel.app |
 | Pantalla de carga, revisión y aprobación | Hecho. Probado de punta a punta con la API real, Drive y la planilla de prueba. |
 | Escritura en la planilla y control de duplicados | Hecho. Probado contra la planilla de prueba. |
@@ -21,7 +21,7 @@ Iniciativa 1 de Mindlin Developers. Las facturas llegan **por Telegram** (al bot
 
 Configuración actual de cada servicio: [docs/configuracion.md](docs/configuracion.md). Lo que falta: [docs/pendientes.md](docs/pendientes.md).
 
-**Se continúa trabajando en la planilla y carpeta de prueba de mindlindevelopers.ia@gmail.com**, por decisión del responsable del proyecto el 28/10/2026. La planilla real del cliente todavía no está disponible. Los resultados de las pruebas están en [docs/verificacion.md](docs/verificacion.md).
+**Se continúa trabajando sobre una copia de prueba de Administración Contable y las carpetas de mindlindevelopers.ia@gmail.com**. El archivo original del cliente no se modifica. La verificación de servicios actual está en [el informe](docs/informe-configuracion-2026-10-28.md); las pruebas sintéticas del circuito anterior permanecen en [docs/verificacion.md](docs/verificacion.md).
 
 ## Desarrollo
 

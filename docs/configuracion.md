@@ -1,8 +1,8 @@
 # Configuración actual
 
-Estado de los servicios verificado el 28/10/2026, con lo que cambió el 29/10/2026 (ver [puesta en marcha](puesta-en-marcha.md)). Acá no hay valores secretos: los secretos de la app están en Vercel y el del script también en sus propiedades privadas.
+Estado de los servicios verificado el 28/10/2026. La configuración de la cola, Apps Script v2 y las dos pestañas contables ya está aplicada en Production; el bot fue verificado activo. Detalle: [informe de configuración](informe-configuracion-2026-10-28.md). Acá no hay valores secretos: los secretos de la app están en Vercel y el del script también en sus propiedades privadas.
 
-Se sigue usando la planilla y la carpeta de **prueba**, por decisión del responsable del proyecto. La planilla real del cliente todavía no está disponible.
+Se trabaja sobre una **copia de prueba de Administración Contable**, convertida del archivo Excel de referencia del cliente. El original no se modifica. Los recursos activos pertenecen a mindlindevelopers.ia@gmail.com.
 
 ## Producción
 
@@ -10,7 +10,7 @@ Se sigue usando la planilla y la carpeta de **prueba**, por decisión del respon
 - **Repo:** `mindlindevelopersia/factura`. Vercel despliega desde `main`.
 - **Login:** probado en producción con axellaban@gmail.com. Entra, muestra el mail y "Salir" funciona.
 - **Integración:** API real de Claude, revisión, aprobación, Drive y Sheets probados con comprobantes sintéticos. Ver [verificacion.md](verificacion.md).
-- **Despliegue con la conexión completa:** `4e8mb3kotD1iLi9omB27SyHEKKUN`, estado Ready y Production, con el dominio principal asignado, desde `main` (`b2f414c`).
+- **Despliegue de configuración:** `D43vzdMfzsMm9wXB4GZhEQhxHPi1`, desde `main` (`946c4cb`); Vercel confirmó su finalización en el estado del commit de GitHub. Después se verificó el código actualizado `941e13a`: 110 tests y TypeScript pasan; su despliegue `9xcbo1h78ZWWV7TxMWiDHQrwsrYo` también figura completado. La app confirma que todas las integraciones están configuradas.
 
 ## Google Cloud
 
@@ -30,19 +30,31 @@ Proyecto `mindlin-developers`, en la cuenta **axellaban@gmail.com** (Gmail, no W
 
 ## Drive (cuenta mindlindevelopers.ia@gmail.com)
 
-- **Planilla de prueba:** "[PRUEBA] Facturación de Egresos - Mindlin", ID `1ICwVOWj1Bz5htd5j06gnhdpVlnW1Rv-_NYEAEaLM1vA`, pestaña `Hoja 1`. Su propietaria es mindlindevelopers.ia@gmail.com y la cuenta de servicio tiene permiso de Editor. Se copiaron los encabezados y el formato del entorno de prueba; no contiene datos reales del cliente.
-- **Carpeta de prueba:** "Facturas Mindlin (prueba)", ID `1ZzZT4P8YVvQkV4lF1Cu9UC7yMLPvzIaP`, propiedad de Mindlin. Los comprobantes se guardan con Apps Script para usar el almacenamiento de esta cuenta de Gmail.
+- **Copia contable activa:** "[PRUEBA] Administración Contable - copia para la app", ID `1xCCxb2TRpjal_yydlZV7DqRG04MpgWESXG__pYLx_54`. Es Google Sheets nativo, conserva las 19 pestañas del archivo de referencia y pertenece a Mindlin. La cuenta de servicio tiene permiso de Editor; el acceso general es restringido.
+- **Pestaña de compras y honorarios:** `Facturación de Egresos (Compras`, ID numérico `1206741754`.
+- **Pestaña de ventas:** `Facturación de Ingresos (Ventas`, ID numérico `136350166`.
+- Los dos nombres anteriores **no llevan paréntesis de cierre**. Se verificaron con los metadatos de Google Sheets y se cargaron exactamente así en Vercel.
+- **Cola:** "Facturas Mindlin - cola de la app", ID `1beptTswzIVeBNLLUTV_9JY5CBdU5PNlfOzs4B50IfUg`. Se creó vacía en Mi unidad de Mindlin y se compartió con la cuenta de servicio como Editor, sin notificaciones. La app crea sus pestañas internas.
+- **Carpeta raíz:** "Facturas Mindlin", ID `1bNyxX168zdxE0qFzpkW4vQpyqqpHKJFD`.
 
-El script **Guardar facturas Mindlin** fue creado, autorizado y publicado desde mindlindevelopers.ia@gmail.com. La prueba del editor creó un archivo en la carpeta nueva y lo envió a la papelera. Después del cambio en Vercel, la app guardó una imagen y un PDF en esa carpeta y agregó las filas 2 y 3 a la planilla de Mindlin. Se verificó que ambos archivos pertenecen a Mindlin y tienen acceso general restringido.
+| Carpeta | Propiedad de Apps Script | ID |
+|---|---|---|
+| Pendientes | `CARPETA_PENDIENTES` | `1kgGZQiyRNS3ld0oAslS1wguSCzBhfAtu` |
+| Facturas de Compras | `CARPETA_COMPRAS` | `1IYy_RL9Iym4kx1HxUNBTDaDaJcGAs9iT` |
+| Facturas de Honorarios de Administración | `CARPETA_HONORARIOS` | `1_OZ9SKvRJxQyOYmusnScIZA1rp-lHHjk` |
+| Facturas de Ventas | `CARPETA_VENTAS` | `1EqoTWlEiwpIdlR_Ay4-itMpb8WZm-BmZ` |
+
+El script **Guardar facturas Mindlin** está publicado para ejecutar como **Yo (mindlindevelopers.ia@gmail.com)**. Se pegó el código v2 del repositorio, idéntico al entregado en el archivo de instrucciones. La función `probar` terminó sin errores y registró OK en las cuatro carpetas nuevas y en la carpeta por defecto. Los archivos temporales creados por esa función fueron enviados a la papelera por la propia prueba.
 
 - Proyecto: `1gCnlM-tgv2n45WKKe4LEpq8jcI0TH7yakOJYd9Xkjj-3zP3wYuOHL2FJ`.
-- Implementación: versión 1 del 28/10/2026, ejecutada como **Yo (mindlindevelopers.ia@gmail.com)**.
-- URL: `https://script.google.com/macros/s/AKfycbzsCnZuxRzSt-FqtdK8_ycfCDdjPBP_vNkB5GqLgrkwYbQyVZ-CIe3Q1MixdIMN5RMl/exec`.
-- Las llamadas requieren el secreto de la app. La URL nueva respondió `{"ok":false,"error":"No autorizado"}` ante un secreto incorrecto.
-- La autorización de Google para el script abarca Drive completo; el código usa la carpeta configurada. Este alcance y la publicación fueron informados y autorizados para la cuenta de Mindlin.
-- La creación de estos recursos y la publicación no requirieron configurar una tarjeta ni activar facturación de Google. El consumo de la API de Anthropic continúa usando la clave ya configurada.
+- Implementación: **versión 2 del 28/10/2026**. Se editó la implementación activa; no se creó otra.
+- URL conservada: `https://script.google.com/macros/s/AKfycbzsCnZuxRzSt-FqtdK8_ycfCDdjPBP_vNkB5GqLgrkwYbQyVZ-CIe3Q1MixdIMN5RMl/exec`.
+- `SECRET`, `APPS_SCRIPT_SECRET`, `APPS_SCRIPT_URL` y la propiedad anterior `CARPETA_ID` se conservaron.
+- `CARPETA_ID` sigue apuntando a "Facturas Mindlin (prueba)": `1ZzZT4P8YVvQkV4lF1Cu9UC7yMLPvzIaP`. La carpeta y la planilla anteriores `1ICwVOWj1Bz5htd5j06gnhdpVlnW1Rv-_NYEAEaLM1vA` permanecen como respaldo.
+- La autorización de Drive existente se conserva. Los permisos de Editor sobre las dos planillas, la publicación de v2 y la recepción del bot fueron confirmados expresamente por el responsable.
+- No se solicitó tarjeta ni activar facturación de Google durante esta configuración. Anthropic conserva la clave existente.
 
-La planilla `16LLVlh-d9OsMCRf6c2XXPs1dEwyN1gRQxOnkb2_qWYo`, la carpeta `1m5AlKHiN-BSFvYQNOG0mep9sP0vu4e-O` y el proyecto de Apps Script `13Ai0PlYTQAzORhuNALbk7hSgo1SuK2MsqWfKBL1Kn5Yz75TRRan3JEWy` de Axel conservan las pruebas anteriores como respaldo. La implementación web de Axel fue **archivada** después de verificar la conexión nueva; su URL devuelve HTTP 404. El proyecto de Google Cloud y el cliente OAuth siguen siendo los existentes, descritos arriba.
+El script y los archivos de las pruebas anteriores de Axel se conservan como respaldo; su implementación web sigue archivada. El proyecto de Google Cloud y el cliente OAuth continúan siendo los existentes, descritos arriba.
 
 Mindlin no tiene Google Workspace: el mail de mindlindevelopers.com está en Zoho. Por eso no hay unidad compartida.
 
@@ -55,15 +67,20 @@ Mindlin no tiene Google Workspace: el mail de mindlindevelopers.com está en Zoh
 | `ALLOWED_EMAILS` (`axellaban@gmail.com,matimindlin111@gmail.com`) | ✅ | ❌ |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | ✅ | ✅ |
 | `GOOGLE_PRIVATE_KEY` | ✅ | ✅ formato corregido |
-| `SHEET_ID`, `SHEET_TAB` | ✅ | ✅ |
-| `SHEET_TAB_EGRESOS`, `SHEET_TAB_INGRESOS` | ❌ falta ([puesta en marcha](puesta-en-marcha.md)) | ❌ |
-| `COLA_SHEET_ID` | ❌ falta ([puesta en marcha](puesta-en-marcha.md)) | ❌ |
-| `TELEGRAM_API_KEY` | ✅ cargada el 29/10/2026. El usuario del bot lo pide la app a Telegram (`getMe`) y se ve en la web | ❌ |
+| `SHEET_ID` | ✅ copia contable nueva | ✅ planilla anterior, sin cambiar su valor |
+| `SHEET_TAB` | ✅ variable anterior conservada | ✅ |
+| `SHEET_TAB_EGRESOS`, `SHEET_TAB_INGRESOS` | ✅ nombres exactos verificados | ❌ |
+| `COLA_SHEET_ID` | ✅ cola nueva | ❌ |
+| `TELEGRAM_API_KEY` | ✅ existente; bot real verificado con `getMe`: @mindlindevelopers_facturas_bot | ❌ |
 | `APPS_SCRIPT_URL`, `APPS_SCRIPT_SECRET` | ✅ | ❌ |
 | `ANTHROPIC_API_KEY` | ✅ | ❌ |
 
 `DRIVE_FOLDER_ID` ya no se usa: las carpetas se configuran en el script de Apps Script. Si está cargada en Vercel, se puede borrar.
 
-`SHEET_TAB` sigue sirviendo como pestaña de egresos mientras no se cargue `SHEET_TAB_EGRESOS`. Sin `SHEET_TAB_INGRESOS`, la app no carga ventas.
+`SHEET_TAB_EGRESOS` está configurada y tiene prioridad sobre la variable anterior `SHEET_TAB`, que se conserva. Ventas usa `SHEET_TAB_INGRESOS`.
 
-Production usa la URL del script de Mindlin y el `SHEET_ID` nuevo. La URL se actualizó en Production y el ID de la planilla en todos los entornos; se volvió a desplegar Production después de guardar ambos cambios. Preview y Development conservan las limitaciones de acceso indicadas en la tabla; la prueba del circuito completo se realizó en Production, apuntando a los archivos de prueba.
+Se editaron o agregaron solamente las cuatro variables de configuración de Production: `SHEET_ID`, `SHEET_TAB_EGRESOS`, `SHEET_TAB_INGRESOS` y `COLA_SHEET_ID`. Para conservar el valor anterior de `SHEET_ID` en Preview y Development, se separó su asignación de Production; no se borró la variable. Las credenciales existentes se verificaron por nombre y entorno, sin revelar ni copiar sus valores.
+
+## Telegram
+
+La app consulta `getMe` de Telegram: el usuario real del bot es **@mindlindevelopers_facturas_bot**. El chequeo de configuración confirma que su webhook apunta a esta app. Cada persona debe abrir la web con su mail habilitado y usar **Subir → Conectar mi Telegram → Iniciar** desde la cuenta de Telegram que quiera vincular. El enlace personal vence; no se copia en la documentación.

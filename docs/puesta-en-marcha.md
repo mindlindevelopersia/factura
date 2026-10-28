@@ -1,6 +1,6 @@
-# Puesta en marcha (cambios del 29/10/2026)
+# Puesta en marcha
 
-El código nuevo (cola de pendientes, web para revisar y subir, bot de Telegram, tres carpetas con subcarpetas por mes, columnas de la planilla real) ya está en `main` y Vercel lo despliega solo. **Hasta hacer estos pasos, la app no puede recibir comprobantes:** le faltan la planilla de la cola, el script de Apps Script en versión 2 y las pestañas de la planilla.
+El código nuevo (cola de pendientes, web para revisar y subir, bot de Telegram, tres carpetas con subcarpetas por mes, columnas de la planilla real) ya está en `main` y Vercel lo despliega solo. **Configuración completada y verificada el 28/10/2026.** La app reconoce la cola, Apps Script v2, las dos pestañas contables y el bot activo. Los IDs y resultados están en el [informe de configuración](informe-configuracion-2026-10-28.md). Los pasos de abajo se conservan como referencia; no volver a crear los recursos que ya existen.
 
 Nada de esto toca la planilla real del cliente: se trabaja sobre una copia.
 
