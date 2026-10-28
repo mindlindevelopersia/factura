@@ -56,9 +56,12 @@ Mindlin no tiene Google Workspace: el mail de mindlindevelopers.com está en Zoh
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | ✅ | ✅ |
 | `GOOGLE_PRIVATE_KEY` | ✅ | ✅ formato corregido |
 | `SHEET_ID`, `SHEET_TAB` | ✅ | ✅ |
+| `SHEET_TAB_EGRESOS`, `SHEET_TAB_INGRESOS` | ❌ falta (cambios del 29/10) | ❌ |
 | `APPS_SCRIPT_URL`, `APPS_SCRIPT_SECRET` | ✅ | ❌ |
 | `ANTHROPIC_API_KEY` | ✅ | ❌ |
 
-`DRIVE_FOLDER_ID` ya no se usa: la carpeta se configura en el script de Apps Script. Si está cargada en Vercel, se puede borrar.
+`DRIVE_FOLDER_ID` ya no se usa: las carpetas se configuran en el script de Apps Script. Si está cargada en Vercel, se puede borrar.
+
+`SHEET_TAB` sigue sirviendo como pestaña de egresos mientras no se cargue `SHEET_TAB_EGRESOS`. Sin `SHEET_TAB_INGRESOS`, la app no carga ventas.
 
 Production usa la URL del script de Mindlin y el `SHEET_ID` nuevo. La URL se actualizó en Production y el ID de la planilla en todos los entornos; se volvió a desplegar Production después de guardar ambos cambios. Preview y Development conservan las limitaciones de acceso indicadas en la tabla; la prueba del circuito completo se realizó en Production, apuntando a los archivos de prueba.

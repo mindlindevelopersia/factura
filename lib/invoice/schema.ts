@@ -1,12 +1,13 @@
 import { z } from "zod";
 
 /**
- * Esquema de los datos que la IA extrae de una factura de compra.
+ * Esquema de los datos que la IA extrae de un comprobante, de compra o de venta.
  *
- * Sigue los campos de la planilla de Facturación de Egresos (ficha P02). No
- * incluye los que se completan después de cargar la factura (fecha de registro,
- * forma de pago, banco, retención de ganancias, monto a transferir, comprobante
- * de retención, link a Drive): esos los pone la app o el usuario, no la IA.
+ * Sigue las columnas de las pestañas de Facturación de Egresos e Ingresos de la
+ * planilla Administración Contable. No incluye lo que se completa después de cargar
+ * la factura (fecha de registro, forma de pago, banco, retención de ganancias, monto
+ * a transferir, comprobante de retención, link a Drive): eso lo pone la app o el
+ * equipo, no la IA.
  */
 
 export const TIPOS_COMPROBANTE = [
@@ -15,6 +16,7 @@ export const TIPOS_COMPROBANTE = [
   "nota_debito",
   "recibo",
   "ticket",
+  "liquidacion",
   "otro",
 ] as const;
 export type TipoComprobante = (typeof TIPOS_COMPROBANTE)[number];
@@ -25,8 +27,13 @@ export type Letra = (typeof LETRAS)[number];
 export const MONEDAS = ["ARS", "USD", "EUR", "otra"] as const;
 export type Moneda = (typeof MONEDAS)[number];
 
-export const PROYECTOS = ["Lerma", "Güemes", "Otro"] as const;
-export type Proyecto = (typeof PROYECTOS)[number];
+/**
+ * Las tres carpetas en las que el equipo ordena los comprobantes. Los honorarios
+ * son las facturas que los socios le hacen a la sociedad: van a la planilla de
+ * egresos como una compra, pero se guardan en su propia carpeta.
+ */
+export const CATEGORIAS = ["compra", "honorarios", "venta"] as const;
+export type Categoria = (typeof CATEGORIAS)[number];
 
 /** Importes que suman el total. El control de suma usa esta lista. */
 export const CAMPOS_IMPORTE = [
@@ -53,6 +60,7 @@ export const CAMPOS_FACTURA = [
   "razon_social",
   "cuit",
   "cuit_receptor",
+  "razon_social_receptor",
   "concepto",
   "moneda",
   "tipo_cambio",
@@ -61,7 +69,7 @@ export const CAMPOS_FACTURA = [
   "cae",
   "cae_vencimiento",
   "rubro",
-  "proyecto",
+  "corresponde_a",
 ] as const;
 export type CampoFactura = (typeof CAMPOS_FACTURA)[number];
 
@@ -79,13 +87,14 @@ export const InvoiceSchema = z.object({
     .describe('Código de tipo de comprobante de ARCA si está impreso (por ejemplo "COD. 001" es 1). null si no figura.'),
   punto_venta: z.number().int().nullable().describe("Punto de venta, sin ceros a la izquierda."),
   numero: z.number().int().nullable().describe("Número de comprobante, sin el punto de venta."),
-  razon_social: z.string().describe("Razón social del emisor (el proveedor)."),
+  razon_social: z.string().describe("Razón social del emisor: el proveedor en una compra, Mindlin en una venta."),
   cuit: z.string().nullable().describe("CUIT del emisor: 11 dígitos, sin guiones ni espacios."),
   cuit_receptor: z
     .string()
     .nullable()
-    .describe("CUIT del receptor (el cliente al que va dirigida la factura): 11 dígitos, sin guiones."),
-  concepto: z.string().describe("Descripción breve de lo facturado, en una línea."),
+    .describe("CUIT del receptor (a quien va dirigida la factura): 11 dígitos, sin guiones."),
+  razon_social_receptor: z.string().nullable().describe("Razón social o nombre del receptor. null si no figura."),
+  concepto: z.string().describe("Lo facturado en pocas palabras, como se anota en la planilla."),
   moneda: z.enum(MONEDAS),
   tipo_cambio: z.number().nullable().describe("Tipo de cambio si el comprobante lo informa. null si no."),
   neto_gravado: importe("Importe neto gravado"),
@@ -100,11 +109,11 @@ export const InvoiceSchema = z.object({
   total: z.number().describe("Importe total del comprobante."),
   cae: z.string().nullable().describe("CAE o CAI, solo dígitos. null si no figura."),
   cae_vencimiento: z.string().nullable().describe("Vencimiento del CAE en formato AAAA-MM-DD. null si no figura."),
-  rubro: z.string().nullable().describe("Rubro de gasto propuesto."),
-  proyecto: z
-    .enum(PROYECTOS)
+  rubro: z.string().nullable().describe("Rubro de gasto propuesto. null en las ventas."),
+  corresponde_a: z
+    .string()
     .nullable()
-    .describe("Proyecto al que corresponde el gasto. null si el comprobante no da pistas."),
+    .describe("A qué corresponde el gasto (la obra o la oficina). null en las ventas o si no hay pistas."),
   campos_dudosos: z
     .array(z.enum(CAMPOS_FACTURA))
     .describe("Campos ilegibles, ambiguos o inferidos que una persona tiene que revisar."),
@@ -113,13 +122,39 @@ export const InvoiceSchema = z.object({
 
 export type Invoice = z.infer<typeof InvoiceSchema>;
 
-/** Esquema con el rubro limitado a una lista cerrada, cuando la hay. */
-export function buildInvoiceSchema(rubros: readonly string[] = []) {
-  if (rubros.length === 0) return InvoiceSchema;
+/** Lista cerrada para la IA, o el campo libre del esquema base si la lista está vacía. */
+function deLaLista(valores: readonly string[], libre: z.ZodNullable<z.ZodString>, descripcion: string) {
+  if (valores.length === 0) return libre;
+  return z
+    .enum(valores as [string, ...string[]])
+    .nullable()
+    .describe(descripcion);
+}
+
+/** Esquema para la IA, con el rubro y "corresponde a" limitados a sus listas cuando las hay. */
+export function buildInvoiceSchema(rubros: readonly string[] = [], correspondeA: readonly string[] = []) {
   return InvoiceSchema.extend({
-    rubro: z
-      .enum(rubros as [string, ...string[]])
-      .nullable()
-      .describe("Rubro de gasto propuesto, de la lista. null si ninguno corresponde."),
+    rubro: deLaLista(rubros, InvoiceSchema.shape.rubro, "Rubro de gasto, de la lista. null en las ventas o si ninguno corresponde."),
+    corresponde_a: deLaLista(
+      correspondeA,
+      InvoiceSchema.shape.corresponde_a,
+      "A qué corresponde el gasto, de la lista. null en las ventas o si no hay pistas.",
+    ),
   });
 }
+
+/**
+ * Lo que se carga en la planilla: lo que leyó la IA más lo que agrega la app (la
+ * categoría y, en las ventas, los datos que salen de la carga anterior del mismo cliente).
+ */
+export const FacturaSchema = InvoiceSchema.extend({
+  categoria: z.enum(CATEGORIAS),
+  /** Ventas: columna "Cliente / Inversor / Razón Social". */
+  cliente: z.string().nullable(),
+  /** Ventas: columna "Tipo de Pago". */
+  tipo_pago: z.string().nullable(),
+  /** Ventas: columna "Depto adquirido". */
+  depto: z.string().nullable(),
+});
+
+export type Factura = z.infer<typeof FacturaSchema>;

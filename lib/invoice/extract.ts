@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import rubrosConfig from "../../config/rubros.json";
+import { EMPRESA } from "../empresa";
 import { toOutputSchema } from "./json-schema";
 import { SYSTEM_PROMPT, userPrompt } from "./prompt";
 import { buildInvoiceSchema, type Invoice } from "./schema";
@@ -25,6 +26,8 @@ export interface ExtractOptions {
   client?: Anthropic;
   /** Lista cerrada de rubros. Por defecto, la de config/rubros.json. */
   rubros?: readonly string[];
+  /** Valores de "Corresponde a". Por defecto, los de config/empresa.json. */
+  correspondeA?: readonly string[];
 }
 
 export interface ExtractionResult {
@@ -61,11 +64,11 @@ function fileBlock(file: InvoiceFile): Anthropic.Beta.BetaContentBlockParam {
   return { type: "image", source: { type: "base64", media_type: mediaType, data } };
 }
 
-/** Lee una factura (PDF o imagen) con Claude y devuelve los campos de la planilla P02. */
+/** Lee un comprobante (PDF o imagen) con Claude y devuelve sus datos para la planilla. */
 export async function extractInvoice(file: InvoiceFile, options: ExtractOptions = {}): Promise<ExtractionResult> {
   const client = options.client ?? new Anthropic();
   const rubros = options.rubros ?? rubrosConfig;
-  const schema = buildInvoiceSchema(rubros);
+  const schema = buildInvoiceSchema(rubros, options.correspondeA ?? EMPRESA.corresponde_a);
 
   const response = await client.beta.messages.create({
     model: MODEL,

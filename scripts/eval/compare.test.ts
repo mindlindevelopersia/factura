@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { Invoice } from "../../lib/invoice/schema";
+import type { Factura } from "../../lib/invoice/schema";
 import {
+  categoriaDeCarpeta,
   claveDeFila,
+  historialDeFilas,
   compararFila,
   normalizarEncabezado,
   normalizeMoneda,
@@ -12,7 +14,7 @@ import {
   parseNumeroComprobante,
 } from "./compare";
 
-const inv: Invoice = {
+const inv: Factura = {
   fecha_factura: "2026-09-15",
   tipo_comprobante: "factura",
   letra: "A",
@@ -22,6 +24,7 @@ const inv: Invoice = {
   razon_social: "Corralón Ejemplo S.A.",
   cuit: "33693450239",
   cuit_receptor: null,
+  razon_social_receptor: null,
   concepto: "Cemento portland y arena gruesa",
   moneda: "ARS",
   tipo_cambio: null,
@@ -38,9 +41,13 @@ const inv: Invoice = {
   cae: null,
   cae_vencimiento: null,
   rubro: "Materiales",
-  proyecto: "Lerma",
+  corresponde_a: "Lerma 439",
   campos_dudosos: [],
   observaciones: null,
+  categoria: "compra",
+  cliente: null,
+  tipo_pago: null,
+  depto: null,
 };
 
 describe("normalización", () => {
@@ -73,6 +80,22 @@ describe("normalización", () => {
     expect(normalizarEncabezado("Percepciones IIBB CABA")).toBe("percepcion_iibb_caba");
     expect(normalizarEncabezado("Razón social")).toBe("razon_social");
   });
+  it("reconoce los encabezados de Administración Contable", () => {
+    const egresos = ["Fecha de la Factura", "Nº Comprobante / Operación", "Rubro / Descripción", "Corresponde a", "IVA           21%",
+      "Importe Neto Gravado", "Percepción IIBB Prov BSAS", "Importe Total"];
+    expect(egresos.map(normalizarEncabezado)).toEqual(["fecha_factura", "numero", "rubro", "corresponde_a", "iva_21",
+      "neto_gravado", "percepcion_iibb_pba", "total"]);
+    const ingresos = ["Fecha Factura", "Nº Comprobante", "Cliente / Inversor / Razón Social", "Tipo de Pago", "CUIT Receptor",
+      "Depto adquirido", "Importe ", "IVA           10,5%", "Comentario"];
+    expect(ingresos.map(normalizarEncabezado)).toEqual(["fecha_factura", "numero", "cliente", "tipo_pago", "cuit_receptor",
+      "depto", "importe_ventas", "iva_10_5", "concepto"]);
+  });
+  it("lee la categoría de la carpeta", () => {
+    expect(categoriaDeCarpeta("Facturas Compras Octubre")).toBe("compra");
+    expect(categoriaDeCarpeta("Facturas Ventas Octubre")).toBe("venta");
+    expect(categoriaDeCarpeta("Facturas de Honorarios de Administración")).toBe("honorarios");
+    expect(categoriaDeCarpeta("otras")).toBeNull();
+  });
 });
 
 describe("compararFila", () => {
@@ -103,7 +126,34 @@ describe("compararFila", () => {
     expect(r.numero.acierto).toBe(false);
   });
 
-  it("arma la clave para emparejar sin columna archivo", () => {
-    expect(claveDeFila(fila)).toBe("33693450239|3|1234");
+  it("no compara la letra si la planilla no la tiene", () => {
+    const nc = { ...inv, tipo_comprobante: "nota_credito" as const };
+    expect(compararFila({ tipo_comprobante: "Nota de Crédito " }, nc, "coma").tipo_comprobante.acierto).toBe(true);
+    expect(compararFila({ tipo_comprobante: "Nota de Crédito B" }, nc, "coma").tipo_comprobante.acierto).toBe(false);
+    expect(compararFila({ tipo_comprobante: "Factura A" }, nc, "coma").tipo_comprobante.acierto).toBe(false);
+  });
+
+  it("compara las columnas de ventas", () => {
+    const venta = { ...inv, categoria: "venta" as const, cliente: "MARTÍN MIRANDA", depto: "1 A", neto_gravado: 15169108.98 };
+    const r = compararFila({ cliente: "MARTÍN MIRANDA", depto: "1-A", importe_ventas: "15,169,108.89" }, venta, "punto");
+    expect(r.cliente.acierto).toBe(true);
+    expect(r.depto.acierto).toBe(true);
+    expect(r.importe_ventas.acierto).toBe(false);
+  });
+
+  it("arma la clave para emparejar sin columna archivo, igual que la de duplicados", () => {
+    expect(claveDeFila(fila)).toBe("E|33693450239|FC|3|1234");
+    expect(claveDeFila({ ...fila, tipo_comprobante: "Nota de Crédito " })).toBe("E|33693450239|NC|3|1234");
+    expect(claveDeFila({ tipo_comprobante: "Factura A", numero: "00002-00000006", cliente: "MARTÍN MIRANDA", cuit_receptor: "30-71827792-9" })).toBe(
+      "I|FC|2|6",
+    );
+  });
+
+  it("arma el historial con las filas de las dos pestañas", () => {
+    const h = historialDeFilas([fila, { cliente: "MARTÍN MIRANDA", cuit_receptor: "30-71827792-9", tipo_pago: "Amortización", depto: "1 A" }]);
+    expect(h.egresos).toEqual([
+      { fila: 2, cuit: "33693450239", razon_social: "CORRALON EJEMPLO SA", rubro: "", concepto: "Cemento y arena", corresponde_a: "" },
+    ]);
+    expect(h.ingresos).toEqual([{ fila: 3, cuit_receptor: "30718277929", cliente: "MARTÍN MIRANDA", tipo_pago: "Amortización", depto: "1 A" }]);
   });
 });

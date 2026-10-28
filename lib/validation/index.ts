@@ -1,5 +1,6 @@
+import { EMPRESA } from "../empresa";
 import { CAMPOS_IMPORTE, type CampoFactura, type Invoice } from "../invoice/schema";
-import { isValidCuit } from "./cuit";
+import { isValidCuit, normalizeCuit } from "./cuit";
 import { compareWithQr, parseArcaQr } from "./qr";
 import { checkSum, TOLERANCIA_SUMA } from "./sum";
 
@@ -8,7 +9,7 @@ export { checkSum, TOLERANCIA_SUMA } from "./sum";
 export { compareWithQr, parseArcaQr, type ArcaQr } from "./qr";
 
 export interface Problema {
-  control: "cuit" | "suma" | "qr";
+  control: "cuit" | "receptor" | "suma" | "qr";
   campos: CampoFactura[];
   mensaje: string;
 }
@@ -23,6 +24,8 @@ export interface ValidateOptions {
   /** Texto leído del QR de ARCA, si se pudo leer. */
   qr?: string | null;
   tolerancia?: number;
+  /** CUIT de Mindlin. Por defecto, el de config/empresa.json. */
+  cuitEmpresa?: string;
 }
 
 export function validateInvoice(inv: Invoice, options: ValidateOptions = {}): Validacion {
@@ -37,6 +40,17 @@ export function validateInvoice(inv: Invoice, options: ValidateOptions = {}): Va
       control: "cuit",
       campos: ["cuit_receptor"],
       mensaje: `El CUIT del receptor (${inv.cuit_receptor}) no es válido.`,
+    });
+  }
+
+  // En una compra el receptor tiene que ser Mindlin. En una venta, Mindlin es el emisor.
+  const empresa = normalizeCuit(options.cuitEmpresa ?? EMPRESA.cuit);
+  const esVenta = normalizeCuit(inv.cuit ?? "") === empresa;
+  if (!esVenta && inv.cuit_receptor && isValidCuit(inv.cuit_receptor) && normalizeCuit(inv.cuit_receptor) !== empresa) {
+    problemas.push({
+      control: "receptor",
+      campos: ["cuit_receptor"],
+      mensaje: `La factura está a nombre de otro CUIT (${inv.cuit_receptor}), no del de Mindlin.`,
     });
   }
 

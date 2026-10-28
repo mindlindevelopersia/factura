@@ -1,18 +1,22 @@
 /**
- * Evalúa el extractor contra un mes de facturas ya cargadas a mano.
+ * Evalúa el extractor contra un mes de comprobantes ya cargados a mano.
  * Uso y formato de entrada: scripts/eval/README.md
  */
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { parse as parseCsv } from "csv-parse/sync";
+import { completarFactura } from "../../lib/invoice/completar";
 import { extractInvoice, type ExtractionResult } from "../../lib/invoice/extract";
+import { claveDuplicado } from "../../lib/invoice/tipos";
 import { validateInvoice } from "../../lib/validation";
 import {
+  categoriaDeCarpeta,
   claveDeFila,
-  claveEmparejamiento,
   compararFila,
+  historialDeFilas,
   normalizarEncabezado,
+  parseFecha,
   type Comparacion,
   type Decimal,
   type FilaEsperada,
@@ -28,6 +32,22 @@ const EXTENSIONES: Record<string, string> = {
 
 /** Precio de lista de claude-opus-5-5 en US$ por millón de tokens, para estimar el costo. */
 const PRECIO = { input: 4, output: 20 };
+
+/** Las facturas de la carpeta y de sus subcarpetas (una por categoría, como en el Drive del equipo). */
+async function listarFacturas(dir: string): Promise<string[]> {
+  const entradas = await readdir(dir, { withFileTypes: true });
+  const archivos: string[] = [];
+  for (const e of entradas) {
+    if (e.isDirectory()) {
+      for (const f of await readdir(path.join(dir, e.name))) {
+        if (EXTENSIONES[path.extname(f).toLowerCase()]) archivos.push(path.join(e.name, f));
+      }
+    } else if (EXTENSIONES[path.extname(e.name).toLowerCase()]) {
+      archivos.push(e.name);
+    }
+  }
+  return archivos.sort();
+}
 
 async function leerEsperado(archivo: string): Promise<FilaEsperada[]> {
   const contenido = (await readFile(archivo, "utf8")).replace(/^﻿/, "");
@@ -69,7 +89,8 @@ async function main() {
   const { values } = parseArgs({
     options: {
       dir: { type: "string" },
-      esperado: { type: "string" },
+      esperado: { type: "string", multiple: true },
+      mes: { type: "string" },
       salida: { type: "string" },
       decimal: { type: "string", default: "coma" },
       concurrencia: { type: "string", default: "4" },
@@ -77,11 +98,15 @@ async function main() {
     },
   });
   if (!values.dir) {
-    console.error("Uso: npm run eval -- --dir <carpeta con facturas> [--esperado esperado.csv] [--salida carpeta]");
+    console.error("Uso: npm run eval -- --dir <carpeta con facturas> [--mes AAAA-MM] [--esperado compras.csv --esperado ventas.csv]");
     process.exit(1);
   }
   const dir = values.dir;
-  const esperadoPath = values.esperado ?? path.join(dir, "esperado.csv");
+  const esperados = values.esperado?.length
+    ? values.esperado
+    : (await readdir(dir)).filter((f) => f.toLowerCase().endsWith(".csv")).map((f) => path.join(dir, f));
+  if (esperados.length === 0) throw new Error(`No hay CSV con la planilla en ${dir}: ver scripts/eval/README.md`);
+  if (values.mes && !/^\d{4}-\d{2}$/.test(values.mes)) throw new Error("--mes tiene que ser AAAA-MM");
   const salida = values.salida ?? path.join("eval-out", path.basename(path.resolve(dir)));
   const decimal = values.decimal as Decimal;
   if (decimal !== "coma" && decimal !== "punto") throw new Error("--decimal tiene que ser coma o punto");
@@ -89,16 +114,24 @@ async function main() {
   const cacheDir = path.join(salida, "extracciones");
   await mkdir(cacheDir, { recursive: true });
 
-  const archivos = (await readdir(dir)).filter((f) => EXTENSIONES[path.extname(f).toLowerCase()]).sort();
-  const filas = await leerEsperado(esperadoPath);
-  console.log(`${archivos.length} facturas, ${filas.length} filas esperadas.`);
+  const archivos = await listarFacturas(dir);
+  const todas = (await Promise.all(esperados.map(leerEsperado))).flat();
+  // Con --mes, se esperan las filas de ese mes y las anteriores sirven de historial, como en
+  // producción: la app propone rubro, "corresponde a", cliente, etc. según la carga anterior.
+  const mes = (f: FilaEsperada) => parseFecha(f.fecha_factura ?? "")?.slice(0, 7) ?? "";
+  const filas = values.mes ? todas.filter((f) => mes(f) === values.mes) : todas;
+  const historial = values.mes ? historialDeFilas(todas.filter((f) => mes(f) !== "" && mes(f) < values.mes!)) : null;
+  console.log(
+    `${archivos.length} facturas, ${filas.length} filas esperadas` +
+      (historial ? `, historial de ${historial.egresos.length + historial.ingresos.length} filas.` : "."),
+  );
 
   // 1. Extraer (o reusar lo extraído en una corrida anterior).
   const extracciones = new Map<string, ExtractionResult>();
   const errores: { archivo: string; error: string }[] = [];
   let nuevas = 0;
   await enParalelo(archivos, Number(values.concurrencia), async (archivo) => {
-    const cache = path.join(cacheDir, `${archivo}.json`);
+    const cache = path.join(cacheDir, `${archivo.replace(/[\\/]/g, "__")}.json`);
     if (!values.rehacer) {
       try {
         extracciones.set(archivo, JSON.parse(await readFile(cache, "utf8")));
@@ -136,7 +169,7 @@ async function main() {
   for (const archivo of archivos) {
     const r = extracciones.get(archivo);
     if (!r) continue;
-    const inv = r.invoice;
+    const { factura: inv } = completarFactura(r.invoice, historial);
     uso.input_tokens += r.usage.input_tokens;
     uso.output_tokens += r.usage.output_tokens;
     if (r.fallback) fallbacks++;
@@ -144,13 +177,16 @@ async function main() {
     if (problemas.some((p) => p.control === "cuit" && p.campos.includes("cuit"))) controles.cuit++;
     if (problemas.some((p) => p.control === "suma")) controles.suma++;
 
-    const fila = porArchivo.get(archivo) ?? porClave.get(claveEmparejamiento(inv.cuit, inv.punto_venta, inv.numero) ?? "");
+    const fila = porArchivo.get(path.basename(archivo)) ?? porClave.get(claveDuplicado(inv) ?? "");
     if (!fila) {
       sinFila.push(archivo);
       continue;
     }
     usadas.add(fila);
     const comparacion: Record<string, Comparacion> = compararFila(fila, inv, decimal);
+    // La subcarpeta dice la categoría: "Facturas Compras Octubre", "Facturas Ventas Octubre"...
+    const categoria = path.dirname(archivo) === "." ? null : categoriaDeCarpeta(path.dirname(archivo));
+    if (categoria) comparacion.categoria = { acierto: inv.categoria === categoria, esperado: categoria, obtenido: inv.categoria };
     for (const [campo, c] of Object.entries(comparacion)) {
       if (c.acierto === null) continue;
       porCampo[campo] ??= { comparados: 0, aciertos: 0 };

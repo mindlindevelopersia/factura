@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CampoFactura, Invoice } from "@/lib/invoice/schema";
+import type { Factura } from "@/lib/invoice/schema";
 import { prepararArchivo } from "@/lib/client/comprimir";
+import { importesSinColumna } from "@/lib/sheets/columnas";
 import { validateInvoice } from "@/lib/validation";
-import { aFactura, aValores, CAMPOS, type CampoEditable, type Valores } from "./formulario";
+import { aFactura, aValores, camposDe, ETIQUETAS_IMPORTE, type CampoEditable, type Valores } from "./formulario";
 
 /** Facturas que se leen con la IA al mismo tiempo. */
 const EN_PARALELO = 2;
@@ -20,14 +21,16 @@ interface Item {
   vistaPrevia: string | null;
   estado: Estado;
   error?: string;
-  original?: Invoice;
+  original?: Factura;
   valores?: Valores;
+  /** Fila de la carga anterior de la misma contraparte, de la que se tomaron datos. */
+  desde?: { pestania: "egresos" | "ingresos"; fila: number } | null;
   /** Campos que la persona cambió. */
   tocados: Set<CampoEditable>;
   /** Campos por los que la persona pasó, aunque no los haya cambiado: los da por revisados. */
   revisados: Set<CampoEditable>;
   duplicado?: boolean;
-  resultado?: { fila: number | null; link: string | null; sinArchivo: boolean };
+  resultado?: { pestania: string; fila: number | null; link: string | null; sinArchivo: boolean };
 }
 
 const ETIQUETAS: Record<Estado, string> = {
@@ -87,8 +90,9 @@ export function CargaFacturas() {
         const data = await leerJson(await fetch("/api/facturas/extraer", { method: "POST", body: fd }));
         actualizar(item.id, {
           estado: "revision",
-          original: data.invoice,
-          valores: aValores(data.invoice),
+          original: data.factura,
+          valores: aValores(data.factura),
+          desde: data.desde,
           tocados: new Set(),
           revisados: new Set(),
           duplicado: data.duplicado,
@@ -112,12 +116,12 @@ export function CargaFacturas() {
     }
   }, [items, leer]);
 
-  async function aprobar(item: Item, invoice: Invoice) {
+  async function aprobar(item: Item, factura: Factura) {
     actualizar(item.id, { estado: "guardando", error: undefined });
     try {
       const fd = new FormData();
       fd.append("archivo", item.archivo!);
-      fd.append("datos", JSON.stringify(invoice));
+      fd.append("datos", JSON.stringify(factura));
       const data = await leerJson(await fetch("/api/facturas/aprobar", { method: "POST", body: fd }));
       actualizar(item.id, { estado: "guardada", resultado: data });
     } catch (e) {
@@ -213,13 +217,13 @@ function Tarjeta({
   item: Item;
   onCambiar: (campo: CampoEditable, valor: string) => void;
   onRevisar: (campo: CampoEditable) => void;
-  onAprobar: (inv: Invoice) => void;
+  onAprobar: (f: Factura) => void;
   onReintentar: () => void;
   onQuitar: () => void;
 }) {
   const editable = item.estado === "revision" && item.original && item.valores;
   let factura: ReturnType<typeof aFactura> | null = null;
-  const dudosos = new Set<CampoFactura>();
+  const dudosos = new Set<string>();
   let problemas: string[] = [];
   if (editable) {
     factura = aFactura(item.original!, item.valores!, item.tocados);
@@ -251,7 +255,7 @@ function Tarjeta({
 
       {item.estado === "guardada" && item.resultado && (
         <div className="alerta alerta--ok">
-          Cargada en la planilla{item.resultado.fila ? ` (fila ${item.resultado.fila})` : ""} con estado "En revisión".
+          Cargada en la pestaña &ldquo;{item.resultado.pestania}&rdquo;{item.resultado.fila ? `, fila ${item.resultado.fila}` : ""}.
           {item.resultado.link && (
             <>
               {" "}
@@ -286,10 +290,27 @@ function Tarjeta({
                 ))}
               </ul>
             )}
+            {factura?.success && importesSinColumna(factura.data).length > 0 && (
+              <p className="alerta alerta--aviso">
+                La planilla no tiene columna para{" "}
+                {importesSinColumna(factura.data)
+                  .map((c) => ETIQUETAS_IMPORTE[c])
+                  .join(", ")}
+                : quedan solo dentro del total.
+              </p>
+            )}
+            {item.desde && (
+              <p className="factura__nota">
+                {item.desde.pestania === "ingresos"
+                  ? "Cliente, tipo de pago y depto"
+                  : "Razón social, rubro y \"corresponde a\""}{" "}
+                tomados de la última carga de esta contraparte (fila {item.desde.fila}).
+              </p>
+            )}
             {item.original!.observaciones && <p className="factura__nota">IA: {item.original!.observaciones}</p>}
 
             <div className="factura__campos">
-              {CAMPOS.map((def) => (
+              {camposDe(item.valores!.categoria).map((def) => (
                 <label
                   key={def.campo}
                   className={`campo${dudosos.has(def.campo) ? " campo--dudoso" : ""}${def.ancho ? " campo--ancho" : ""}`}

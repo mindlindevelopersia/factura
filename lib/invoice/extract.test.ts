@@ -13,6 +13,7 @@ const invoice: Invoice = {
   razon_social: "Corralón Ejemplo S.A.",
   cuit: "33693450239",
   cuit_receptor: null,
+  razon_social_receptor: null,
   concepto: "Cemento",
   moneda: "ARS",
   tipo_cambio: null,
@@ -29,7 +30,7 @@ const invoice: Invoice = {
   cae: null,
   cae_vencimiento: null,
   rubro: "Materiales",
-  proyecto: null,
+  corresponde_a: null,
   campos_dudosos: [],
   observaciones: null,
 };

@@ -1,10 +1,12 @@
-import type { Invoice } from "../invoice/schema";
+import type { Categoria, Factura } from "../invoice/schema";
 import { formatNumero, formatTipo } from "../invoice/tipos";
 
 export interface ArchivoParaGuardar {
   nombre: string;
   mediaType: string;
   data: Uint8Array;
+  /** Cada categoría va a su carpeta: compras, honorarios o ventas. */
+  carpeta: Categoria;
 }
 
 /** Dónde se guardan los PDF y las fotos. Devuelve el link para la planilla. */
@@ -31,6 +33,7 @@ export class AppsScriptAlmacen implements AlmacenArchivos {
       body: JSON.stringify({
         secret: this.secreto,
         nombre: archivo.nombre,
+        carpeta: archivo.carpeta,
         mimeType: archivo.mediaType,
         base64: Buffer.from(archivo.data).toString("base64"),
       }),
@@ -63,9 +66,13 @@ const EXTENSIONES: Record<string, string> = {
   "image/gif": "gif",
 };
 
-/** Nombre estándar: "2026-09-15 Corralon Ejemplo SA - Factura A 00003-00001234.pdf". */
-export function nombreArchivo(inv: Invoice, mediaType: string): string {
-  const partes = [inv.fecha_factura, inv.razon_social, "-", formatTipo(inv), formatNumero(inv) ?? ""];
+/**
+ * Nombre estándar: "2026-09-15 Corralon Ejemplo SA - Factura A 00003-00001234.pdf". En las
+ * ventas va el cliente en lugar del emisor, que siempre es Mindlin.
+ */
+export function nombreArchivo(f: Factura, mediaType: string): string {
+  const contraparte = f.categoria === "venta" ? (f.cliente ?? f.razon_social_receptor ?? "") : f.razon_social;
+  const partes = [f.fecha_factura, contraparte, "-", formatTipo(f), formatNumero(f) ?? ""];
   const base = partes
     .join(" ")
     .replace(/[\\/:*?"<>|\n\r\t]+/g, " ")

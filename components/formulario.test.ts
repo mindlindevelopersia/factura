@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { Invoice } from "@/lib/invoice/schema";
-import { aFactura, aValores } from "./formulario";
+import type { Factura } from "@/lib/invoice/schema";
+import { aFactura, aValores, camposDe } from "./formulario";
 
-const invoice: Invoice = {
+const invoice: Factura = {
   fecha_factura: "2026-09-15",
   tipo_comprobante: "factura",
   letra: "A",
@@ -12,6 +12,7 @@ const invoice: Invoice = {
   razon_social: "Corralón Ejemplo S.A.",
   cuit: "33693450239",
   cuit_receptor: "20123456786",
+  razon_social_receptor: null,
   concepto: "Cemento",
   moneda: "ARS",
   tipo_cambio: null,
@@ -28,9 +29,13 @@ const invoice: Invoice = {
   cae: null,
   cae_vencimiento: "2026-09-25",
   rubro: null,
-  proyecto: null,
+  corresponde_a: null,
   campos_dudosos: ["total"],
   observaciones: null,
+  categoria: "compra",
+  cliente: null,
+  tipo_pago: null,
+  depto: null,
 };
 
 describe("formulario de revisión", () => {
@@ -40,12 +45,13 @@ describe("formulario de revisión", () => {
   });
 
   it("convierte lo editado y conserva lo que no se edita", () => {
-    const valores = { ...aValores(invoice), total: "1210.50", numero: "1235", proyecto: "Güemes", iva_21: "" };
-    const r = aFactura(invoice, valores, new Set(["total", "numero", "proyecto", "iva_21"]));
+    const valores = { ...aValores(invoice), total: "1210.50", numero: "1235", corresponde_a: "HQ", iva_21: "" };
+    const r = aFactura(invoice, valores, new Set(["total", "numero", "corresponde_a", "iva_21"] as const));
     expect(r.success).toBe(true);
     if (!r.success) return;
-    expect(r.data).toMatchObject({ total: 1210.5, numero: 1235, proyecto: "Güemes", iva_21: 0 });
+    expect(r.data).toMatchObject({ total: 1210.5, numero: 1235, corresponde_a: "HQ", iva_21: 0 });
     expect(r.data.cuit_receptor).toBe("20123456786");
+    expect(r.data.tipo_cambio).toBeNull();
     expect(r.data.codigo_arca).toBe(1);
   });
 
@@ -53,6 +59,21 @@ describe("formulario de revisión", () => {
     const valores = { ...aValores(invoice), letra: "B" };
     const r = aFactura(invoice, valores, new Set(["letra"]));
     expect(r.success && r.data.codigo_arca).toBeNull();
+  });
+
+  it("muestra los campos de cada categoría", () => {
+    const venta = camposDe("venta").map((c) => c.campo);
+    expect(venta).toEqual(expect.arrayContaining(["cliente", "tipo_pago", "depto", "cuit_receptor"]));
+    expect(venta).not.toContain("rubro");
+    const compra = camposDe("compra").map((c) => c.campo);
+    expect(compra).toEqual(expect.arrayContaining(["razon_social", "cuit", "rubro", "corresponde_a"]));
+    expect(compra).not.toContain("cliente");
+  });
+
+  it("guarda los datos de una venta", () => {
+    const valores = { ...aValores(invoice), categoria: "venta", cliente: "MARTÍN MIRANDA", depto: "1 A", tipo_pago: "" };
+    const r = aFactura(invoice, valores, new Set(["categoria", "cliente", "depto", "tipo_pago"] as const));
+    expect(r.success && r.data).toMatchObject({ categoria: "venta", cliente: "MARTÍN MIRANDA", depto: "1 A", tipo_pago: null });
   });
 
   it("rechaza números inválidos", () => {

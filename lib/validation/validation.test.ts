@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Invoice } from "../invoice/schema";
-import { claveDuplicado, codigoArca, formatTipo } from "../invoice/tipos";
+import { claveDuplicado, codigoArca, familiaDeTexto, formatTipo, parseNumero } from "../invoice/tipos";
 import { checkSum, compareWithQr, isValidCuit, parseArcaQr, validateInvoice } from "./index";
 
 const factura: Invoice = {
@@ -12,7 +12,8 @@ const factura: Invoice = {
   numero: 1234,
   razon_social: "Corralón Ejemplo S.A.",
   cuit: "33693450239",
-  cuit_receptor: "20123456786",
+  cuit_receptor: "30718811550",
+  razon_social_receptor: null,
   concepto: "Cemento y arena",
   moneda: "ARS",
   tipo_cambio: null,
@@ -29,7 +30,7 @@ const factura: Invoice = {
   cae: "75123456789012",
   cae_vencimiento: "2026-09-25",
   rubro: "Materiales",
-  proyecto: "Lerma",
+  corresponde_a: "Lerma 439",
   campos_dudosos: [],
   observaciones: null,
 };
@@ -49,7 +50,7 @@ const qrOk = {
   moneda: "PES",
   ctz: 1,
   tipoDocRec: 80,
-  nroDocRec: 20123456786,
+  nroDocRec: 30718811550,
   tipoCodAut: "E",
   codAut: 75123456789012,
 };
@@ -107,6 +108,15 @@ describe("validateInvoice", () => {
       expect.arrayContaining(["concepto", "cuit", "total", "neto_gravado", "iva_21", "percepcion_iva", "percepcion_iibb_pba"]),
     );
   });
+  it("avisa si una compra no está a nombre de Mindlin", () => {
+    const v = validateInvoice({ ...factura, cuit_receptor: "20123456786" });
+    expect(v.problemas.map((p) => p.control)).toEqual(["receptor"]);
+    expect(v.dudosos).toEqual(["cuit_receptor"]);
+  });
+  it("en una venta el receptor es el cliente", () => {
+    const v = validateInvoice({ ...factura, cuit: "30718811550", cuit_receptor: "30718277929" });
+    expect(v.problemas).toEqual([]);
+  });
 });
 
 describe("tipos de comprobante", () => {
@@ -116,11 +126,25 @@ describe("tipos de comprobante", () => {
     expect(codigoArca({ ...factura, codigo_arca: 201 })).toBe(201);
     expect(codigoArca({ ...factura, tipo_comprobante: "ticket", letra: null })).toBeNull();
   });
-  it("arma la clave de duplicado", () => {
-    expect(claveDuplicado(factura)).toBe("33693450239|1|00003-00001234");
-    expect(claveDuplicado({ ...factura, numero: null })).toBeNull();
+  it("arma la clave de duplicado por familia, no por letra", () => {
+    const compra = { ...factura, categoria: "compra" as const };
+    expect(claveDuplicado(compra)).toBe("E|33693450239|FC|3|1234");
+    expect(claveDuplicado({ ...compra, tipo_comprobante: "nota_credito" })).toBe("E|33693450239|NC|3|1234");
+    expect(claveDuplicado({ ...compra, categoria: "venta" })).toBe("I|FC|3|1234");
+    expect(claveDuplicado({ ...compra, numero: null })).toBeNull();
+    expect(claveDuplicado({ ...compra, cuit: null })).toBeNull();
+  });
+  it("lee la familia y el número como los escribe la planilla", () => {
+    expect(familiaDeTexto("Nota de Crédito ")).toBe("NC");
+    expect(familiaDeTexto("Factura A")).toBe("FC");
+    expect(familiaDeTexto('Ticket Factura "A"')).toBe("FC");
+    expect(familiaDeTexto("Liquidación A")).toBe("FC");
+    expect(parseNumero("00005-00025853")).toEqual({ punto_venta: 5, numero: 25853 });
+    expect(parseNumero("000001-0000295")).toEqual({ punto_venta: 1, numero: 295 });
+    expect(parseNumero("-")).toBeNull();
   });
   it("formatea el tipo para la planilla", () => {
-    expect(formatTipo({ tipo_comprobante: "nota_credito", letra: "C" })).toBe("Nota de crédito C");
+    expect(formatTipo({ tipo_comprobante: "nota_credito", letra: "C" })).toBe("Nota de Crédito C");
+    expect(formatTipo({ tipo_comprobante: "liquidacion", letra: "A" })).toBe("Liquidación A");
   });
 });
