@@ -284,6 +284,23 @@ export function Panel({ onIrA }: { onIrA: (vista: "revisar" | "subir" | "histori
           </span>
         </div>
       </div>
+      {r.fechasARevisar.cantidad > 0 && (
+        <p className="alerta alerta--aviso">
+          {r.fechasARevisar.cantidad === 1 ? "Una fila" : `${r.fechasARevisar.cantidad} filas`} de la planilla{" "}
+          {r.fechasARevisar.cantidad === 1 ? "tiene" : "tienen"} la fecha de factura vacía o imposible y no{" "}
+          {r.fechasARevisar.cantidad === 1 ? "entra" : "entran"} en los gráficos:{" "}
+          {r.fechasARevisar.filas.map((f, i) => (
+            <span key={`${f.pestania}-${f.fila}`}>
+              {i > 0 && ", "}
+              <a href={`/ir/planilla-${f.pestania}?fila=${f.fila}`} target="_blank" rel="noopener">
+                {f.pestania === "ingresos" ? "ventas" : "egresos"} fila {f.fila}
+              </a>
+              {f.motivo === "futura" ? " (fecha en el futuro)" : " (sin fecha)"}
+            </span>
+          ))}
+          {r.fechasARevisar.cantidad > r.fechasARevisar.filas.length && ` y ${r.fechasARevisar.cantidad - r.fechasARevisar.filas.length} más`}.
+        </p>
+      )}
       {r.enOtraMoneda > 0 && (
         <p className="factura__nota">
           {r.enOtraMoneda} {r.enOtraMoneda === 1 ? "factura" : "facturas"} de los últimos 12 meses en otra moneda no se suman a los totales en pesos.

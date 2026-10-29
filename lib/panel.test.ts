@@ -62,6 +62,13 @@ describe("resumirPanel", () => {
     expect(r.meses.at(-1)).toEqual({ mes: "2026-10", egresos: { total: 1300, cantidad: 3 }, ingresos: { total: 9000, cantidad: 1 } });
     expect(r.meses.at(-2)?.egresos.total).toBe(7000);
     expect(r.enOtraMoneda).toBe(1);
+    expect(r.fechasARevisar).toEqual({ cantidad: 1, filas: [{ pestania: "egresos", fila: 2, motivo: "sin_fecha" }] });
+  });
+
+  it("señala las fechas imposibles, como un error de tipeo en el año", () => {
+    const r = resumirPanel([mov({ fila: 164, fecha: "2062-08-03" }), mov({ fila: 165 })], [], ahora);
+    expect(r.fechasARevisar).toEqual({ cantidad: 1, filas: [{ pestania: "egresos", fila: 164, motivo: "futura" }] });
+    expect(r.mesActual.compras.cantidad).toBe(1);
   });
 
   it("agrupa los proveedores por CUIT y junta el resto en Otros", () => {

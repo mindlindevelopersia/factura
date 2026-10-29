@@ -44,6 +44,11 @@ export interface ResumenPanel {
   proveedores: { mes: string; lista: { nombre: string; total: number; cantidad: number }[]; otros: Monto };
   /** Filas de los últimos 12 meses en otra moneda: no se suman a los totales en pesos. */
   enOtraMoneda: number;
+  /**
+   * Filas con importe pero con la fecha de factura vacía, ilegible o en el futuro (un error de
+   * tipeo, como 03/08/2062): no entran en los gráficos. Las primeras, para mostrarlas con link.
+   */
+  fechasARevisar: { cantidad: number; filas: { pestania: "egresos" | "ingresos"; fila: number; motivo: "sin_fecha" | "futura" }[] };
   /** La app en el mes: cuántas cargó, cuántas llegaron por Telegram y cuánto tardan en cargarse. */
   app: { cargadas: number; porTelegram: number; horasHastaCarga: number | null };
   recientes: Reciente[];
@@ -95,8 +100,15 @@ export function resumirPanel(movimientos: Movimiento[] | null, items: ItemCola[]
   const mesActual = { compras: vacio(), honorarios: vacio(), ventas: vacio() };
   const proveedores = new Map<string, { nombre: string; total: number; cantidad: number }>();
   let enOtraMoneda = 0;
+  const fechasARevisar: ResumenPanel["fechasARevisar"] = { cantidad: 0, filas: [] };
+  const limiteFuturo = new Date(ahora.getTime() + 31 * 86_400_000).toISOString().slice(0, 10);
 
   for (const m of movimientos ?? []) {
+    if (!m.fecha || m.fecha > limiteFuturo) {
+      fechasARevisar.cantidad += 1;
+      if (fechasARevisar.filas.length < 5) fechasARevisar.filas.push({ pestania: m.pestania, fila: m.fila, motivo: m.fecha ? "futura" : "sin_fecha" });
+      continue;
+    }
     const mesFila = m.fecha?.slice(0, 7);
     const grupo = mesFila ? porMes.get(mesFila) : undefined;
     if (!grupo) continue;
@@ -168,6 +180,7 @@ export function resumirPanel(movimientos: Movimiento[] | null, items: ItemCola[]
       otros: redondearMonto(otros),
     },
     enOtraMoneda,
+    fechasARevisar,
     app: {
       cargadas: delMes.length,
       porTelegram: delMes.filter((i) => i.origen === "telegram").length,

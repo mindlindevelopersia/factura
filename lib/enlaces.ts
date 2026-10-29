@@ -64,7 +64,7 @@ export async function urlDe(destino: Destino, fila?: number): Promise<{ url: str
   const categoria = destino.replace("drive-", "") as Categoria;
   try {
     const url = (await carpetasDeDrive())[categoria];
-    return url ? { url } : { falta: "Falta publicar la versión 3 del script de Drive (apps-script/README.md)." };
+    return url ? { url } : { falta: "Falta actualizar el script que guarda los PDF en Drive para que la app conozca las carpetas (docs/mapa.md, \"Qué falta\")." };
   } catch (e) {
     return { falta: `No se pudo hablar con el script de Drive: ${e instanceof Error ? e.message : String(e)}` };
   }

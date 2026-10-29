@@ -43,9 +43,9 @@ El cliente pasó una carpeta de Drive con la "Copia para IA de Administración C
 
 Hecho: panel de inicio con gráficos, accesos directos a la planilla y a Drive solo desde la app, QR para conectar Telegram desde la compu, señales del bot mientras procesa y candados para que nada se cargue dos veces. Falta:
 
-- [ ] **Publicar el script en versión 3** (va incluido en la [puesta en marcha](puesta-en-marcha.md)): sin eso, los botones de Drive del panel aparecen grisados. La app funciona igual con la 2.
-- [ ] **Compartir la planilla y las carpetas con acceso "Restringido"**, solo con las cuentas del equipo. La app esconde los links detrás del login, pero si un link de Google circula, quien lo abre lo decide Google (ver "Accesos a la planilla y a Drive" en el README).
-- [ ] Mirar el panel con los datos reales después de la puesta en marcha: las fechas de la planilla (si alguna fila tiene la fecha como texto raro, no entra en los gráficos) y la moneda.
+- [ ] **Actualizar el script de Drive** (versión 3; el publicado el 29/10 es la 2, verificado). Sin eso, los botones de Drive del Inicio aparecen grisados. Prompt en [mapa.md](mapa.md), "Prompt para computer use".
+- [ ] **Ordenar el Drive y dejar todo en acceso "Restringido"**: mismo prompt.
+- [ ] Comparar una vez los totales de octubre del Inicio con la planilla. Las filas con fecha vacía o imposible las señala el panel solo.
 - [ ] Probar desde un celular real: mandar una factura y ver 👀, "escribiendo…", 👌 y, al aprobarla, 👍.
 
 ## Puesta en marcha de la cola, la web y Telegram
