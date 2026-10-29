@@ -43,9 +43,7 @@ El cliente pasó una carpeta de Drive con la "Copia para IA de Administración C
 
 Hecho: panel de inicio con gráficos, accesos directos a la planilla y a Drive solo desde la app, QR para conectar Telegram desde la compu, señales del bot mientras procesa y candados para que nada se cargue dos veces. Falta:
 
-- [ ] **Actualizar el script de Drive** (versión 3; el publicado el 29/10 es la 2, verificado). Sin eso, los botones de Drive del Inicio aparecen grisados. Prompt en [mapa.md](mapa.md), "Prompt para computer use".
-- [ ] **Ordenar el Drive y dejar todo en acceso "Restringido"**: mismo prompt.
-- [ ] Comparar una vez los totales de octubre del Inicio con la planilla. Las filas con fecha vacía o imposible las señala el panel solo.
+- [ ] La lista por prioridad (evaluación, limpieza, botones de Drive, acceso restringido, planilla real, alta del equipo y prueba final) está en [mapa.md](mapa.md), "Qué falta, por prioridad".
 - [ ] Probar desde un celular real: mandar una factura y ver 👀, "escribiendo…", 👌 y, al aprobarla, 👍.
 
 ## Puesta en marcha de la cola, la web y Telegram

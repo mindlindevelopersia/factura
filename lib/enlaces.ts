@@ -1,4 +1,5 @@
 import "server-only";
+import carpetasConfiguradas from "../config/drive.json";
 import type { Categoria } from "./invoice/schema";
 import { planillaDesdeEnv } from "./sheets/planilla";
 import { almacenDesdeEnv } from "./storage/archivos";
@@ -60,11 +61,15 @@ export async function urlDe(destino: Destino, fila?: number): Promise<{ url: str
       return { falta: `No se pudo abrir la planilla: ${e instanceof Error ? e.message : String(e)}` };
     }
   }
-  if (!almacenDesdeEnv()) return { falta: "Falta configurar el script de Drive (APPS_SCRIPT_URL)." };
   const categoria = destino.replace("drive-", "") as Categoria;
+  // Los IDs de las carpetas no son secretos (quién las abre lo decide Google): si están en
+  // config/drive.json, no hace falta preguntarle al script.
+  const id = (carpetasConfiguradas as Partial<Record<Categoria, string>>)[categoria]?.trim();
+  if (id) return { url: `https://drive.google.com/drive/folders/${id}` };
+  if (!almacenDesdeEnv()) return { falta: "Falta configurar el script de Drive (APPS_SCRIPT_URL)." };
   try {
     const url = (await carpetasDeDrive())[categoria];
-    return url ? { url } : { falta: "Falta actualizar el script que guarda los PDF en Drive para que la app conozca las carpetas (docs/mapa.md, \"Qué falta\")." };
+    return url ? { url } : { falta: "Falta cargar los IDs de las carpetas de Drive en config/drive.json (docs/mapa.md, \"Qué falta\")." };
   } catch (e) {
     return { falta: `No se pudo hablar con el script de Drive: ${e instanceof Error ? e.message : String(e)}` };
   }

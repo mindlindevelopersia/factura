@@ -68,11 +68,19 @@ Cómo escribe:
 | **Telegram** | Qué cuenta de Telegram corresponde a qué mail |
 | **Candados** | Registro corto que impide que dos personas carguen la misma factura a la vez. Aparece la primera vez que se usa |
 
-## Qué falta
+## Qué falta, por prioridad
 
-1. **Actualizar el script de Drive** (lo que en el código se llama "versión 3"). El script publicado es la versión 2: guarda y mueve los PDF bien, pero no le dice a la app dónde están las carpetas. Por eso los botones "Drive · Compras", "Drive · Honorarios" y "Drive · Ventas" del Inicio aparecen grisados. La versión 3 solo agrega eso; se pega el código nuevo y se publica, sin cambiar la URL. Va en el prompt de abajo.
-2. **Ordenar el Drive y dejar todo en acceso "Restringido"**, también en el prompt de abajo. La app esconde los links de Google detrás del login, pero quién puede abrir un archivo lo decide Google: con acceso "Restringido", solo las cuentas invitadas.
-3. **Revisar el Inicio una vez con la planilla de verdad.** El panel se probó con números simulados, porque desde el entorno de desarrollo no hay acceso a la planilla ni al login. Si alguna fila tiene la fecha vacía o imposible (la auditoría de octubre encontró una con 03/08/2062), el panel ahora lo avisa solo, con link a la fila. Lo único para mirar a ojo es que los totales de octubre coincidan con la planilla.
+1. **Evaluar la IA con octubre.** Medir cuánto acierta con las 10 facturas reales antes de usarla en la planilla real. Necesita una clave de Anthropic en el entorno donde se corre (`ANTHROPIC_API_KEY`) y las facturas y la planilla de octubre en `muestras/2026-10/` ([scripts/eval/README.md](../scripts/eval/README.md)).
+2. **Limpiar las pruebas.**
+   - Hecho el 29/10: a la papelera las pruebas viejas de la cuenta de Axel ("Facturas (prueba)", "[PRUEBA] Facturación de Egresos" y el script viejo).
+   - Falta, en la cuenta de Mindlin: archivar "Facturas Mindlin (prueba)" y "[PRUEBA] Facturación de Egresos - Mindlin", borrar los PDF de prueba de "Facturas Mindlin" y las filas de prueba de la cola, y ordenar el Drive como arriba.
+3. **Botones de Drive del Inicio.** Cargar los IDs de las carpetas de compras, honorarios y ventas en `config/drive.json` (no son secretos). Con eso andan sin tocar el script. La otra forma es publicar la versión 3 del script (prompt de abajo).
+4. **Acceso "Restringido"** en la carpeta y las dos planillas.
+5. **Pasar a la planilla real**, si la evaluación da bien: compartir "Administración Contable" con la cuenta de servicio como Editor y cambiar `SHEET_ID`, `SHEET_TAB_EGRESOS` y `SHEET_TAB_INGRESOS` en Vercel. El panel pasa a mostrar los números reales solo.
+6. **Alta del equipo:** cada mail en `ALLOWED_EMAILS` (Vercel) y como usuario de prueba en la pantalla de consentimiento de Google. Después, cada uno conecta su Telegram con el QR del Inicio.
+7. **Prueba final con una factura real**, por Telegram y por la web: fila en la planilla, PDF en la carpeta del mes, panel actualizado.
+
+El panel se probó con números simulados. Si alguna fila de la planilla tiene la fecha vacía o imposible (la auditoría de octubre encontró una con 03/08/2062), ahora lo avisa solo, con link a la fila.
 
 ## Prompt para computer use
 
