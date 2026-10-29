@@ -2,7 +2,8 @@ import Image from "next/image";
 import { signIn } from "@/auth";
 
 const ERRORES: Record<string, string> = {
-  AccessDenied: "Ese mail no está habilitado para usar la app. Pedile acceso al administrador.",
+  AccessDenied:
+    "Ese mail no está habilitado para usar la app. Pedile acceso al administrador.",
   Configuration: "El login no está bien configurado. Avisale al administrador.",
 };
 
@@ -36,8 +37,16 @@ export default async function LoginPage({
           height={219}
           priority
         />
-        <h1>Facturas de compra</h1>
-        <p>Ingresá con tu cuenta de Google habilitada.</p>
+        <span className="eyebrow">Administración de comprobantes</span>
+        <h1>
+          Menos carga manual.
+          <br />
+          Más control.
+        </h1>
+        <p>
+          Compras, honorarios y ventas en un mismo lugar. La IA propone los
+          datos; vos revisás y aprobás.
+        </p>
         {error && (
           <p role="alert" className="alerta alerta--error">
             {ERRORES[error] ?? "No se pudo iniciar sesión. Probá de nuevo."}
@@ -53,6 +62,9 @@ export default async function LoginPage({
             Ingresar con Google
           </button>
         </form>
+        <p className="login__acceso">
+          Acceso exclusivo para cuentas habilitadas de Mindlin.
+        </p>
       </div>
     </main>
   );

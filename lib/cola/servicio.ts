@@ -198,6 +198,9 @@ export async function leer(s: Servicios, item: ItemCola, data?: Uint8Array): Pro
   }
   // Mientras la IA leía pudo llegar un comentario: se conservan los que haya ahora.
   const actual = await s.cola.obtener(item.id);
+  // Otra persona pudo resolverlo mientras la IA respondía. Nunca se vuelve a abrir
+  // un comprobante aprobado o descartado por una lectura que terminó más tarde.
+  if (actual?.estado === "aprobada" || actual?.estado === "descartada") return actual;
   if (actual) leido = { ...leido, notas: actual.notas };
   await s.cola.guardar(leido);
   await avisar(s, leido, leido.estado === "pendiente" ? "leida" : "error", extra);

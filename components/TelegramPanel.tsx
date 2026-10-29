@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { fechaHora, leerJson } from "./formato";
+import { Icono } from "./Icono";
+import { Confirmacion } from "./Confirmacion";
 
 interface Estado {
   configurado: boolean;
@@ -18,10 +20,19 @@ export function TelegramPanel() {
   const [estado, setEstado] = useState<Estado | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activando, setActivando] = useState(false);
+  const [desconectando, setDesconectando] = useState<number | null>(null);
+  const [confirmar, setConfirmar] = useState<{
+    id: number;
+    usuario: string;
+  } | null>(null);
 
   const cargar = useCallback(async () => {
     try {
-      setEstado(await leerJson<Estado>(await fetch("/api/telegram", { cache: "no-store" })));
+      setEstado(
+        await leerJson<Estado>(
+          await fetch("/api/telegram", { cache: "no-store" }),
+        ),
+      );
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -35,20 +46,29 @@ export function TelegramPanel() {
     return () => clearInterval(intervalo);
   }, [cargar]);
 
-  async function desconectar(id: number, usuario: string) {
-    if (!window.confirm(`¿Desconectar ${usuario}? Ese Telegram ya no va a poder mandar facturas.`)) return;
+  async function desconectar(id: number) {
+    setConfirmar(null);
+    setDesconectando(id);
+    setError(null);
     try {
       await leerJson(
-        await fetch("/api/telegram", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ desconectar: id }) }),
+        await fetch("/api/telegram", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ desconectar: id }),
+        }),
       );
       await cargar();
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setDesconectando(null);
     }
   }
 
   async function activar() {
     setActivando(true);
+    setError(null);
     try {
       await leerJson(await fetch("/api/telegram", { method: "POST" }));
       await cargar();
@@ -61,56 +81,116 @@ export function TelegramPanel() {
 
   return (
     <div className="card telegram">
-      <h2>Por Telegram</h2>
-      {error && <p className="alerta alerta--error">{error}</p>}
+      <h2>
+        <Icono nombre="telegram" />
+        También podés enviar por Telegram
+      </h2>
+      {error && (
+        <p role="alert" className="alerta alerta--error">
+          {error}
+        </p>
+      )}
       {!estado && !error && <p className="carga__resumen">Cargando…</p>}
-      {estado && !estado.configurado && <p>El bot no está configurado: falta TELEGRAM_API_KEY en el servidor.</p>}
+      {estado && !estado.configurado && (
+        <p>
+          Telegram todavía no está conectado. Pedile al administrador que revise
+          las conexiones de la app.
+        </p>
+      )}
       {estado?.configurado && (
         <>
           <p>
             Mandale las facturas en PDF o como foto a{" "}
-            <a href={`https://t.me/${estado.bot}`} target="_blank" rel="noreferrer">
+            <a
+              href={`https://t.me/${estado.bot}`}
+              target="_blank"
+              rel="noreferrer"
+            >
               @{estado.bot}
             </a>
-            . Quedan acá, en &quot;Para revisar&quot;, y el bot te avisa cuando las lee y cuando se cargan.
+            . Quedan acá, en &quot;Para revisar&quot;, y el bot te avisa cuando
+            las lee y cuando se cargan.
           </p>
           {!estado.activo && (
             <div className="alerta alerta--aviso telegram__activar">
               <span>
-                El bot no está recibiendo mensajes en esta app{estado.webhook ? ` (apunta a ${estado.webhook})` : ""}. Activalo una
-                vez, desde la dirección de producción.
+                El bot todavía no está recibiendo comprobantes en esta app.
+                Activá la conexión para empezar.
               </span>
-              <button type="button" className="btn btn--primario btn--chico" disabled={activando} onClick={activar}>
+              <button
+                type="button"
+                className="btn btn--primario btn--chico"
+                disabled={activando}
+                onClick={activar}
+              >
                 {activando ? "Activando…" : "Activar bot"}
               </button>
             </div>
           )}
-          {estado.activo && estado.ultimoError && <p className="factura__nota">Último error de Telegram: {estado.ultimoError}</p>}
+          {estado.activo && estado.ultimoError && (
+            <p className="factura__nota">
+              Último error de Telegram: {estado.ultimoError}
+            </p>
+          )}
           {(estado.conectados?.length ?? 0) > 0 && (
             <ul className="telegram__cuentas">
               {estado.conectados!.map((c) => (
                 <li key={c.id}>
                   <span>
                     Conectado: <strong>{c.usuario}</strong>
-                    {c.conectado && <span className="factura__nota"> · desde {fechaHora(c.conectado)}</span>}
+                    {c.conectado && (
+                      <span className="factura__nota">
+                        {" "}
+                        · desde {fechaHora(c.conectado)}
+                      </span>
+                    )}
                   </span>
-                  <button type="button" className="btn btn--borde btn--chico" onClick={() => desconectar(c.id, c.usuario)}>
-                    Desconectar
+                  <button
+                    type="button"
+                    className="btn btn--borde btn--chico"
+                    disabled={desconectando !== null}
+                    onClick={() =>
+                      setConfirmar({ id: c.id, usuario: c.usuario })
+                    }
+                  >
+                    {desconectando === c.id ? "Desconectando…" : "Desconectar"}
                   </button>
                 </li>
               ))}
             </ul>
           )}
           <p>
-            <a className="btn btn--borde" href={estado.linkConectar} target="_blank" rel="noreferrer">
-              {estado.conectados?.length ? "Conectar otro Telegram" : "Conectar mi Telegram"}
+            <a
+              className="btn btn--borde"
+              href={estado.linkConectar}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {estado.conectados?.length
+                ? "Conectar otro Telegram"
+                : "Conectar mi Telegram"}
             </a>{" "}
             <span className="factura__nota">
-              Abrilo desde el teléfono con el Telegram que quieras conectar y tocá &quot;Iniciar&quot;. Queda conectado a tu mail. El
-              link dura una hora.
+              Abrilo desde el teléfono con el Telegram que quieras conectar y
+              tocá &quot;Iniciar&quot;. Queda conectado a tu mail. El link dura
+              una hora.
             </span>
           </p>
         </>
+      )}
+      {confirmar && (
+        <Confirmacion
+          titulo="¿Desconectar este Telegram?"
+          confirmar="Desconectar"
+          peligro
+          onCancelar={() => setConfirmar(null)}
+          onConfirmar={() => void desconectar(confirmar.id)}
+        >
+          <p>
+            <strong>{confirmar.usuario}</strong> dejará de poder enviar
+            comprobantes. Podés volver a conectarlo desde esta pantalla.
+          </p>
+        </Confirmacion>
       )}
     </div>
   );
