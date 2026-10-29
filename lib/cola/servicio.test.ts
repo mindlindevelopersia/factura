@@ -102,7 +102,12 @@ function servicios(opciones: { leida?: Invoice; error?: Error; egresos?: string[
     extraer: async (_archivo: unknown, contexto?: { comentario?: string }): Promise<ExtractionResult> => {
       comentarios.push(contexto?.comentario);
       if (opciones.error) throw opciones.error;
-      return { invoice: opciones.leida ?? invoiceDePrueba(), model: "m", fallback: false, usage: { input_tokens: 1, output_tokens: 1 } };
+      return {
+        invoice: opciones.leida ?? invoiceDePrueba(),
+        model: "m",
+        fallback: false,
+        usage: { input_tokens: 1, output_tokens: 1 },
+      };
     },
     avisar: async (item: ItemCola, aviso: Aviso, { duplicado, repetida }: ExtraAviso) => {
       avisos.push({ aviso, id: item.id, duplicado, repetida: repetida?.id ?? null });
@@ -114,6 +119,42 @@ function servicios(opciones: { leida?: Invoice; error?: Error; egresos?: string[
 }
 
 const pdf = { nombre: "FC 25853.pdf", mediaType: "application/pdf", data: new Uint8Array([1, 2, 3]) };
+
+describe("lectura que termina después de resolver el comprobante", () => {
+  for (const destino of ["aprobada", "descartada"] as const) {
+    it(`conserva el estado ${destino} en vez de volver a pendiente`, async () => {
+      const { s, avisos } = servicios();
+      const item = await ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "equipo@ejemplo.com" });
+      let liberar!: () => void;
+      let inicio!: () => void;
+      const iniciada = new Promise<void>((resolve) => {
+        inicio = resolve;
+      });
+      const pausa = new Promise<void>((resolve) => {
+        liberar = resolve;
+      });
+      s.extraer = async () => {
+        inicio();
+        await pausa;
+        return {
+          invoice: invoiceDePrueba(),
+          model: "m",
+          fallback: false,
+          usage: { input_tokens: 1, output_tokens: 1 },
+        };
+      };
+      const lectura = reintentar(s, item.id);
+      await iniciada;
+      if (destino === "aprobada") await aprobar(s, item.id, item.lectura!.factura, "equipo@ejemplo.com");
+      else await descartar(s, item.id, "equipo@ejemplo.com");
+      liberar();
+      expect((await lectura).estado).toBe(destino);
+      expect((await s.cola.obtener(item.id))?.estado).toBe(destino);
+      expect((await listar(s)).pendientes).toHaveLength(0);
+      expect(avisos.at(-1)?.aviso).toBe(destino);
+    });
+  }
+});
 
 describe("ingresar", () => {
   it("guarda el archivo en pendientes, lo encola y lo lee", async () => {
@@ -128,14 +169,21 @@ describe("ingresar", () => {
 
   it("si la IA falla, queda en error con el archivo guardado", async () => {
     const { s, avisos } = servicios({ error: new ExtractionError("La respuesta se cortó", "max_tokens") });
-    const item = await ingresar(s, { archivo: pdf, origen: "telegram", enviadaPor: "@ana", telegram: { chat: 1, mensaje: 2 } });
+    const item = await ingresar(s, {
+      archivo: pdf,
+      origen: "telegram",
+      enviadaPor: "@ana",
+      telegram: { chat: 1, mensaje: 2 },
+    });
     expect(item).toMatchObject({ estado: "error", error: "La respuesta se cortó", telegram: { chat: 1, mensaje: 2 } });
     expect(s.almacen.archivos.size).toBe(1);
     expect(avisos[0].aviso).toBe("error");
   });
 
   it("avisa si ya está cargada en la planilla", async () => {
-    const egresos = [["Factura A", "00005-00025853", "Corralón", "Materiales", "33-69345023-9", "Cemento", "Lerma 439"]];
+    const egresos = [
+      ["Factura A", "00005-00025853", "Corralón", "Materiales", "33-69345023-9", "Cemento", "Lerma 439"],
+    ];
     const { s, avisos } = servicios({ egresos });
     await ingresar(s, { archivo: pdf, origen: "telegram", enviadaPor: "@ana" });
     expect(avisos[0].duplicado).toBe(true);
@@ -150,11 +198,23 @@ describe("aprobar", () => {
     const revisada = facturaDePrueba({ concepto: "Cemento x 5" });
     const item = await aprobar(s, id, revisada, "tadeo@x.com");
 
-    expect(s.planilla.filas[0]).toEqual({ factura: revisada, link: `https://drive/${item.archivo.driveId}`, fechaRegistro: "2026-10-29" });
+    expect(s.planilla.filas[0]).toEqual({
+      factura: revisada,
+      link: `https://drive/${item.archivo.driveId}`,
+      fechaRegistro: "2026-10-29",
+    });
     expect(s.almacen.movimientos).toEqual([
-      { carpeta: "compra", subcarpeta: "Facturas Compras Octubre 2026", nombre: "2026-10-01 Corralón Ejemplo S.A. - Factura A 00005-00025853.pdf" },
+      {
+        carpeta: "compra",
+        subcarpeta: "Facturas Compras Octubre 2026",
+        nombre: "2026-10-01 Corralón Ejemplo S.A. - Factura A 00005-00025853.pdf",
+      },
     ]);
-    expect(item).toMatchObject({ estado: "aprobada", resueltaPor: "tadeo@x.com", resultado: { pestania: "Compras", fila: 230 } });
+    expect(item).toMatchObject({
+      estado: "aprobada",
+      resueltaPor: "tadeo@x.com",
+      resultado: { pestania: "Compras", fila: 230 },
+    });
     expect(item.lectura?.factura.concepto).toBe("Cemento x 5");
     const { pendientes, historial } = await listar(s);
     expect(pendientes).toEqual([]);
@@ -171,7 +231,9 @@ describe("aprobar", () => {
   });
 
   it("rechaza un duplicado de la planilla sin mover el archivo", async () => {
-    const egresos = [["Factura A", "00005-00025853", "Corralón", "Materiales", "33-69345023-9", "Cemento", "Lerma 439"]];
+    const egresos = [
+      ["Factura A", "00005-00025853", "Corralón", "Materiales", "33-69345023-9", "Cemento", "Lerma 439"],
+    ];
     const { s } = servicios({ egresos });
     const { id } = await ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "a" });
     await expect(aprobar(s, id, facturaDePrueba(), "a")).rejects.toBeInstanceOf(ErrorCola);
@@ -201,7 +263,12 @@ describe("descartar y reintentar", () => {
   it("reintentar vuelve a leer desde Drive", async () => {
     const { s } = servicios({ error: new Error("caído") });
     const { id } = await ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "a" });
-    s.extraer = async () => ({ invoice: invoiceDePrueba(), model: "m", fallback: true, usage: { input_tokens: 1, output_tokens: 1 } });
+    s.extraer = async () => ({
+      invoice: invoiceDePrueba(),
+      model: "m",
+      fallback: true,
+      usage: { input_tokens: 1, output_tokens: 1 },
+    });
     const item = await reintentar(s, id);
     expect(item).toMatchObject({ estado: "pendiente", error: null, lectura: { fallback: true } });
   });
@@ -224,14 +291,22 @@ describe("descartar y reintentar", () => {
       huella: "h",
       notas: [],
     });
-    expect((await listar(s)).pendientes[0]).toMatchObject({ estado: "error", error: "La lectura no terminó. Reintentá." });
+    expect((await listar(s)).pendientes[0]).toMatchObject({
+      estado: "error",
+      error: "La lectura no terminó. Reintentá.",
+    });
   });
 });
 
 describe("filas de la cola", () => {
   it("ida y vuelta sin perder nada", async () => {
     const { s } = servicios();
-    const item = await ingresar(s, { archivo: pdf, origen: "telegram", enviadaPor: "@ana (ana@x.com)", telegram: { chat: 123, mensaje: 45 } });
+    const item = await ingresar(s, {
+      archivo: pdf,
+      origen: "telegram",
+      enviadaPor: "@ana (ana@x.com)",
+      telegram: { chat: 123, mensaje: 45 },
+    });
     expect(deFilaCola(aFilaCola(item))).toEqual(item);
   });
 
@@ -254,14 +329,18 @@ describe("la misma factura más de una vez", () => {
     expect(comentarios).toHaveLength(1);
     // Una tercera vez, después de aprobarla, tampoco.
     await aprobar(s, primera.id, primera.lectura!.factura, "t");
-    await expect(ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "c" })).rejects.toThrow(/ya está cargado en la fila 230/);
+    await expect(ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "c" })).rejects.toThrow(
+      /ya está cargado en la fila 230/,
+    );
   });
 
   it("si se descartó, se puede volver a mandar", async () => {
     const { s } = servicios();
     const primera = await ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "a" });
     await descartar(s, primera.id, "a");
-    await expect(ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "a" })).resolves.toMatchObject({ estado: "pendiente" });
+    await expect(ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "a" })).resolves.toMatchObject({
+      estado: "pendiente",
+    });
   });
 
   it("la misma factura en otro archivo (una foto y el PDF) se marca como repetida", async () => {
@@ -272,7 +351,10 @@ describe("la misma factura más de una vez", () => {
     expect(avisos.at(-1)).toMatchObject({ aviso: "leida", id: segunda.id, repetida: primera.id });
     const { pendientes } = await listar(s);
     expect(pendientes.find((p) => p.id === primera.id)?.repetida).toBeNull();
-    expect(pendientes.find((p) => p.id === segunda.id)?.repetida).toMatchObject({ id: primera.id, estado: "pendiente" });
+    expect(pendientes.find((p) => p.id === segunda.id)?.repetida).toMatchObject({
+      id: primera.id,
+      estado: "pendiente",
+    });
     // Aprobada la primera, la segunda ya no se puede aprobar: está en la planilla.
     await aprobar(s, primera.id, primera.lectura!.factura, "t");
     await expect(aprobar(s, segunda.id, segunda.lectura!.factura, "t")).rejects.toMatchObject({ status: 409 });
@@ -281,7 +363,12 @@ describe("la misma factura más de una vez", () => {
   it("con otro total no es la misma", async () => {
     const { s, avisos } = servicios();
     await ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "a" });
-    s.extraer = async () => ({ invoice: invoiceDePrueba({ total: 99999 }), model: "m", fallback: false, usage: { input_tokens: 1, output_tokens: 1 } });
+    s.extraer = async () => ({
+      invoice: invoiceDePrueba({ total: 99999 }),
+      model: "m",
+      fallback: false,
+      usage: { input_tokens: 1, output_tokens: 1 },
+    });
     const otra = await ingresar(s, { archivo: { ...pdf, data: new Uint8Array([7]) }, origen: "web", enviadaPor: "a" });
     expect(avisos.at(-1)?.repetida).toBeNull();
     expect((await listar(s)).pendientes.find((p) => p.id === otra.id)?.repetida).toBeNull();
@@ -298,16 +385,38 @@ describe("comentarios", () => {
 
   it("el texto que acompaña al archivo se guarda y se le pasa a la IA", async () => {
     const { s, comentarios } = servicios();
-    const item = await ingresar(s, { archivo: pdf, origen: "telegram", enviadaPor: "@ana", comentario: "  es de la oficina  " });
-    expect(item.notas).toEqual([{ tipo: "texto", texto: "es de la oficina", de: "@ana", fecha: "2026-10-29T15:00:00.000Z" }]);
+    const item = await ingresar(s, {
+      archivo: pdf,
+      origen: "telegram",
+      enviadaPor: "@ana",
+      comentario: "  es de la oficina  ",
+    });
+    expect(item.notas).toEqual([
+      { tipo: "texto", texto: "es de la oficina", de: "@ana", fecha: "2026-10-29T15:00:00.000Z" },
+    ]);
     expect(comentarios).toEqual(["es de la oficina"]);
   });
 
   it("un mensaje posterior va a la última factura del chat, si es de la última media hora", async () => {
     const { s } = servicios();
-    const vieja = await ingresar(s, { archivo: pdf, origen: "telegram", enviadaPor: "@ana", telegram: { chat: 5, mensaje: 1 } });
-    const nueva = await ingresar(s, { archivo: { ...pdf, data: new Uint8Array([4]) }, origen: "telegram", enviadaPor: "@ana", telegram: { chat: 5, mensaje: 2 } });
-    await ingresar(s, { archivo: { ...pdf, data: new Uint8Array([6]) }, origen: "telegram", enviadaPor: "@juan", telegram: { chat: 6, mensaje: 1 } });
+    const vieja = await ingresar(s, {
+      archivo: pdf,
+      origen: "telegram",
+      enviadaPor: "@ana",
+      telegram: { chat: 5, mensaje: 1 },
+    });
+    const nueva = await ingresar(s, {
+      archivo: { ...pdf, data: new Uint8Array([4]) },
+      origen: "telegram",
+      enviadaPor: "@ana",
+      telegram: { chat: 5, mensaje: 2 },
+    });
+    await ingresar(s, {
+      archivo: { ...pdf, data: new Uint8Array([6]) },
+      origen: "telegram",
+      enviadaPor: "@juan",
+      telegram: { chat: 6, mensaje: 1 },
+    });
     expect((await ultimoDelChat(s, 5))?.id).toBe(nueva.id);
     expect(vieja.id).not.toBe(nueva.id);
     s.ahora = () => new Date("2026-10-29T15:31:00Z");
@@ -317,7 +426,11 @@ describe("comentarios", () => {
   it("los audios se archivan al lado de la factura al aprobarla", async () => {
     const { s } = servicios();
     const item = await ingresar(s, { archivo: pdf, origen: "telegram", enviadaPor: "@ana" });
-    const { id: audioId } = await s.almacen.guardarPendiente({ nombre: "audio-9.ogg", mediaType: "audio/ogg", data: new Uint8Array([1]) });
+    const { id: audioId } = await s.almacen.guardarPendiente({
+      nombre: "audio-9.ogg",
+      mediaType: "audio/ogg",
+      data: new Uint8Array([1]),
+    });
     await agregarNota(s, item.id, audio(audioId));
     const aprobado = await aprobar(s, item.id, item.lectura!.factura, "t");
     expect(s.almacen.movimientos[1]).toEqual({
@@ -332,12 +445,20 @@ describe("comentarios", () => {
     const { s } = servicios();
     const item = await ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "a" });
     await aprobar(s, item.id, item.lectura!.factura, "t");
-    const { id: tarde } = await s.almacen.guardarPendiente({ nombre: "audio-9.ogg", mediaType: "audio/ogg", data: new Uint8Array([2]) });
+    const { id: tarde } = await s.almacen.guardarPendiente({
+      nombre: "audio-9.ogg",
+      mediaType: "audio/ogg",
+      data: new Uint8Array([2]),
+    });
     await agregarNota(s, item.id, audio(tarde));
     expect(s.almacen.archivos.get(tarde)?.carpeta).toBe("compra/Facturas Compras Octubre 2026");
 
     const otra = await ingresar(s, { archivo: { ...pdf, data: new Uint8Array([3]) }, origen: "web", enviadaPor: "a" });
-    const { id: antes } = await s.almacen.guardarPendiente({ nombre: "a.ogg", mediaType: "audio/ogg", data: new Uint8Array([4]) });
+    const { id: antes } = await s.almacen.guardarPendiente({
+      nombre: "a.ogg",
+      mediaType: "audio/ogg",
+      data: new Uint8Array([4]),
+    });
     await agregarNota(s, otra.id, audio(antes));
     await descartar(s, otra.id, "t");
     expect(s.almacen.archivos.get(antes)?.carpeta).toBe("papelera");

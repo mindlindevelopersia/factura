@@ -1,10 +1,20 @@
 import rubros from "@/config/rubros.json";
 import { EMPRESA } from "@/lib/empresa";
 import { RUBROS_DETALLE } from "@/lib/invoice/proveedores";
-import { CAMPOS_IMPORTE, FacturaSchema, LETRAS, MONEDAS, type Categoria, type Factura } from "@/lib/invoice/schema";
+import {
+  CAMPOS_IMPORTE,
+  FacturaParaGuardarSchema,
+  LETRAS,
+  MONEDAS,
+  type Categoria,
+  type Factura,
+} from "@/lib/invoice/schema";
 
 /** Campos de la ficha de revisión. Los que no están (código ARCA, vencimiento del CAE...) se conservan como los leyó la IA. */
-export type CampoEditable = Exclude<keyof Factura, "codigo_arca" | "cae_vencimiento" | "campos_dudosos" | "observaciones">;
+export type CampoEditable = Exclude<
+  keyof Factura,
+  "codigo_arca" | "cae_vencimiento" | "campos_dudosos" | "observaciones"
+>;
 
 export interface DefCampo {
   campo: CampoEditable;
@@ -14,6 +24,7 @@ export interface DefCampo {
   ancho?: boolean;
   /** Solo se muestra para estas categorías. Sin esto, para todas. */
   solo?: readonly Categoria[];
+  extranjera?: boolean;
 }
 
 const vacio = { valor: "", texto: "—" };
@@ -41,7 +52,7 @@ export const CAMPOS: DefCampo[] = [
     tipo: "opciones",
     opciones: [
       { valor: "compra", texto: "Compra" },
-      { valor: "honorarios", texto: "Honorarios de administración" },
+      { valor: "honorarios", texto: "Honorarios" },
       { valor: "venta", texto: "Venta" },
     ],
   },
@@ -60,29 +71,84 @@ export const CAMPOS: DefCampo[] = [
       { valor: "otro", texto: "Otro" },
     ],
   },
-  { campo: "letra", etiqueta: "Letra", tipo: "opciones", opciones: lista(LETRAS) },
+  {
+    campo: "letra",
+    etiqueta: "Letra",
+    tipo: "opciones",
+    opciones: lista(LETRAS),
+  },
   { campo: "punto_venta", etiqueta: "Punto de venta", tipo: "entero" },
   { campo: "numero", etiqueta: "Número", tipo: "entero" },
-  { campo: "razon_social", etiqueta: "Razón social", tipo: "texto", ancho: true, solo: EGRESOS },
+  {
+    campo: "razon_social",
+    etiqueta: "Razón social",
+    tipo: "texto",
+    ancho: true,
+    solo: EGRESOS,
+  },
   { campo: "cuit", etiqueta: "CUIT", tipo: "texto", solo: EGRESOS },
-  { campo: "cliente", etiqueta: "Cliente / inversor", tipo: "texto", ancho: true, solo: VENTAS },
+  {
+    campo: "cliente",
+    etiqueta: "Cliente / inversor",
+    tipo: "texto",
+    ancho: true,
+    solo: VENTAS,
+  },
   { campo: "cuit_receptor", etiqueta: "CUIT receptor", tipo: "texto" },
   { campo: "tipo_pago", etiqueta: "Tipo de pago", tipo: "texto", solo: VENTAS },
   { campo: "depto", etiqueta: "Depto adquirido", tipo: "texto", solo: VENTAS },
   { campo: "cae", etiqueta: "CAE", tipo: "texto" },
   { campo: "concepto", etiqueta: "Concepto", tipo: "texto", ancho: true },
   rubros.length > 0
-    ? { campo: "rubro", etiqueta: "Rubro", tipo: "opciones", opciones: lista(rubros), solo: EGRESOS }
+    ? {
+        campo: "rubro",
+        etiqueta: "Rubro",
+        tipo: "opciones",
+        opciones: lista(rubros),
+        solo: EGRESOS,
+      }
     : { campo: "rubro", etiqueta: "Rubro", tipo: "texto", solo: EGRESOS },
-  { campo: "rubro_detalle", etiqueta: "Rubro detallado", tipo: "opciones", opciones: lista(RUBROS_DETALLE), solo: EGRESOS },
-  { campo: "corresponde_a", etiqueta: "Corresponde a", tipo: "opciones", opciones: lista(EMPRESA.corresponde_a), solo: EGRESOS },
-  { campo: "moneda", etiqueta: "Moneda", tipo: "opciones", opciones: MONEDAS.map((m) => ({ valor: m, texto: m === "otra" ? "Otra" : m })) },
-  ...Object.entries(ETIQUETAS_IMPORTE).map(([campo, etiqueta]) => ({ campo: campo as CampoEditable, etiqueta, tipo: "importe" as const })),
+  {
+    campo: "rubro_detalle",
+    etiqueta: "Rubro detallado",
+    tipo: "opciones",
+    opciones: lista(RUBROS_DETALLE),
+    solo: EGRESOS,
+  },
+  {
+    campo: "corresponde_a",
+    etiqueta: "Corresponde a",
+    tipo: "opciones",
+    opciones: lista(EMPRESA.corresponde_a),
+    solo: EGRESOS,
+  },
+  {
+    campo: "moneda",
+    etiqueta: "Moneda",
+    tipo: "opciones",
+    opciones: MONEDAS.map((m) => ({
+      valor: m,
+      texto: m === "otra" ? "Otra" : m,
+    })),
+  },
+  {
+    campo: "tipo_cambio",
+    etiqueta: "Tipo de cambio a pesos",
+    tipo: "importe",
+    extranjera: true,
+  },
+  ...Object.entries(ETIQUETAS_IMPORTE).map(([campo, etiqueta]) => ({
+    campo: campo as CampoEditable,
+    etiqueta,
+    tipo: "importe" as const,
+  })),
 ];
 
 /** Los campos que se muestran para una categoría. */
-export function camposDe(categoria: string): DefCampo[] {
-  return CAMPOS.filter((d) => !d.solo || d.solo.includes(categoria as Categoria));
+export function camposDe(categoria: string, moneda = "ARS"): DefCampo[] {
+  return CAMPOS.filter(
+    (d) => (!d.solo || d.solo.includes(categoria as Categoria)) && (!d.extranjera || moneda !== "ARS"),
+  );
 }
 
 export type Valores = Record<CampoEditable, string>;
@@ -118,9 +184,11 @@ export function aFactura(original: Factura, valores: Valores, tocados: ReadonlyS
   for (const { campo, tipo } of CAMPOS) {
     const s = valores[campo].trim();
     if (tipo === "entero") datos[campo] = s === "" ? null : Number(s);
-    else if (tipo === "importe") datos[campo] = s === "" ? 0 : Number(s.replace(",", "."));
+    else if (tipo === "importe")
+      datos[campo] =
+        s === "" ? (campo === "tipo_cambio" ? null : campo === "total" ? NaN : 0) : Number(s.replace(",", "."));
     else datos[campo] = s === "" && NULABLES.has(campo) ? null : s;
   }
   if (tocados.has("tipo_comprobante") || tocados.has("letra")) datos.codigo_arca = null;
-  return FacturaSchema.safeParse(datos);
+  return FacturaParaGuardarSchema.safeParse(datos);
 }

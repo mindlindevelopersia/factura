@@ -80,52 +80,113 @@ const importe = (descripcion: string) =>
 export const InvoiceSchema = z.object({
   fecha_factura: z.string().describe("Fecha de emisión en formato AAAA-MM-DD."),
   tipo_comprobante: z.enum(TIPOS_COMPROBANTE),
-  letra: z.enum(LETRAS).nullable().describe("Letra del comprobante. null si no tiene."),
+  letra: z
+    .enum(LETRAS)
+    .nullable()
+    .describe("Letra del comprobante. null si no tiene."),
   codigo_arca: z
     .number()
     .int()
     .nullable()
-    .describe('Código de tipo de comprobante de ARCA si está impreso (por ejemplo "COD. 001" es 1). null si no figura.'),
-  punto_venta: z.number().int().nullable().describe("Punto de venta, sin ceros a la izquierda."),
-  numero: z.number().int().nullable().describe("Número de comprobante, sin el punto de venta."),
-  razon_social: z.string().describe("Razón social del emisor: el proveedor en una compra, Mindlin en una venta."),
-  cuit: z.string().nullable().describe("CUIT del emisor: 11 dígitos, sin guiones ni espacios."),
+    .describe(
+      'Código de tipo de comprobante de ARCA si está impreso (por ejemplo "COD. 001" es 1). null si no figura.',
+    ),
+  punto_venta: z
+    .number()
+    .int()
+    .nullable()
+    .describe("Punto de venta, sin ceros a la izquierda."),
+  numero: z
+    .number()
+    .int()
+    .nullable()
+    .describe("Número de comprobante, sin el punto de venta."),
+  razon_social: z
+    .string()
+    .describe(
+      "Razón social del emisor: el proveedor en una compra, Mindlin en una venta.",
+    ),
+  cuit: z
+    .string()
+    .nullable()
+    .describe("CUIT del emisor: 11 dígitos, sin guiones ni espacios."),
   cuit_receptor: z
     .string()
     .nullable()
-    .describe("CUIT del receptor (a quien va dirigida la factura): 11 dígitos, sin guiones."),
-  razon_social_receptor: z.string().nullable().describe("Razón social o nombre del receptor. null si no figura."),
-  concepto: z.string().describe("Lo facturado en pocas palabras, como se anota en la planilla."),
+    .describe(
+      "CUIT del receptor (a quien va dirigida la factura): 11 dígitos, sin guiones.",
+    ),
+  razon_social_receptor: z
+    .string()
+    .nullable()
+    .describe("Razón social o nombre del receptor. null si no figura."),
+  concepto: z
+    .string()
+    .describe("Lo facturado en pocas palabras, como se anota en la planilla."),
   moneda: z.enum(MONEDAS),
-  tipo_cambio: z.number().nullable().describe("Tipo de cambio si el comprobante lo informa. null si no."),
+  tipo_cambio: z
+    .number()
+    .nullable()
+    .describe("Tipo de cambio si el comprobante lo informa. null si no."),
   neto_gravado: importe("Importe neto gravado"),
-  no_gravado: importe("Importe no gravado más exento, o el importe sin IVA discriminado"),
+  no_gravado: importe(
+    "Importe no gravado más exento, o el importe sin IVA discriminado",
+  ),
   iva_21: importe("IVA al 21%"),
   iva_10_5: importe("IVA al 10,5%"),
   iva_otras: importe("IVA a otras alícuotas (27%, 5%, 2,5%), sumado"),
   percepcion_iva: importe("Percepción de IVA"),
   percepcion_iibb_caba: importe("Percepción de Ingresos Brutos de CABA"),
-  percepcion_iibb_pba: importe("Percepción de Ingresos Brutos de Provincia de Buenos Aires"),
-  otros_tributos: importe("Otros tributos: percepciones de otras provincias, impuestos internos, etc."),
+  percepcion_iibb_pba: importe(
+    "Percepción de Ingresos Brutos de Provincia de Buenos Aires",
+  ),
+  otros_tributos: importe(
+    "Otros tributos: percepciones de otras provincias, impuestos internos, etc.",
+  ),
   total: z.number().describe("Importe total del comprobante."),
-  cae: z.string().nullable().describe("CAE o CAI, solo dígitos. null si no figura."),
-  cae_vencimiento: z.string().nullable().describe("Vencimiento del CAE en formato AAAA-MM-DD. null si no figura."),
-  rubro: z.string().nullable().describe("Rubro de gasto propuesto. null en las ventas."),
-  rubro_detalle: z.string().nullable().describe("Rubro detallado del proveedor. null en las ventas."),
+  cae: z
+    .string()
+    .nullable()
+    .describe("CAE o CAI, solo dígitos. null si no figura."),
+  cae_vencimiento: z
+    .string()
+    .nullable()
+    .describe("Vencimiento del CAE en formato AAAA-MM-DD. null si no figura."),
+  rubro: z
+    .string()
+    .nullable()
+    .describe("Rubro de gasto propuesto. null en las ventas."),
+  rubro_detalle: z
+    .string()
+    .nullable()
+    .describe("Rubro detallado del proveedor. null en las ventas."),
   corresponde_a: z
     .string()
     .nullable()
-    .describe("A qué corresponde el gasto (la obra o la oficina). null en las ventas o si no hay pistas."),
+    .describe(
+      "A qué corresponde el gasto (la obra o la oficina). null en las ventas o si no hay pistas.",
+    ),
   campos_dudosos: z
     .array(z.enum(CAMPOS_FACTURA))
-    .describe("Campos ilegibles, ambiguos o inferidos que una persona tiene que revisar."),
-  observaciones: z.string().nullable().describe("Algo que la persona que revisa deba saber. null si no hay nada."),
+    .describe(
+      "Campos ilegibles, ambiguos o inferidos que una persona tiene que revisar.",
+    ),
+  observaciones: z
+    .string()
+    .nullable()
+    .describe(
+      "Algo que la persona que revisa deba saber. null si no hay nada.",
+    ),
 });
 
 export type Invoice = z.infer<typeof InvoiceSchema>;
 
 /** Lista cerrada para la IA, o el campo libre del esquema base si la lista está vacía. */
-function deLaLista(valores: readonly string[], libre: z.ZodNullable<z.ZodString>, descripcion: string) {
+function deLaLista(
+  valores: readonly string[],
+  libre: z.ZodNullable<z.ZodString>,
+  descripcion: string,
+) {
   if (valores.length === 0) return libre;
   return z
     .enum(valores as [string, ...string[]])
@@ -140,7 +201,11 @@ export function buildInvoiceSchema(
   rubrosDetalle: readonly string[] = [],
 ) {
   return InvoiceSchema.extend({
-    rubro: deLaLista(rubros, InvoiceSchema.shape.rubro, "Rubro de gasto, de la lista. null en las ventas o si ninguno corresponde."),
+    rubro: deLaLista(
+      rubros,
+      InvoiceSchema.shape.rubro,
+      "Rubro de gasto, de la lista. null en las ventas o si ninguno corresponde.",
+    ),
     rubro_detalle: deLaLista(
       rubrosDetalle,
       InvoiceSchema.shape.rubro_detalle,
@@ -169,3 +234,37 @@ export const FacturaSchema = InvoiceSchema.extend({
 });
 
 export type Factura = z.infer<typeof FacturaSchema>;
+
+/** Controles antes de escribir: una lectura incompleta sigue editable en la cola. */
+export const FacturaParaGuardarSchema = FacturaSchema.superRefine((f, ctx) => {
+  const fecha = new Date(`${f.fecha_factura}T00:00:00Z`);
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(f.fecha_factura) ||
+    Number.isNaN(fecha.getTime()) ||
+    fecha.toISOString().slice(0, 10) !== f.fecha_factura
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["fecha_factura"],
+      message: "Ingresá una fecha de emisión válida.",
+    });
+  }
+  if (f.punto_venta !== null && (f.punto_venta < 0 || f.punto_venta > 99999))
+    ctx.addIssue({
+      code: "custom",
+      path: ["punto_venta"],
+      message: "El punto de venta debe tener hasta 5 dígitos, sin signo.",
+    });
+  if (f.numero !== null && (f.numero < 1 || f.numero > 99999999))
+    ctx.addIssue({
+      code: "custom",
+      path: ["numero"],
+      message: "El número debe tener entre 1 y 8 dígitos.",
+    });
+  if (f.tipo_cambio !== null && f.tipo_cambio <= 0)
+    ctx.addIssue({
+      code: "custom",
+      path: ["tipo_cambio"],
+      message: "El tipo de cambio debe ser mayor que cero.",
+    });
+});

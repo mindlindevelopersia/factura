@@ -62,8 +62,10 @@ Tomado de mindlindevelopers.com. Los colores y estilos están como variables en 
 
 - Lima de marca `#D2DA4D` (el color del logo) y negro `#1A1A1A`. Botones principales en lima con texto negro.
 - Tipografía Sora (400 y 700), cargada con `next/font`.
-- Botones en píldora (radio de 30 px) y tarjetas con radio de 16 px.
+- Controles compactos con áreas táctiles de al menos 44 px y tarjetas de 14 px de radio.
 - Los campos dudosos van en amarillo (`--dudoso`), un tono distinto del lima para que no se confundan.
+
+La auditoría de experiencia y los cambios del recorrido están documentados en [docs/auditoria-ux-2026-10-28.md](docs/auditoria-ux-2026-10-28.md). La bandeja permite buscar y filtrar, revisar un comprobante por vez sin perder ediciones y consultar un historial con búsquedas y estados. Las subidas continúan al cambiar de sección dentro de la app.
 - Logos en `public/brand/` y el ícono de la pestaña en `app/icon.png`, copiados del sitio.
 
 ## Login
