@@ -127,13 +127,16 @@ async function drive(): Promise<Chequeo> {
     const r = (await res.json()) as { ok?: boolean; error?: string; version?: number; carpetas?: Record<string, boolean> };
     if (r.error === "No autorizado") return { titulo, ok: false, detalle: "APPS_SCRIPT_SECRET no coincide con el SECRET del script." };
     if ((r.version ?? 1) < 2) {
-      return { titulo, ok: false, detalle: "El script publicado es la versión 1: falta pegar la versión 2 y publicar una versión nueva de la implementación." };
+      return { titulo, ok: false, detalle: "El script publicado es la versión 1: falta pegar la versión 3 y publicar una versión nueva de la implementación." };
     }
     const faltan = Object.entries(CARPETAS)
       .filter(([clave]) => !r.carpetas?.[clave])
       .map(([, nombre]) => nombre);
-    if (faltan.length > 0) return { titulo, ok: false, detalle: `Versión 2, pero faltan carpetas en las propiedades del script: ${faltan.join(", ")}.` };
-    return { titulo, ok: true, detalle: "Versión 2, con las cuatro carpetas configuradas." };
+    if (faltan.length > 0) return { titulo, ok: false, detalle: `Versión ${r.version}, pero faltan carpetas en las propiedades del script: ${faltan.join(", ")}.` };
+    if ((r.version ?? 1) < 3) {
+      return { titulo, ok: true, detalle: "Versión 2, con las cuatro carpetas configuradas. Para los accesos a Drive del panel, falta publicar la versión 3 (apps-script/README.md)." };
+    }
+    return { titulo, ok: true, detalle: `Versión ${r.version}, con las cuatro carpetas configuradas.` };
   } catch (e) {
     return { titulo, ok: false, detalle: `No se pudo hablar con el script: ${mensaje(e)}` };
   }

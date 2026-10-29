@@ -1,8 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
 import { after, NextResponse } from "next/server";
 import { isAllowedEmail } from "@/lib/auth/allowed";
-import { serviciosDesdeEnv, usuariosTelegramDesdeEnv } from "@/lib/cola/env";
-import { agregarNota, ArchivoRepetido, ingresar, ultimoDelChat } from "@/lib/cola/servicio";
+import { candadosDesdeEnv, serviciosDesdeEnv, usuariosTelegramDesdeEnv } from "@/lib/cola/env";
+import { agregarNota, ArchivoEnCurso, ArchivoRepetido, ingresar, ultimoDelChat } from "@/lib/cola/servicio";
 import { secretoWebhook, TelegramApi, tokenTelegram, type MensajeTelegram } from "@/lib/telegram/api";
 import { adjuntoDe, audioDe, emailDeCodigo, nombreDe, TEXTOS } from "@/lib/telegram/mensajes";
 
@@ -87,12 +87,18 @@ export async function POST(req: Request) {
       return (await responder(TEXTOS.notaAgregada(conNota)), ok());
     }
 
-    // Si Telegram reintenta el mismo mensaje, no se carga dos veces.
-    const repetido = (await s.cola.listar()).some((i) => i.telegram?.chat === m.chat.id && i.telegram?.mensaje === m.message_id);
-    if (repetido) return ok();
+    // Si Telegram reintenta el mismo mensaje (por ejemplo, porque esta función tardó), no se
+    // carga dos veces. El candado no se suelta: vence a los dos días, cuando Telegram ya no reintenta.
+    const candado = await candadosDesdeEnv().tomar(`telegram:${m.chat.id}:${m.message_id}`, 48 * 60 * 60 * 1000);
+    if (!candado) return ok();
 
-    await responder(TEXTOS.recibida);
+    await Promise.all([
+      responder(TEXTOS.recibida),
+      telegram.reaccionar(m.chat.id, m.message_id, "👀").catch((e) => console.error("No se pudo reaccionar en Telegram", e)),
+    ]);
     after(async () => {
+      // "escribiendo…" mientras se baja, se guarda y se lee: unos 10 a 40 segundos.
+      const parar = telegram.escribiendo(m.chat.id);
       try {
         const data = await telegram.bajar(adjunto.fileId);
         // ingresar avisa por Telegram cuando termina de leer (o si no pudo).
@@ -104,12 +110,19 @@ export async function POST(req: Request) {
           comentario: m.caption,
         });
       } catch (e) {
+        await telegram.reaccionar(m.chat.id, m.message_id, "🤔").catch(() => {});
         if (e instanceof ArchivoRepetido) {
           await responder(TEXTOS.repetida(e.existente)).catch(() => {});
           return;
         }
+        if (e instanceof ArchivoEnCurso) {
+          await responder(TEXTOS.enCurso).catch(() => {});
+          return;
+        }
         console.error("No se pudo ingresar el comprobante de Telegram", e);
         await responder(TEXTOS.noGuardada(e instanceof Error ? e.message : String(e))).catch(() => {});
+      } finally {
+        parar();
       }
     });
     return ok();

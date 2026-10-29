@@ -1,6 +1,6 @@
 # Guardar los PDF en Drive con Apps Script
 
-La cuenta de servicio no puede guardar archivos en un Drive de Gmail. Por eso la app usa este script, que se publica como web app en la cuenta dueña de las carpetas y trabaja a nombre de esa cuenta. Desde la versión 2 hace cuatro cosas: guarda cada comprobante en la carpeta de pendientes al llegar, lo lee para la vista previa de la web, al aprobarlo lo mueve a la carpeta de su categoría (compras, honorarios de administración o ventas) dentro de la subcarpeta del mes, y al descartarlo lo manda a la papelera. La app lo usa cuando están cargadas `APPS_SCRIPT_URL` y `APPS_SCRIPT_SECRET`. Si no están, carga las facturas en la planilla con el link vacío.
+La cuenta de servicio no puede guardar archivos en un Drive de Gmail. Por eso la app usa este script, que se publica como web app en la cuenta dueña de las carpetas y trabaja a nombre de esa cuenta. Desde la versión 2 hace cuatro cosas guarda cada comprobante en la carpeta de pendientes al llegar, lo lee para la vista previa de la web, al aprobarlo lo mueve a la carpeta de su categoría (compras, honorarios de administración o ventas) dentro de la subcarpeta del mes, y al descartarlo lo manda a la papelera. La versión 3 además le pasa a la app los links de las carpetas, para los accesos directos del panel. La app lo usa cuando están cargadas `APPS_SCRIPT_URL` y `APPS_SCRIPT_SECRET`. Si no están, carga las facturas en la planilla con el link vacío.
 
 La cuenta elegida para este proyecto es **mindlindevelopers.ia@gmail.com**. Las carpetas, la planilla y el script deben pertenecer a esa cuenta. Los identificadores y el estado verificado están en [la configuración actual](../docs/configuracion.md).
 
@@ -25,7 +25,7 @@ Reglas: no escribas la clave secreta en el informe final ni en ningún otro lado
 4. Borrá todo el contenido de Código.gs y pegá este código:
 
 /**
- * Guarda y ordena en Drive los comprobantes que manda la app (versión 2).
+ * Guarda y ordena en Drive los comprobantes que manda la app (versión 3).
  *
  * Se publica como web app en la cuenta de Google dueña de las carpetas:
  *   Ejecutar como: Yo. Quién tiene acceso: Cualquier usuario.
@@ -42,10 +42,11 @@ Reglas: no escribas la clave secreta en el informe final ni en ningún otro lado
  *   leer      { id } -> { nombre, mimeType, base64 }
  *   archivar  { id, carpeta, subcarpeta, nombre } -> { url }  (mueve y renombra)
  *   descartar { id }  (a la papelera)
- *   version   {} -> { carpetas: { pendientes, compra, honorarios, venta } }  (qué carpetas están configuradas)
+ *   version   {} -> { carpetas: { pendientes, compra, honorarios, venta }, enlaces: { ... } }
+ *             (qué carpetas están configuradas y sus links, para los accesos del panel; desde la versión 3)
  * Solo toca archivos que estén en las carpetas configuradas o en sus subcarpetas.
  */
-var VERSION = 2;
+var VERSION = 3;
 var CARPETAS = {
   pendientes: 'CARPETA_PENDIENTES',
   compra: 'CARPETA_COMPRAS',
@@ -63,10 +64,13 @@ function doPost(e) {
     var accion = body.accion || 'guardar';
     if (accion === 'version') {
       var carpetas = {};
+      var enlaces = {};
       Object.keys(CARPETAS).forEach(function (k) {
-        carpetas[k] = !!(props.getProperty(CARPETAS[k]) || props.getProperty('CARPETA_ID'));
+        var id = props.getProperty(CARPETAS[k]) || props.getProperty('CARPETA_ID');
+        carpetas[k] = !!id;
+        if (id) enlaces[k] = 'https://drive.google.com/drive/folders/' + id;
       });
-      return responder({ ok: true, carpetas: carpetas });
+      return responder({ ok: true, carpetas: carpetas, enlaces: enlaces });
     }
     if (accion === 'guardar') {
       var blob = Utilities.newBlob(Utilities.base64Decode(body.base64), body.mimeType, body.nombre);
@@ -195,9 +199,9 @@ INFORME FINAL (sin la clave secreta)
 - Cualquier paso que no se pudo hacer, y por qué.
 ````
 
-## Actualizar el script publicado a la versión 2
+## Actualizar el script publicado a la versión 3
 
-El script publicado el 28/10/2026 es la versión 1: guarda todo en una sola carpeta (`CARPETA_ID`) y no sabe leer, mover ni descartar. La app nueva lo necesita en versión 2; con la 1, al subir un comprobante avisa "El script de Apps Script es de una versión anterior". Para actualizarlo, en la cuenta dueña del script (los pasos completos, con prompt para computer use, están en [la puesta en marcha](../docs/puesta-en-marcha.md)):
+El script publicado el 28/10/2026 es la versión 1: guarda todo en una sola carpeta (`CARPETA_ID`) y no sabe leer, mover ni descartar. La app necesita como mínimo la versión 2 (con la 3, el panel también tiene los accesos a las carpetas de Drive); con la 1, al subir un comprobante avisa "El script de Apps Script es de una versión anterior". Para actualizarlo, en la cuenta dueña del script (los pasos completos, con prompt para computer use, están en [la puesta en marcha](../docs/puesta-en-marcha.md)):
 
 1. Crear las carpetas del paso 1 de arriba y anotar sus ID.
 2. En script.google.com, abrir el proyecto del script, reemplazar Código.gs por [`guardar-factura.gs`](guardar-factura.gs) y guardar.

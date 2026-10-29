@@ -6,10 +6,12 @@ import { formatNumero, formatTipo } from "../invoice/tipos";
  * - leyendo: llegó y la IA lo está leyendo.
  * - pendiente: leído, espera que alguien lo revise y lo apruebe.
  * - error: no se pudo leer; se puede reintentar.
+ * - aprobando: alguien lo aprobó y la app lo está cargando. Si se corta a mitad de camino,
+ *   queda así y se puede volver a aprobar sin duplicar la fila (ver aprobar en servicio.ts).
  * - aprobada: cargado en la planilla y archivado en su carpeta.
  * - descartada: alguien lo descartó; el archivo fue a la papelera.
  */
-export const ESTADOS = ["leyendo", "pendiente", "error", "aprobada", "descartada"] as const;
+export const ESTADOS = ["leyendo", "pendiente", "error", "aprobando", "aprobada", "descartada"] as const;
 export type EstadoCola = (typeof ESTADOS)[number];
 
 export type Origen = "web" | "telegram";

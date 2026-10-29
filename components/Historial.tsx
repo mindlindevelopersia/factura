@@ -39,7 +39,15 @@ export function Historial({ items }: { items: ItemCola[] }) {
                   {f ? importe(f.total, f.moneda) : ""}
                 </td>
                 <td data-etiqueta="Planilla">
-                  {i.resultado ? `${i.resultado.pestania}${i.resultado.fila ? `, fila ${i.resultado.fila}` : ""}` : ""}
+                  {i.resultado?.pestania}
+                  {i.resultado?.fila && (
+                    <>
+                      {", "}
+                      <a href={`/ir/planilla-${f?.categoria === "venta" ? "ingresos" : "egresos"}?fila=${i.resultado.fila}`} target="_blank" rel="noopener">
+                        fila {i.resultado.fila}
+                      </a>
+                    </>
+                  )}
                 </td>
                 <td data-etiqueta="Origen">
                   {i.origen === "telegram" ? "Telegram" : "Web"}

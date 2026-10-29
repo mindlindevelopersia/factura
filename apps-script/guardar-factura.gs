@@ -1,5 +1,5 @@
 /**
- * Guarda y ordena en Drive los comprobantes que manda la app (versión 2).
+ * Guarda y ordena en Drive los comprobantes que manda la app (versión 3).
  *
  * Se publica como web app en la cuenta de Google dueña de las carpetas:
  *   Ejecutar como: Yo. Quién tiene acceso: Cualquier usuario.
@@ -16,10 +16,11 @@
  *   leer      { id } -> { nombre, mimeType, base64 }
  *   archivar  { id, carpeta, subcarpeta, nombre } -> { url }  (mueve y renombra)
  *   descartar { id }  (a la papelera)
- *   version   {} -> { carpetas: { pendientes, compra, honorarios, venta } }  (qué carpetas están configuradas)
+ *   version   {} -> { carpetas: { pendientes, compra, honorarios, venta }, enlaces: { ... } }
+ *             (qué carpetas están configuradas y sus links, para los accesos del panel; desde la versión 3)
  * Solo toca archivos que estén en las carpetas configuradas o en sus subcarpetas.
  */
-var VERSION = 2;
+var VERSION = 3;
 var CARPETAS = {
   pendientes: 'CARPETA_PENDIENTES',
   compra: 'CARPETA_COMPRAS',
@@ -37,10 +38,13 @@ function doPost(e) {
     var accion = body.accion || 'guardar';
     if (accion === 'version') {
       var carpetas = {};
+      var enlaces = {};
       Object.keys(CARPETAS).forEach(function (k) {
-        carpetas[k] = !!(props.getProperty(CARPETAS[k]) || props.getProperty('CARPETA_ID'));
+        var id = props.getProperty(CARPETAS[k]) || props.getProperty('CARPETA_ID');
+        carpetas[k] = !!id;
+        if (id) enlaces[k] = 'https://drive.google.com/drive/folders/' + id;
       });
-      return responder({ ok: true, carpetas: carpetas });
+      return responder({ ok: true, carpetas: carpetas, enlaces: enlaces });
     }
     if (accion === 'guardar') {
       var blob = Utilities.newBlob(Utilities.base64Decode(body.base64), body.mimeType, body.nombre);

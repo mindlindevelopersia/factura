@@ -1,17 +1,31 @@
 import type { JWT } from "google-auth-library";
 import { googleClient } from "../google/auth";
 import { COLUMNAS, filaConOpcionales, indiceColumna, letraColumna, pestaniaDe, type DatosFila, type Pestania } from "./columnas";
-import { leerRegistros, RANGO_EGRESOS, RANGO_INGRESOS, type Registros } from "./registros";
+import { leerRegistros, RANGO_EGRESOS, RANGO_FECHAS, RANGO_INGRESOS, type Registros } from "./registros";
 
 /** Dónde se registran las facturas. Hoy Google Sheets; si el cliente usa Excel, otra implementación. */
 export interface Planilla {
   /** true si la pestaña está configurada. */
   tiene(pestania: Pestania): boolean;
-  /** Lo que ya está cargado en las dos pestañas, para duplicados e historial. */
-  registros(): Promise<Registros>;
+  /**
+   * Lo que ya está cargado en las dos pestañas, para duplicados, historial y el panel.
+   * Puede venir de una lectura de hace unos segundos; fresco: true la lee de nuevo (lo usa
+   * la aprobación, que no puede trabajar con datos viejos).
+   */
+  registros(opciones?: { fresco?: boolean }): Promise<Registros>;
   /** Agrega la fila en la pestaña que corresponde a la factura y devuelve su número. */
   agregar(datos: DatosFila): Promise<{ pestania: string; fila: number | null }>;
+  /** Link a la pestaña en Google Sheets, y a la fila si se pasa. */
+  enlace?(pestania: Pestania, fila?: number): Promise<string>;
 }
+
+/**
+ * Cuánto se reusa una lectura de la planilla. La web consulta la cola cada 20 segundos por
+ * persona y el panel también lee la planilla: sin esto, con varias personas con la web
+ * abierta se agota la cuota de lecturas de Sheets (60 por minuto para la cuenta de servicio).
+ */
+export const REGISTROS_VIGENCIA_MS = 30_000;
+const lecturas = new Map<string, { hasta: number; registros: Promise<Registros> }>();
 
 export class PestaniaSinConfigurar extends Error {
   constructor(pestania: Pestania) {
@@ -84,17 +98,44 @@ export class GoogleSheetsPlanilla implements Planilla {
     return titulos;
   }
 
-  async registros(): Promise<Registros> {
+  private claveLectura() {
+    return `${this.sheetId}|${this.pestanias.egresos}|${this.pestanias.ingresos}`;
+  }
+
+  async registros({ fresco = false }: { fresco?: boolean } = {}): Promise<Registros> {
+    const clave = this.claveLectura();
+    const guardada = lecturas.get(clave);
+    if (!fresco && guardada && guardada.hasta > Date.now()) return guardada.registros;
+    const registros = this.leerRegistros();
+    lecturas.set(clave, { hasta: Date.now() + REGISTROS_VIGENCIA_MS, registros });
+    registros.catch(() => {
+      if (lecturas.get(clave)?.registros === registros) lecturas.delete(clave);
+    });
+    return registros;
+  }
+
+  private async leerRegistros(): Promise<Registros> {
     const egresos = this.pestanias.egresos;
     if (!egresos) throw new PestaniaSinConfigurar("egresos");
     const ingresos = this.pestanias.ingresos;
-    const rangos = [this.rango(egresos, RANGO_EGRESOS), ...(ingresos ? [this.rango(ingresos, RANGO_INGRESOS)] : [])];
+    const rangos = [
+      this.rango(egresos, RANGO_EGRESOS),
+      this.rango(egresos, RANGO_FECHAS),
+      ...(ingresos ? [this.rango(ingresos, RANGO_INGRESOS), this.rango(ingresos, RANGO_FECHAS)] : []),
+    ];
     const query = rangos.map((r) => `ranges=${encodeURIComponent(r)}`).join("&");
     const r = await this.client.request<{ valueRanges: { values?: (string | number | boolean)[][] }[] }>({
       url: `${SHEETS}/${this.sheetId}/values:batchGet?${query}&valueRenderOption=UNFORMATTED_VALUE`,
     });
-    const [e, i] = r.data.valueRanges;
-    return leerRegistros(e?.values ?? [], i?.values ?? []);
+    const [e, fe, i, fi] = r.data.valueRanges;
+    return leerRegistros(e?.values ?? [], i?.values ?? [], { egresos: fe?.values ?? [], ingresos: fi?.values ?? [] });
+  }
+
+  async enlace(tipo: Pestania, fila?: number): Promise<string> {
+    const pestania = this.pestanias[tipo];
+    if (!pestania) throw new PestaniaSinConfigurar(tipo);
+    const gid = await this.idDe(pestania);
+    return `https://docs.google.com/spreadsheets/d/${this.sheetId}/edit#gid=${gid}${fila ? `&range=A${fila}` : ""}`;
   }
 
   async agregar(datos: DatosFila): Promise<{ pestania: string; fila: number | null }> {
@@ -112,6 +153,7 @@ export class GoogleSheetsPlanilla implements Planilla {
     });
     const n = r.data.updates?.updatedRange?.match(/!A(\d+):/)?.[1];
     const fila = n ? Number(n) : null;
+    lecturas.delete(this.claveLectura());
 
     if (fila) {
       try {

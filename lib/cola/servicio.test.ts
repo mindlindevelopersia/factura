@@ -6,11 +6,13 @@ import { filaPlanilla, type DatosFila } from "../sheets/columnas";
 import type { Planilla } from "../sheets/planilla";
 import { leerRegistros } from "../sheets/registros";
 import type { Almacen, Destino } from "../storage/archivos";
+import { CandadosMemoria } from "./candados";
 import type { Cola } from "./hoja";
 import { aFilaCola, deFilaCola, type ItemCola } from "./item";
 import {
   agregarNota,
   aprobar,
+  ArchivoEnCurso,
   ArchivoRepetido,
   descartar,
   ErrorCola,
@@ -66,6 +68,8 @@ class AlmacenEnMemoria implements Almacen {
 /** La planilla en memoria: lo que se agrega aparece en los registros, como en Sheets. */
 class PlanillaEnMemoria implements Planilla {
   filas: DatosFila[] = [];
+  /** Para simular que Sheets falla al agregar: antes de escribir la fila, o después (la fila queda y la respuesta se pierde). */
+  falla: "antes" | "despues" | null = null;
   private readonly ingresos: (string | number | null)[][] = [];
   constructor(
     private readonly egresos: (string | number | null)[][] = [],
@@ -78,10 +82,12 @@ class PlanillaEnMemoria implements Planilla {
     return leerRegistros(this.egresos, this.ingresos);
   }
   async agregar(d: DatosFila) {
+    if (this.falla === "antes") throw new Error("Sheets no respondió");
     this.filas.push(d);
     // Desde la columna C, como las lee la app.
     const valores = filaPlanilla(d).slice(2);
     (d.factura.categoria === "venta" ? this.ingresos : this.egresos).push(valores);
+    if (this.falla === "despues") throw new Error("Sheets no respondió");
     return { pestania: d.factura.categoria === "venta" ? "Ventas" : "Compras", fila: 229 + this.filas.length };
   }
 }
@@ -101,6 +107,7 @@ function servicios(opciones: { leida?: Invoice; error?: Error; egresos?: string[
     avisar: async (item: ItemCola, aviso: Aviso, { duplicado, repetida }: ExtraAviso) => {
       avisos.push({ aviso, id: item.id, duplicado, repetida: repetida?.id ?? null });
     },
+    candados: new CandadosMemoria(() => new Date("2026-10-29T15:00:00Z")),
     ahora: () => new Date("2026-10-29T15:00:00Z"),
   } satisfies Servicios;
   return { s, avisos, comentarios };
@@ -334,5 +341,86 @@ describe("comentarios", () => {
     await agregarNota(s, otra.id, audio(antes));
     await descartar(s, otra.id, "t");
     expect(s.almacen.archivos.get(antes)?.carpeta).toBe("papelera");
+  });
+});
+
+describe("cero duplicados con pedidos simultáneos", () => {
+  it("dos personas aprueban la misma factura a la vez: una sola fila", async () => {
+    const { s } = servicios();
+    const { id } = await ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "a" });
+    const resultados = await Promise.allSettled([aprobar(s, id, facturaDePrueba(), "ana"), aprobar(s, id, facturaDePrueba(), "tadeo")]);
+    expect(resultados.map((r) => r.status).sort()).toEqual(["fulfilled", "rejected"]);
+    expect(resultados.find((r) => r.status === "rejected")).toMatchObject({ reason: { status: 409 } });
+    expect(s.planilla.filas).toHaveLength(1);
+  });
+
+  it("la misma factura en dos archivos, aprobados a la vez: una sola fila", async () => {
+    const { s } = servicios();
+    const foto = await ingresar(s, { archivo: { ...pdf, nombre: "foto.jpg", mediaType: "image/jpeg", data: new Uint8Array([9]) }, origen: "telegram", enviadaPor: "a" });
+    const original = await ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "b" });
+    const resultados = await Promise.allSettled([
+      aprobar(s, foto.id, facturaDePrueba(), "ana"),
+      aprobar(s, original.id, facturaDePrueba(), "tadeo"),
+    ]);
+    expect(resultados.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    expect(s.planilla.filas).toHaveLength(1);
+    // Cuando termina la primera, la segunda ve la fila y no deja cargarla.
+    const pendiente = (await listar(s)).pendientes[0];
+    await expect(aprobar(s, pendiente.id, facturaDePrueba(), "tadeo")).rejects.toThrow(/ya está cargada en la planilla \(fila \d+\)/);
+    expect(s.planilla.filas).toHaveLength(1);
+  });
+
+  it("el mismo archivo mandado dos veces seguidas entra una sola vez", async () => {
+    const { s } = servicios();
+    const resultados = await Promise.allSettled([
+      ingresar(s, { archivo: pdf, origen: "telegram", enviadaPor: "a" }),
+      ingresar(s, { archivo: pdf, origen: "telegram", enviadaPor: "a" }),
+    ]);
+    expect(resultados.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const rechazo = resultados.find((r) => r.status === "rejected") as PromiseRejectedResult;
+    expect(rechazo.reason).toBeInstanceOf(ArchivoEnCurso);
+    expect(s.almacen.archivos.size).toBe(1);
+    expect(await s.cola.listar()).toHaveLength(1);
+  });
+
+  it("si Sheets escribe la fila pero la respuesta se pierde, volver a aprobar no la duplica", async () => {
+    const { s, avisos } = servicios();
+    const { id } = await ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "a" });
+    s.planilla.falla = "despues";
+    await expect(aprobar(s, id, facturaDePrueba(), "ana")).rejects.toMatchObject({ status: 502 });
+    const cortada = (await listar(s)).pendientes[0];
+    expect(cortada).toMatchObject({ estado: "aprobando", error: expect.stringMatching(/Volvé a aprobar/) });
+    // No se puede descartar: el archivo ya está en su carpeta y quizás la fila en la planilla.
+    await expect(descartar(s, id, "ana")).rejects.toMatchObject({ status: 409 });
+
+    s.planilla.falla = null;
+    const item = await aprobar(s, id, facturaDePrueba(), "ana");
+    // La fila que encontró en la planilla (en el doble de la planilla, la numeración es otra que la del agregado).
+    expect(item).toMatchObject({ estado: "aprobada", resultado: { fila: expect.any(Number) } });
+    expect(s.planilla.filas).toHaveLength(1);
+    expect(avisos.map((a) => a.aviso)).toEqual(["leida", "aprobada"]);
+  });
+
+  it("si Sheets falla antes de escribir, volver a aprobar la carga", async () => {
+    const { s } = servicios();
+    const { id } = await ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "a" });
+    s.planilla.falla = "antes";
+    await expect(aprobar(s, id, facturaDePrueba(), "ana")).rejects.toMatchObject({ status: 502 });
+    s.planilla.falla = null;
+    await expect(aprobar(s, id, facturaDePrueba(), "ana")).resolves.toMatchObject({ estado: "aprobada" });
+    expect(s.planilla.filas).toHaveLength(1);
+    expect(s.almacen.movimientos).toHaveLength(2); // el mismo archivo, movido dos veces al mismo lugar
+  });
+
+  it("mientras alguien aprueba, nadie más puede aprobar ni descartar", async () => {
+    const { s } = servicios();
+    const { id } = await ingresar(s, { archivo: pdf, origen: "web", enviadaPor: "a" });
+    const item = (await s.cola.obtener(id))!;
+    await s.cola.guardar({ ...item, estado: "aprobando", resueltaPor: "ana", resuelta: "2026-10-29T14:59:30Z" });
+    await expect(aprobar(s, id, facturaDePrueba(), "tadeo")).rejects.toThrow(/ana está aprobando/);
+    // Pasados dos minutos sin terminar, se da por cortada y se puede retomar.
+    await s.cola.guardar({ ...item, estado: "aprobando", resueltaPor: "ana", resuelta: "2026-10-29T14:50:00Z" });
+    await expect(aprobar(s, id, facturaDePrueba(), "tadeo")).resolves.toMatchObject({ estado: "aprobada" });
+    expect(s.planilla.filas).toHaveLength(1);
   });
 });

@@ -15,10 +15,10 @@ La app ya está desplegada con el código nuevo (cola de pendientes, web para re
 | # | Dónde | Qué |
 |---|---|---|
 | 1 | Drive de mindlindevelopers.ia@gmail.com | Carpeta "Facturas Mindlin" con cuatro subcarpetas |
-| 2 | Apps Script, misma cuenta | Pasar el script a la versión 2 (código incluido en el prompt), cargar las carpetas y publicar una versión nueva |
+| 2 | Apps Script, misma cuenta | Pasar el script a la versión 3 (código incluido en el prompt), cargar las carpetas y publicar una versión nueva |
 | 3 | Sheets, misma cuenta | Copia en Google Sheets de la "Copia para IA de Administración Contable" (planilla de prueba con la estructura real) |
 | 4 | Sheets, misma cuenta | Planilla vacía para la cola de la app |
-| 5 | Las dos planillas | Compartirlas con la cuenta de servicio como Editor |
+| 5 | Las dos planillas y la carpeta | Compartir las planillas con la cuenta de servicio como Editor y dejar el acceso general en "Restringido" |
 | 6 | Vercel | `SHEET_ID`, `SHEET_TAB_EGRESOS`, `SHEET_TAB_INGRESOS`, `COLA_SHEET_ID` y redeploy |
 | 7 | La app | Revisar el estado de la configuración y activar el bot de Telegram |
 
@@ -50,12 +50,12 @@ PASO 1. Carpetas en Drive
 2. Adentro de "Facturas Mindlin", creá cuatro carpetas: "Pendientes", "Facturas de Compras", "Facturas de Honorarios de Administración" y "Facturas de Ventas".
 3. Anotá el ID de las cuatro: es lo que está después de /folders/ en la URL cuando abrís cada carpeta.
 
-PASO 2. Script de Apps Script a la versión 2
+PASO 2. Script de Apps Script a la versión 3
 1. Entrá a https://script.google.com/home y abrí el proyecto "Guardar facturas Mindlin" (ID 1gCnlM-tgv2n45WKKe4LEpq8jcI0TH7yakOJYd9Xkjj-3zP3wYuOHL2FJ).
 2. Abrí el archivo Código.gs, seleccioná todo su contenido, borralo y pegá exactamente este código (desde "/**" hasta la última "}"):
 
 /**
- * Guarda y ordena en Drive los comprobantes que manda la app (versión 2).
+ * Guarda y ordena en Drive los comprobantes que manda la app (versión 3).
  *
  * Se publica como web app en la cuenta de Google dueña de las carpetas:
  *   Ejecutar como: Yo. Quién tiene acceso: Cualquier usuario.
@@ -72,10 +72,11 @@ PASO 2. Script de Apps Script a la versión 2
  *   leer      { id } -> { nombre, mimeType, base64 }
  *   archivar  { id, carpeta, subcarpeta, nombre } -> { url }  (mueve y renombra)
  *   descartar { id }  (a la papelera)
- *   version   {} -> { carpetas: { pendientes, compra, honorarios, venta } }  (qué carpetas están configuradas)
+ *   version   {} -> { carpetas: { pendientes, compra, honorarios, venta }, enlaces: { ... } }
+ *             (qué carpetas están configuradas y sus links, para los accesos del panel; desde la versión 3)
  * Solo toca archivos que estén en las carpetas configuradas o en sus subcarpetas.
  */
-var VERSION = 2;
+var VERSION = 3;
 var CARPETAS = {
   pendientes: 'CARPETA_PENDIENTES',
   compra: 'CARPETA_COMPRAS',
@@ -93,10 +94,13 @@ function doPost(e) {
     var accion = body.accion || 'guardar';
     if (accion === 'version') {
       var carpetas = {};
+      var enlaces = {};
       Object.keys(CARPETAS).forEach(function (k) {
-        carpetas[k] = !!(props.getProperty(CARPETAS[k]) || props.getProperty('CARPETA_ID'));
+        var id = props.getProperty(CARPETAS[k]) || props.getProperty('CARPETA_ID');
+        carpetas[k] = !!id;
+        if (id) enlaces[k] = 'https://drive.google.com/drive/folders/' + id;
       });
-      return responder({ ok: true, carpetas: carpetas });
+      return responder({ ok: true, carpetas: carpetas, enlaces: enlaces });
     }
     if (accion === 'guardar') {
       var blob = Utilities.newBlob(Utilities.base64Decode(body.base64), body.mimeType, body.nombre);
@@ -203,7 +207,7 @@ function probar() {
 5. Volvé al editor (el ícono "<>" de la izquierda). Arriba, en el selector de funciones, elegí "probar" y tocá "Ejecutar".
    - Si pide autorización: elegí mindlindevelopers.ia@gmail.com. Si aparece "Google no verificó esta app", tocá "Configuración avanzada" y después "Ir a Guardar facturas Mindlin (no seguro)". Es un script propio de esta cuenta. Aceptá los permisos.
    - En el registro de ejecución tienen que aparecer líneas "CARPETA_PENDIENTES OK", "CARPETA_COMPRAS OK", "CARPETA_HONORARIOS OK" y "CARPETA_VENTAS OK" (y una de CARPETA_ID). Anotá el resultado.
-6. Publicá la versión nueva SIN crear una implementación nueva: tocá "Implementar" > "Administrar implementaciones". Seleccioná la implementación activa (la aplicación web), tocá el lápiz (editar), en "Versión" elegí "Nueva versión", poné la descripción "v2" y tocá "Implementar".
+6. Publicá la versión nueva SIN crear una implementación nueva: tocá "Implementar" > "Administrar implementaciones". Seleccioná la implementación activa (la aplicación web), tocá el lápiz (editar), en "Versión" elegí "Nueva versión", poné la descripción "v3" y tocá "Implementar".
 7. Verificá que la URL de la aplicación web sea exactamente la de arriba (https://script.google.com/macros/s/AKfycbzsCnZuxRzSt-FqtdK8_ycfCDdjPBP_vNkB5GqLgrkwYbQyVZ-CIe3Q1MixdIMN5RMl/exec). Si cambió, frená y avisame: no la cambies en Vercel por tu cuenta.
 
 PASO 3. Copia de la planilla del cliente en Google Sheets
@@ -223,6 +227,7 @@ Para la planilla del paso 3 y para la del paso 4:
 1. Tocá "Compartir".
 2. Agregá facturas-app@mindlin-developers.iam.gserviceaccount.com con rol "Editor".
 3. Destildá "Notificar a las personas" y tocá "Compartir" (o "Enviar"). Si avisa que la dirección no es de una cuenta de Google o que está fuera de la organización, confirmá igual: es normal para una cuenta de servicio.
+4. En la misma ventana de "Compartir", mirá "Acceso general": tiene que decir "Restringido". Si dice "Cualquier persona con el vínculo", cambialo a "Restringido" y guardá. Hacé lo mismo con la carpeta "Facturas Mindlin" del paso 1 (clic derecho > Compartir > Acceso general). No agregues ni quites personas: solo el acceso general.
 
 PASO 6. Variables en Vercel
 1. Entrá a vercel.com y abrí el proyecto de la app (el que tiene el dominio mindlin-developers.vercel.app).
@@ -239,16 +244,17 @@ PASO 7. Verificar en la app y activar el bot
 1. Abrí https://mindlin-developers.vercel.app. Si pide iniciar sesión con Google y no hay una sesión de un mail habilitado, frená y pedime que inicie sesión yo.
 2. Andá a la pestaña "Subir" y tocá "Revisar la configuración" (si la app ya muestra el recuadro "Estado de la configuración", usá ese). Anotá cada línea con su ✓ o ✗ y el texto que la acompaña.
 3. Si la línea "Bot de Telegram" dice que falta activarlo, en la misma pestaña "Subir", dentro de "Por Telegram", tocá "Activar bot". Volvé a revisar la configuración y anotá cómo quedó.
-4. Si alguna otra línea tiene ✗, no intentes arreglarla por tu cuenta salvo que el texto diga exactamente qué falta y sea uno de los pasos de arriba (por ejemplo, un nombre de pestaña mal copiado: corregilo en Vercel y hacé Redeploy otra vez). Si no, anotalo para el informe.
+4. Andá a la pestaña "Inicio". Arriba hay botones de acceso directo (Planilla y Drive). Anotá cuáles están negros (activos) y cuáles grisados, con el texto que muestran al pasar el mouse. Tocá cada uno activo y anotá si abre la planilla o la carpeta correcta.
+5. Si alguna otra línea tiene ✗, no intentes arreglarla por tu cuenta salvo que el texto diga exactamente qué falta y sea uno de los pasos de arriba (por ejemplo, un nombre de pestaña mal copiado: corregilo en Vercel y hacé Redeploy otra vez). Si no, anotalo para el informe.
 
 INFORME FINAL (sin valores secretos)
 - Paso 1: ID de las cuatro carpetas.
 - Paso 2: resultado de "probar" (las líneas OK) y confirmación de que la URL del script no cambió.
 - Paso 3: ID de la copia y nombre exacto de las dos pestañas de facturación.
 - Paso 4: ID de la planilla de la cola.
-- Paso 5: confirmación de que las dos planillas están compartidas con la cuenta de servicio como Editor.
+- Paso 5: confirmación de que las dos planillas están compartidas con la cuenta de servicio como Editor, y el "Acceso general" de las dos planillas y de la carpeta (antes y después).
 - Paso 6: variables cargadas o editadas, confirmación de que existen las demás, y si el redeploy quedó "Ready".
-- Paso 7: cada línea del estado de la configuración con ✓ o ✗ y su texto, antes y después de activar el bot.
+- Paso 7: cada línea del estado de la configuración con ✓ o ✗ y su texto, antes y después de activar el bot, y qué abre cada acceso directo del Inicio.
 - Cualquier paso que no se pudo hacer, y por qué.
 ````
 

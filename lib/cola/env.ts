@@ -6,8 +6,9 @@ import { extractInvoice } from "../invoice/extract";
 import { planillaDesdeEnv } from "../sheets/planilla";
 import { almacenDesdeEnv, ScriptDesactualizado } from "../storage/archivos";
 import { TelegramApi, tokenTelegram } from "../telegram/api";
-import { textoAviso } from "../telegram/mensajes";
+import { reaccionDeAviso, textoAviso } from "../telegram/mensajes";
 import { COLUMNAS_USUARIOS_TELEGRAM, UsuariosTelegram } from "../telegram/usuarios";
+import { CandadosSheets, COLUMNAS_CANDADOS, type Candados } from "./candados";
 import { ColaSheets } from "./hoja";
 import { COLUMNAS_COLA } from "./item";
 import { ErrorCola, type Servicios } from "./servicio";
@@ -45,10 +46,21 @@ export function serviciosDesdeEnv(appUrl: string): Servicios {
     avisar: telegram
       ? async (item, aviso, extra) => {
           if (!item.telegram) return;
-          await telegram.enviar(item.telegram.chat, textoAviso(item, aviso, appUrl, extra), item.telegram.mensaje);
+          const { chat, mensaje } = item.telegram;
+          // La reacción sobre el mensaje de la factura muestra en qué quedó, sin buscar el aviso.
+          await Promise.all([
+            telegram.enviar(chat, textoAviso(item, aviso, appUrl, extra), mensaje),
+            telegram.reaccionar(chat, mensaje, reaccionDeAviso(aviso, extra)).catch((e) => console.error("No se pudo reaccionar en Telegram", e)),
+          ]);
         }
       : undefined,
+    candados: candadosDesdeEnv(),
   };
+}
+
+/** Los candados (ver candados.ts), en la pestaña "Candados" de la planilla de la cola. */
+export function candadosDesdeEnv(): Candados {
+  return new CandadosSheets(pestaniaCola(process.env.COLA_TAB_CANDADOS || "Candados", COLUMNAS_CANDADOS));
 }
 
 /** Las cuentas de Telegram conectadas, en la pestaña "Telegram" de la planilla de la cola. */

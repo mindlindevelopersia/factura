@@ -8,7 +8,7 @@ import { validateInvoice } from "@/lib/validation";
 import { fechaHora, leerJson } from "./formato";
 import { aFactura, aValores, camposDe, ETIQUETAS_IMPORTE, type CampoEditable, type Valores } from "./formulario";
 
-const ETIQUETAS_ESTADO = { leyendo: "Leyendo con IA…", pendiente: "Para revisar", error: "Error" } as const;
+const ETIQUETAS_ESTADO = { leyendo: "Leyendo con IA…", pendiente: "Para revisar", error: "Error", aprobando: "Cargando en la planilla…" } as const;
 
 /**
  * Ficha de un comprobante de la cola: el archivo al lado de los datos editables.
@@ -88,6 +88,12 @@ export function FichaRevision({
 
   const sinColumna = factura?.success ? importesSinColumna(factura.data) : [];
   const archivoUrl = `/api/cola/${item.id}/archivo`;
+  const pestania = original?.categoria === "venta" ? "ingresos" : "egresos";
+  const fila = (n: number, p: string = pestania) => (
+    <a href={`/ir/planilla-${p}?fila=${n}`} target="_blank" rel="noopener">
+      fila {n}
+    </a>
+  );
   const estado = item.estado as keyof typeof ETIQUETAS_ESTADO;
 
   return (
@@ -99,7 +105,7 @@ export function FichaRevision({
             {item.origen === "telegram" ? "Por Telegram" : "Subida a la web"} · {item.enviadaPor} · {fechaHora(item.recibida)}
           </p>
         </div>
-        <span className={`estado estado--${item.estado === "pendiente" ? "revision" : item.estado}`}>{ETIQUETAS_ESTADO[estado]}</span>
+        <span className={`estado estado--${item.estado === "pendiente" || item.estado === "aprobando" ? "revision" : item.estado}`}>{ETIQUETAS_ESTADO[estado]}</span>
       </header>
 
       {(error || item.error) && (
@@ -127,12 +133,12 @@ export function FichaRevision({
             )}
             {item.cargada?.tipo === "duplicada" && (
               <p className="alerta alerta--error">
-                Esta factura ya está cargada en la planilla, en la fila {item.cargada.fila} (mismo CUIT, tipo, número y total).
+                Esta factura ya está cargada en la planilla, en la {fila(item.cargada.fila)} (mismo CUIT, tipo, número y total).
               </p>
             )}
             {item.cargada?.tipo === "mismo_numero" && (
               <p className="alerta alerta--aviso">
-                En la fila {item.cargada.fila} hay una factura del mismo proveedor con este número pero otro total. Fijate que no
+                En la {fila(item.cargada.fila)} hay una factura del mismo proveedor con este número pero otro total. Fijate que no
                 sea la misma antes de aprobar.
               </p>
             )}
@@ -151,7 +157,7 @@ export function FichaRevision({
             {item.lectura?.desde && (
               <p className="factura__nota">
                 {item.lectura.desde.pestania === "ingresos" ? "Cliente, tipo de pago y depto" : 'Razón social, rubro y "corresponde a"'}{" "}
-                tomados de la última carga de esta contraparte (fila {item.lectura.desde.fila}).
+                tomados de la última carga de esta contraparte ({fila(item.lectura.desde.fila, item.lectura.desde.pestania)}).
               </p>
             )}
             {original?.observaciones && <p className="factura__nota">IA: {original.observaciones}</p>}
@@ -230,14 +236,26 @@ export function FichaRevision({
                   {ocupado === "aprobar" ? "Cargando…" : "Aprobar y cargar"}
                 </button>
               )}
+              {item.estado === "aprobando" && (
+                <button
+                  type="button"
+                  className="btn btn--primario"
+                  disabled={!item.error || !factura?.success || ocupado !== null}
+                  onClick={() => factura?.success && accion("aprobar", factura.data)}
+                >
+                  {ocupado === "aprobar" ? "Cargando…" : item.error ? "Completar la aprobación" : "Cargando en la planilla…"}
+                </button>
+              )}
               {item.estado === "error" && (
                 <button type="button" className="btn btn--primario" disabled={ocupado !== null} onClick={() => accion("reintentar")}>
                   {ocupado === "reintentar" ? "Leyendo…" : "Reintentar"}
                 </button>
               )}
-              <button type="button" className="btn btn--borde" disabled={ocupado !== null} onClick={() => accion("descartar")}>
-                Descartar
-              </button>
+              {item.estado !== "aprobando" && (
+                <button type="button" className="btn btn--borde" disabled={ocupado !== null} onClick={() => accion("descartar")}>
+                  Descartar
+                </button>
+              )}
               {item.estado === "pendiente" && (
                 <button type="button" className="btn btn--borde" disabled={ocupado !== null} onClick={() => accion("reintentar")}>
                   {ocupado === "reintentar" ? "Leyendo…" : "Volver a leer"}

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import QRCode from "qrcode";
 import { getUser } from "@/lib/auth/session";
 import { faltantesCola, respuestaDeError, usuariosTelegramDesdeEnv } from "@/lib/cola/env";
 import { TelegramApi, tokenTelegram } from "@/lib/telegram/api";
@@ -10,18 +11,30 @@ function webhookDe(req: Request): string {
 
 /**
  * Estado del bot para la web: si está activo (el webhook apunta a esta app), si el usuario
- * ya conectó su Telegram y el link para conectarlo.
+ * ya conectó su Telegram, el link para conectarlo y ese link como QR (en la compu, para
+ * escanearlo con el celular: casi nadie tiene Telegram en la compu).
+ *
+ * ?solo=cuentas devuelve solo las cuentas conectadas: la web lo consulta seguido mientras
+ * muestra el QR, para avisar apenas se conecta.
  */
 export async function GET(req: Request) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: "Sesión vencida. Volvé a ingresar." }, { status: 401 });
   const token = tokenTelegram();
   if (!token) return NextResponse.json({ configurado: false });
+  if (new URL(req.url).searchParams.get("solo") === "cuentas") {
+    try {
+      return NextResponse.json({ conectados: faltantesCola().length === 0 ? await usuariosTelegramDesdeEnv().telegramsDe(user.email) : [] });
+    } catch (e) {
+      return respuestaDeError(e);
+    }
+  }
   try {
     const telegram = new TelegramApi(token);
     const [info, bot] = await Promise.all([telegram.infoWebhook(), telegram.yo()]);
     // Sin la planilla de la cola no hay dónde guardar las cuentas conectadas: se muestra igual el estado del bot.
     const conectados = faltantesCola().length === 0 ? await usuariosTelegramDesdeEnv().telegramsDe(user.email) : [];
+    const linkConectar = `https://t.me/${bot.username}?start=${codigoVinculo(user.email, process.env.AUTH_SECRET ?? "")}`;
     return NextResponse.json({
       configurado: true,
       bot: bot.username,
@@ -29,7 +42,8 @@ export async function GET(req: Request) {
       webhook: info.url || null,
       ultimoError: info.last_error_message ?? null,
       conectados,
-      linkConectar: `https://t.me/${bot.username}?start=${codigoVinculo(user.email, process.env.AUTH_SECRET ?? "")}`,
+      linkConectar,
+      qrConectar: await QRCode.toString(linkConectar, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#1a1a1aff", light: "#ffffffff" } }),
     });
   } catch (e) {
     return respuestaDeError(e);

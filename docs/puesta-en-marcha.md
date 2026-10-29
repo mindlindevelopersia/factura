@@ -1,6 +1,6 @@
 # Puesta en marcha (cambios del 29/10/2026)
 
-El código nuevo (cola de pendientes, web para revisar y subir, bot de Telegram, tres carpetas con subcarpetas por mes, columnas de la planilla real) ya está en `main` y Vercel lo despliega solo. **Hasta hacer estos pasos, la app no puede recibir comprobantes:** le faltan la planilla de la cola, el script de Apps Script en versión 2 y las pestañas de la planilla.
+El código nuevo (cola de pendientes, web para revisar y subir, bot de Telegram, tres carpetas con subcarpetas por mes, columnas de la planilla real) ya está en `main` y Vercel lo despliega solo. **Hasta hacer estos pasos, la app no puede recibir comprobantes:** le faltan la planilla de la cola, el script de Apps Script en versión 3 y las pestañas de la planilla.
 
 Nada de esto toca la planilla real del cliente: se trabaja sobre una copia.
 
@@ -9,7 +9,7 @@ Nada de esto toca la planilla real del cliente: se trabaja sobre una copia.
 | # | Dónde | Qué | Quién |
 |---|---|---|---|
 | 1 | Drive de mindlindevelopers.ia@gmail.com | Crear "Facturas Mindlin" con cuatro carpetas adentro: Pendientes, Facturas de Compras, Facturas de Honorarios de Administración, Facturas de Ventas | Prompt de abajo |
-| 2 | Apps Script, misma cuenta | Pasar el script "Guardar facturas Mindlin" a la versión 2 y cargar las cuatro carpetas | Prompt de abajo |
+| 2 | Apps Script, misma cuenta | Pasar el script "Guardar facturas Mindlin" a la versión 3 y cargar las cuatro carpetas | Prompt de abajo |
 | 3 | Sheets, misma cuenta | Guardar como Hojas de cálculo de Google una copia de la "Copia para IA de Administración Contable": es la planilla de prueba con la estructura real | Prompt de abajo |
 | 4 | Sheets, misma cuenta | Crear una planilla vacía "Facturas Mindlin - cola de la app" | Prompt de abajo |
 | 5 | Las dos planillas | Compartirlas con `facturas-app@mindlin-developers.iam.gserviceaccount.com` como Editor | Prompt de abajo |
@@ -37,7 +37,7 @@ La copia de la planilla ya tiene cargado octubre, así que sirve para probar con
 
 ## Si algo falla
 
-La web muestra sola el **estado de la configuración** cuando falta algo (también en "Subir > Revisar la configuración"): cada pieza con ✓ o ✗ y qué hacer. Por ejemplo, si la clave de Anthropic funciona, qué pestañas tiene la planilla, si el script es la versión 2 y qué carpetas le faltan.
+La web muestra sola el **estado de la configuración** cuando falta algo (también en "Subir > Revisar la configuración"): cada pieza con ✓ o ✗ y qué hacer. Por ejemplo, si la clave de Anthropic funciona, qué pestañas tiene la planilla, si el script es la versión 3 y qué carpetas le faltan.
 
 | Mensaje | Qué falta |
 |---|---|

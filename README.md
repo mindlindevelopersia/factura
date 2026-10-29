@@ -13,7 +13,8 @@ Iniciativa 1 de Mindlin Developers. Las facturas llegan **por Telegram** (al bot
 | Controles de CUIT, suma y QR (`lib/validation/`) | Hecho. Falta leer el QR de la imagen o del PDF. |
 | Script de evaluación (`scripts/eval/`) | Hecho y adaptado a la planilla real. Falta correrlo con octubre de 2026 (ver [pendientes](docs/pendientes.md)). |
 | Tres categorías y columnas de la planilla real | Hecho (29/10/2026). Auditado contra octubre: ver [docs/auditoria-octubre.md](docs/auditoria-octubre.md). |
-| Cola de pendientes, web (revisar, subir, historial) y bot de Telegram | Hecho (29/10/2026). Falta la [puesta en marcha](docs/puesta-en-marcha.md): carpetas, script v2, planilla de la cola y variables. |
+| Cola de pendientes, web (revisar, subir, historial) y bot de Telegram | Hecho (29/10/2026). Falta la [puesta en marcha](docs/puesta-en-marcha.md): carpetas, script v3, planilla de la cola y variables. |
+| Panel de inicio, accesos a la planilla y a Drive, QR de Telegram y cero duplicados | Hecho (29/10/2026). Probado con tests y con capturas en compu y celular, con datos simulados. Falta verlo con datos reales después de la puesta en marcha. |
 | Login con Google y lista de mails | Hecho y desplegado en https://mindlin-developers.vercel.app |
 | Pantalla de carga, revisión y aprobación | Hecho. Probado de punta a punta con la API real, Drive y la planilla de prueba. |
 | Escritura en la planilla y control de duplicados | Hecho. Probado contra la planilla de prueba. |
@@ -51,8 +52,8 @@ Nada de esto va al repo. En local, en `.env.local`. En Vercel, en Settings > Env
 | `SHEET_TAB_EGRESOS` | Pestaña de compras y honorarios. Si no está, se usa `SHEET_TAB` (el nombre anterior) | Planilla |
 | `SHEET_TAB_INGRESOS` | Pestaña de ventas. Sin esto, la app no carga ventas | Ventas |
 | `APPS_SCRIPT_URL`, `APPS_SCRIPT_SECRET` | Script que guarda y ordena los PDF en Drive (`apps-script/`, versión 2) | Siempre: la cola guarda cada archivo al llegar |
-| `COLA_SHEET_ID` | Planilla aparte para la cola y las cuentas de Telegram conectadas. **No** la de Administración Contable. La app crea sus pestañas | Siempre |
-| `COLA_TAB`, `COLA_TAB_TELEGRAM` | Nombres de esas pestañas. Por defecto, "Cola" y "Telegram" | Opcional |
+| `COLA_SHEET_ID` | Planilla aparte para la cola y las cuentas de Telegram conectadas. **No** la de Administración Contable. La app crea sus pestañas ("Cola", "Telegram" y "Candados") | Siempre |
+| `COLA_TAB`, `COLA_TAB_TELEGRAM`, `COLA_TAB_CANDADOS` | Nombres de esas pestañas. Por defecto, "Cola", "Telegram" y "Candados" | Opcional |
 | `TELEGRAM_API_KEY` | Token del bot de Telegram (de BotFather). También se acepta `TELEGRAM_BOT_TOKEN` | Telegram |
 
 ## Estilo
@@ -88,6 +89,24 @@ Auth.js (`next-auth` v5) con Google. Solo entran los mails de `ALLOWED_EMAILS`, 
 2. Cargar `AUTH_SECRET` (generado con `npx auth secret`), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` y `ALLOWED_EMAILS`. `ANTHROPIC_API_KEY` todavía no hace falta en Vercel.
 3. Desplegar y agregar el dominio que asigne Vercel en el paso 3 del cliente OAuth.
 
+## Panel de inicio
+
+Es lo primero que se ve al entrar (`components/Panel.tsx`, `GET /api/panel`, cálculo en `lib/panel.ts`). Un link de Telegram (`/?revisar=<id>`) abre directo "Para revisar".
+
+- **Para revisar:** cuántos comprobantes esperan, cuántos con error y cuántos se están leyendo. Tocándolo se va a revisarlos.
+- **El mes en pesos:** compras, honorarios (las facturas de los socios) y ventas, con la cantidad de facturas. Sale de la planilla, así que incluye lo cargado a mano.
+- **Lo que hizo la app en el mes:** cuántas cargó, cuántas llegaron por Telegram y cuánto tardan, en la mediana, desde que llegan hasta que se cargan.
+- **Egresos e ingresos de los últimos 12 meses**, por fecha de factura, y las **compras del mes por proveedor** (agrupadas por CUIT; las notas de crédito restan). Las facturas en otra moneda no se suman: el panel dice cuántas hay. Cada gráfico tiene tooltip y vista de tabla. Los colores están validados para daltonismo.
+- **Actividad reciente**, con link a la fila de la planilla de cada factura cargada.
+- **Accesos directos** a la planilla (compras y honorarios, ventas) y a las carpetas de Drive (compras, honorarios, ventas).
+- La planilla se lee una vez cada 30 segundos como mucho (`REGISTROS_VIGENCIA_MS`), aunque haya varias personas con la web abierta. La aprobación siempre la lee de nuevo.
+
+### Accesos a la planilla y a Drive
+
+Los botones del panel, los links "fila 230" de la ficha y del historial apuntan a `/ir/<destino>` (`app/ir/[destino]/route.ts`, `lib/enlaces.ts`). Esa ruta pide sesión y recién ahí redirige a Google, así que los links de Google no aparecen en ninguna página. Los links de las carpetas los da el script de Drive desde la versión 3; con la 2, esos botones aparecen grisados con lo que falta.
+
+**Lo que la app no puede hacer:** una vez que alguien tiene el link de Google (por ejemplo, lo copia de la barra del navegador), Google decide quién lo abre, no la app. Para que solo entre el equipo, la planilla y las carpetas tienen que estar compartidas con **acceso general "Restringido"** y solo con las cuentas de Google de cada persona (y la cuenta de servicio, en la planilla). Así, aunque el link circule, nadie más lo puede abrir.
+
 ## Cola, revisión y Telegram
 
 Todo comprobante, llegue por donde llegue, pasa por la misma cola (`lib/cola/`):
@@ -111,11 +130,19 @@ La cola vive en una pestaña de la planilla `COLA_SHEET_ID`, una fila por compro
 - El bot solo atiende chats privados de cuentas conectadas a un mail que siga en `ALLOWED_EMAILS`. A las demás les contesta cómo conectarse y no guarda nada de lo que mandaron.
 - Cada llamada de Telegram trae un secreto derivado del token (`secretoWebhook` en `lib/telegram/api.ts`): el webhook rechaza las que no lo traen. Es la única ruta fuera del login (`proxy.ts`).
 - Acepta PDF, JPG, PNG y WEBP como documento, y fotos (toma la de mayor resolución). Hasta 20 MB, el límite de Telegram para bots (5 MB para imágenes como documento: es el límite de Claude). Si Telegram reintenta un mensaje, no se carga dos veces.
-- Avisa cuando lee la factura (con un aviso si ya está cargada o si ya la habían mandado), si no la pudo leer, y cuando alguien la aprueba o la descarta en la web.
+- **Señales mientras procesa:** apenas llega, contesta "Recibida. La estoy leyendo…" y pone 👀 sobre el mensaje de la factura; mientras lee, el chat muestra "escribiendo…". Después avisa cuando la leyó (con el link para revisarla, y un aviso si ya está cargada o si ya la habían mandado), si no la pudo leer, y cuando alguien la aprueba o la descarta en la web. La reacción sobre el mensaje va cambiando: 👌 lista para revisar, 🤔 necesita atención (no se pudo leer, ya está cargada o repetida), 👍 cargada en la planilla; al descartarla se saca.
+- **Conectar desde la compu:** casi nadie tiene Telegram en la compu, así que en la web (Inicio y Subir) el link de conexión se muestra como **QR** para escanear con el celular, y la web avisa sola cuando la cuenta quedó conectada. En el celular se muestra el botón, que abre Telegram directo.
+- Si Telegram pide esperar (demasiados mensajes), el bot espera y reintenta. Los avisos no se reintentan ante un corte de red, para no mandarlos dos veces.
 - **Comentarios:** el texto que acompaña a la foto o al PDF queda guardado con la factura y la IA lo usa de contexto (sirve para lo que el comprobante no dice, como a qué obra corresponde; nunca cambia datos impresos). Un texto o un audio mandado después se anota en la última factura de ese chat de la última media hora; si no hay ninguna, el bot pide mandar primero la factura. Los audios se guardan en Drive y se escuchan en la ficha; al aprobar, quedan en la misma carpeta que la factura ("... - comentario 1.ogg"). No se transcriben: Claude no lee audio.
 - En la web, al subir, también se puede escribir un comentario.
 
 ### La misma factura más de una vez
+
+Nada se carga dos veces aunque dos pedidos lleguen al mismo tiempo (dos personas que aprueban a la vez, la misma foto mandada dos veces seguidas, Telegram que reintenta un mensaje). Para eso hay **candados** (`lib/cola/candados.ts`) en la pestaña "Candados" de la planilla de la cola: cada intento agrega una fila y gana la primera vigente. Sheets aplica los agregados de a uno, así que de dos intentos simultáneos gana exactamente uno.
+
+- **Aprobar** toma un candado por comprobante y otro por factura (proveedor, tipo y número), y con el candado vuelve a leer la cola y la planilla. El que llega segundo recibe "Otra persona está aprobando esta factura".
+- **Aprobación cortada:** antes de escribir la fila, el comprobante queda "aprobando". Si Sheets falla o la función se corta, la ficha lo muestra con "Completar la aprobación": al tocarlo, si la fila ya está en la planilla se completa con esa fila, y si no, se agrega. No se puede descartar a mitad de camino, porque el archivo ya puede estar en su carpeta.
+- **Google con mucho tráfico:** si Sheets responde que se agotó la cuota, la app espera y reintenta. Las lecturas también se reintentan ante un corte; un agregado de fila no, porque podría haberse hecho (`lib/google/reintentos.ts`).
 
 - **El mismo archivo** (misma huella SHA-256) no entra dos veces en la cola, venga por donde venga: no se guarda ni se lee de nuevo, y se le dice a quien lo mandó dónde está ("llegó el 29/10, 14:32 y está para revisar", "ya está cargado en la fila 230"). Si el anterior se descartó, sí se puede volver a mandar.
 - **El mismo comprobante en otro archivo** (una foto y después el PDF): se lee, pero la ficha avisa que ya lo habían mandado y el bot también. Se reconoce por proveedor, tipo, punto de venta, número y total.

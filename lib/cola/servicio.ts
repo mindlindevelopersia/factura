@@ -8,8 +8,9 @@ import { pestaniaDe } from "../sheets/columnas";
 import type { Planilla } from "../sheets/planilla";
 import { buscarCargada, TOLERANCIA_DUPLICADO, type Coincidencia, type Registros } from "../sheets/registros";
 import { nombreArchivo, subcarpetaDe, type Almacen, type ArchivoNuevo } from "../storage/archivos";
+import type { Candado, Candados } from "./candados";
 import type { Cola } from "./hoja";
-import type { ItemCola, Nota, Origen } from "./item";
+import type { ItemCola, Nota, Origen, Resultado } from "./item";
 
 export type Aviso = "leida" | "error" | "aprobada" | "descartada";
 
@@ -30,6 +31,8 @@ export interface Servicios {
   extraer: (archivo: InvoiceFile, contexto?: { comentario?: string }) => Promise<ExtractionResult>;
   /** Le avisa al que mandó el comprobante (hoy, por Telegram). */
   avisar?: (item: ItemCola, aviso: Aviso, extra: ExtraAviso) => Promise<void>;
+  /** Para que dos pedidos simultáneos no carguen lo mismo dos veces. Sin esto, no se traba nada. */
+  candados?: Candados;
   ahora?: () => Date;
 }
 
@@ -52,6 +55,14 @@ export class ArchivoRepetido extends ErrorCola {
   }
 }
 
+/** El mismo archivo está entrando en este momento por otro pedido (lo mandaron dos veces seguidas). */
+export class ArchivoEnCurso extends ErrorCola {
+  constructor() {
+    super("Este archivo ya se está cargando: llegó dos veces seguidas. Queda una sola vez.", 409);
+    this.name = "ArchivoEnCurso";
+  }
+}
+
 /** "llegó el 29/10 14:32 y está para revisar", "ya está cargado en la fila 230"... */
 export function descripcionEstado(item: ItemCola): string {
   const cuando = new Intl.DateTimeFormat("es-AR", {
@@ -70,6 +81,8 @@ export function descripcionEstado(item: ItemCola): string {
       return `se descartó${quien}`;
     case "error":
       return `llegó el ${cuando}${quien} y no se pudo leer; se puede reintentar desde la web`;
+    case "aprobando":
+      return `se está cargando en la planilla${item.resueltaPor ? ` (lo aprobó ${item.resueltaPor})` : ""}`;
     default:
       return `llegó el ${cuando}${quien} y está para revisar`;
   }
@@ -95,6 +108,34 @@ export function huellaDe(data: Uint8Array): string {
 
 /** Si la lectura no terminó en este tiempo, la función se cortó: se muestra como error para reintentar. */
 export const LECTURA_COLGADA_MS = 3 * 60 * 1000;
+
+/**
+ * Una aprobación tarda unos segundos (la función corta a los 60). Pasado este tiempo sin
+ * terminar, se la da por cortada y se puede retomar. Es también lo que dura su candado.
+ */
+export const APROBACION_COLGADA_MS = 2 * 60 * 1000;
+
+/** Lo que dura el candado de un archivo que entra: guardarlo en Drive y anotarlo en la cola. */
+const INGRESO_MS = 2 * 60 * 1000;
+
+/**
+ * Corre fn con los candados de esas claves tomados (ver candados.ts) y los suelta al final.
+ * Si otro pedido tiene alguno, tira el error de ocupado sin correr nada.
+ */
+async function conCandados<T>(s: Servicios, claves: string[], duracionMs: number, ocupado: () => Error, fn: () => Promise<T>): Promise<T> {
+  if (!s.candados) return fn();
+  const tomados: Candado[] = [];
+  try {
+    for (const clave of claves) {
+      const candado = await s.candados.tomar(clave, duracionMs);
+      if (!candado) throw ocupado();
+      tomados.push(candado);
+    }
+    return await fn();
+  } finally {
+    await Promise.all(tomados.map((c) => c.soltar().catch((e) => console.error("No se pudo soltar un candado", e))));
+  }
+}
 
 const ahora = (s: Servicios) => (s.ahora ?? (() => new Date()))();
 
@@ -141,10 +182,15 @@ export interface Entrada {
  * Lo que hace cualquier comprobante al llegar, por la web o por Telegram: se guarda en la
  * carpeta de pendientes (así no se pierde aunque falle la lectura), entra en la cola y se
  * lee con la IA. Si el mismo archivo ya está en la cola, tira ArchivoRepetido sin guardar
- * ni leer nada.
+ * ni leer nada; si está entrando en este mismo momento por otro pedido, ArchivoEnCurso.
  */
 export async function ingresar(s: Servicios, entrada: Entrada): Promise<ItemCola> {
   const huella = huellaDe(entrada.archivo.data);
+  const item = await conCandados(s, [`archivo:${huella}`], INGRESO_MS, () => new ArchivoEnCurso(), () => encolar(s, entrada, huella));
+  return leer(s, item, entrada.archivo.data);
+}
+
+async function encolar(s: Servicios, entrada: Entrada, huella: string): Promise<ItemCola> {
   const existente = (await s.cola.listar()).find((i) => i.huella === huella && i.estado !== "descartada");
   if (existente) throw new ArchivoRepetido(existente);
 
@@ -168,7 +214,7 @@ export async function ingresar(s: Servicios, entrada: Entrada): Promise<ItemCola
     notas: comentario ? [{ tipo: "texto", texto: comentario, de: entrada.enviadaPor, fecha: recibida }] : [],
   };
   await s.cola.agregar(item);
-  return leer(s, item, entrada.archivo.data);
+  return item;
 }
 
 /** Los comentarios de texto, para pasárselos a la IA. */
@@ -251,7 +297,22 @@ const YA: Record<string, string> = {
   aprobada: "Este comprobante ya fue aprobado y cargado.",
   descartada: "Este comprobante ya fue descartado.",
   leyendo: "La IA todavía está leyendo este comprobante.",
+  aprobando: "Este comprobante se está cargando en la planilla.",
 };
+
+/** Una aprobación que está corriendo ahora (no una que se cortó o falló a mitad de camino). */
+export function aprobacionEnCurso(item: ItemCola, momento: number): boolean {
+  return item.estado === "aprobando" && !item.error && momento - Date.parse(item.resuelta ?? item.recibida) < APROBACION_COLGADA_MS;
+}
+
+function verificarAprobable(item: ItemCola, momento: number) {
+  if (item.estado === "pendiente") return;
+  if (item.estado === "aprobando" && !aprobacionEnCurso(item, momento)) return;
+  if (item.estado === "aprobando") {
+    throw new ErrorCola(`${item.resueltaPor ?? "Otra persona"} está aprobando este comprobante en este momento.`, 409);
+  }
+  throw new ErrorCola(YA[item.estado] ?? "Este comprobante no se puede aprobar.", 409);
+}
 
 /** Vuelve a leer un comprobante que dio error (o que se quiere releer). */
 export async function reintentar(s: Servicios, id: string): Promise<ItemCola> {
@@ -264,50 +325,92 @@ export async function reintentar(s: Servicios, id: string): Promise<ItemCola> {
 /**
  * Aprueba un comprobante con los datos que revisó la persona: controla duplicados contra la
  * planilla, mueve el archivo a la subcarpeta del mes de su categoría y agrega la fila.
- * Si algo falla a mitad de camino, el comprobante sigue pendiente y se puede volver a
- * aprobar: el archivo se mueve por su ID, así que repetir no duplica nada en Drive.
+ *
+ * Para que nunca quede una fila de más:
+ * - Toma un candado por comprobante y otro por factura (proveedor, tipo y número): si dos
+ *   personas aprueban a la vez, o la misma factura en dos archivos, pasa una sola.
+ * - Con el candado tomado, vuelve a leer el comprobante y la planilla (sin la lectura guardada).
+ * - Antes de escribir en la planilla, deja el comprobante "aprobando". Si la función se corta
+ *   o Sheets falla a mitad de camino, al volver a aprobar se busca la fila: si ya está, se
+ *   completa la aprobación con esa fila en lugar de agregar otra.
+ * - Mover el archivo es por su ID, así que repetirlo no duplica nada en Drive.
  */
 export async function aprobar(s: Servicios, id: string, factura: Factura, usuario: string): Promise<ItemCola> {
-  const item = await buscar(s, id);
-  if (item.estado !== "pendiente") throw new ErrorCola(YA[item.estado] ?? "Este comprobante no se puede aprobar.", 409);
-  if (!s.planilla) throw new ErrorCola("Falta configurar la planilla en el servidor.", 503);
+  verificarAprobable(await buscar(s, id), ahora(s).getTime());
+  const planilla = s.planilla;
+  if (!planilla) throw new ErrorCola("Falta configurar la planilla en el servidor.", 503);
   const pestania = pestaniaDe(factura);
-  if (!s.planilla.tiene(pestania)) {
+  if (!planilla.tiene(pestania)) {
     const variable = pestania === "ingresos" ? "SHEET_TAB_INGRESOS" : "SHEET_TAB_EGRESOS";
     throw new ErrorCola(`Falta configurar la pestaña de ${pestania === "ingresos" ? "ventas" : "compras"} (${variable}).`, 503);
   }
 
-  const cargada = buscarCargada(await s.planilla.registros(), factura);
-  if (cargada?.tipo === "duplicada") {
-    throw new ErrorCola(`Esta factura ya está cargada en la planilla (fila ${cargada.fila}).`, 409);
-  }
+  const clave = claveDuplicado(factura);
+  const claves = [`aprobar:${id}`, ...(clave ? [`factura:${clave}`] : [])];
+  const ocupado = () => new ErrorCola("Otra persona está aprobando esta factura en este momento. Esperá unos segundos.", 409);
+  return conCandados(s, claves, APROBACION_COLGADA_MS, ocupado, async () => {
+    const item = await buscar(s, id);
+    verificarAprobable(item, ahora(s).getTime());
+    const retomada = item.estado === "aprobando";
+    const nombreGenerico = pestania === "ingresos" ? "Ingresos" : "Egresos";
 
-  const subcarpeta = subcarpetaDe(factura);
-  const nombre = nombreArchivo(factura, item.archivo.mediaType);
-  const { url } = await s.almacen.archivar(item.archivo.driveId, { carpeta: factura.categoria, subcarpeta, nombre });
-  // Los audios van al lado del comprobante, con el mismo nombre: "... - comentario 1.ogg".
-  const base = nombre.replace(/\.[^.]+$/, "");
-  const notas = await Promise.all(
-    item.notas.map(async (n, i): Promise<Nota> => {
-      if (n.tipo !== "audio" || !n.audio) return n;
-      const extension = n.audio.nombre.match(/\.[^.]+$/)?.[0] ?? "";
-      const archivada = await s.almacen.archivar(n.audio.driveId, { carpeta: factura.categoria, subcarpeta, nombre: `${base} - comentario ${i + 1}${extension}` });
-      return { ...n, audio: { ...n.audio, url: archivada.url } };
-    }),
-  );
-  const fecha = ahora(s);
-  const { pestania: nombrePestania, fila } = await s.planilla.agregar({ factura, link: url, fechaRegistro: hoyEnBuenosAires(fecha) });
+    const cargada = buscarCargada(await planilla.registros({ fresco: true }), factura);
+    if (cargada?.tipo === "duplicada") {
+      if (!retomada) throw new ErrorCola(`Esta factura ya está cargada en la planilla (fila ${cargada.fila}).`, 409);
+      // La aprobación anterior llegó a escribir la fila: se completa con esa fila.
+      return terminarAprobacion(s, item, factura, usuario, { pestania: item.resultado?.pestania ?? nombreGenerico, fila: cargada.fila, link: item.archivo.url });
+    }
 
+    const subcarpeta = subcarpetaDe(factura);
+    const nombre = nombreArchivo(factura, item.archivo.mediaType);
+    const { url } = await s.almacen.archivar(item.archivo.driveId, { carpeta: factura.categoria, subcarpeta, nombre });
+    // Los audios van al lado del comprobante, con el mismo nombre: "... - comentario 1.ogg".
+    const base = nombre.replace(/\.[^.]+$/, "");
+    const notas = await Promise.all(
+      item.notas.map(async (n, i): Promise<Nota> => {
+        if (n.tipo !== "audio" || !n.audio) return n;
+        const extension = n.audio.nombre.match(/\.[^.]+$/)?.[0] ?? "";
+        const archivada = await s.almacen.archivar(n.audio.driveId, { carpeta: factura.categoria, subcarpeta, nombre: `${base} - comentario ${i + 1}${extension}` });
+        return { ...n, audio: { ...n.audio, url: archivada.url } };
+      }),
+    );
+
+    const fecha = ahora(s);
+    const enCurso: ItemCola = {
+      ...item,
+      estado: "aprobando",
+      archivo: { ...item.archivo, url },
+      notas,
+      lectura: { factura, desde: item.lectura?.desde ?? null, fallback: item.lectura?.fallback ?? false },
+      error: null,
+      resuelta: fecha.toISOString(),
+      resueltaPor: usuario,
+      resultado: { pestania: nombreGenerico, fila: null, link: url },
+    };
+    await s.cola.guardar(enCurso);
+
+    let agregada: { pestania: string; fila: number | null };
+    try {
+      agregada = await planilla.agregar({ factura, link: url, fechaRegistro: hoyEnBuenosAires(fecha) });
+    } catch (e) {
+      const motivo = e instanceof Error ? e.message : String(e);
+      const error = `No se pudo confirmar la carga en la planilla (${motivo}). Volvé a aprobar: si la fila llegó a escribirse, no se duplica.`;
+      await s.cola.guardar({ ...enCurso, error }).catch((e2) => console.error(`No se pudo anotar el error de ${id}`, e2));
+      throw new ErrorCola(error, 502);
+    }
+    return terminarAprobacion(s, enCurso, factura, usuario, { ...agregada, link: url });
+  });
+}
+
+async function terminarAprobacion(s: Servicios, item: ItemCola, factura: Factura, usuario: string, resultado: Resultado): Promise<ItemCola> {
   const aprobado: ItemCola = {
     ...item,
     estado: "aprobada",
-    archivo: { ...item.archivo, url },
-    notas,
     lectura: { factura, desde: item.lectura?.desde ?? null, fallback: item.lectura?.fallback ?? false },
     error: null,
-    resuelta: fecha.toISOString(),
-    resueltaPor: usuario,
-    resultado: { pestania: nombrePestania, fila, link: url },
+    resuelta: item.resuelta ?? ahora(s).toISOString(),
+    resueltaPor: item.resueltaPor ?? usuario,
+    resultado,
   };
   await s.cola.guardar(aprobado);
   await avisar(s, aprobado, "aprobada");
@@ -318,6 +421,10 @@ export async function aprobar(s: Servicios, id: string, factura: Factura, usuari
 export async function descartar(s: Servicios, id: string, usuario: string): Promise<ItemCola> {
   const item = await buscar(s, id);
   if (item.estado === "aprobada" || item.estado === "descartada") throw new ErrorCola(YA[item.estado], 409);
+  if (item.estado === "aprobando") {
+    // El archivo ya puede estar en su carpeta y la fila en la planilla: descartarlo rompería el link.
+    throw new ErrorCola("Este comprobante quedó a mitad de la aprobación. Volvé a aprobarlo para completarla: si la fila ya está en la planilla, no se duplica.", 409);
+  }
   await s.almacen.descartar(item.archivo.driveId);
   for (const n of item.notas) if (n.audio) await s.almacen.descartar(n.audio.driveId);
   const descartado: ItemCola = { ...item, estado: "descartada", resuelta: ahora(s).toISOString(), resueltaPor: usuario };
@@ -338,10 +445,15 @@ export async function listar(s: Servicios, limiteHistorial = 100): Promise<{ pen
   const [items, previos] = await Promise.all([s.cola.listar(), registros(s.planilla)]);
   const momento = ahora(s).getTime();
   const pendientes = items
-    .filter((i) => i.estado === "pendiente" || i.estado === "error" || i.estado === "leyendo")
+    .filter((i) => i.estado === "pendiente" || i.estado === "error" || i.estado === "leyendo" || i.estado === "aprobando")
     .map((i): Pendiente => {
       const colgada = i.estado === "leyendo" && momento - Date.parse(i.recibida) > LECTURA_COLGADA_MS;
-      const item = colgada ? { ...i, estado: "error" as const, error: "La lectura no terminó. Reintentá." } : i;
+      const cortada = i.estado === "aprobando" && !i.error && !aprobacionEnCurso(i, momento);
+      const item = colgada
+        ? { ...i, estado: "error" as const, error: "La lectura no terminó. Reintentá." }
+        : cortada
+          ? { ...i, error: "La aprobación anterior no terminó. Volvé a aprobar para completarla: si la fila ya está en la planilla, no se duplica." }
+          : i;
       const otra = item.lectura ? repetidaEnCola(items, item, item.lectura.factura) : null;
       // De dos repetidas pendientes, se marca la que llegó después (la cola está en orden de llegada).
       const repetida = otra && (otra.estado === "aprobada" || items.indexOf(otra) < items.findIndex((x) => x.id === item.id)) ? otra : null;

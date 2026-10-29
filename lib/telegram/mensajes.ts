@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { comprobante, contraparte, type ItemCola } from "../cola/item";
 import { descripcionEstado, type ExtraAviso } from "../cola/servicio";
-import type { MensajeTelegram } from "./api";
+import type { MensajeTelegram, Reaccion } from "./api";
 
 /** Telegram deja bajar hasta 20 MB a los bots. */
 export const TAMANIO_MAXIMO_TELEGRAM = 20_000_000;
@@ -108,6 +108,7 @@ export const TEXTOS = {
   codigoInvalido: "Ese link de conexión venció (duran una hora) o no sirve. Generá uno nuevo desde la web de facturas: pestaña \"Subir\", \"Conectar mi Telegram\".",
   vinculado: (email: string) => `Listo, este Telegram quedó conectado a ${email}. Ya podés mandarme facturas.`,
   recibida: "Recibida. La estoy leyendo…",
+  enCurso: "Esta factura ya la estoy cargando: llegó dos veces seguidas. Queda una sola vez.",
   noGuardada: (motivo: string) => `No pude guardar la factura: ${motivo}`,
   repetida: (existente: ItemCola) => `Esta factura ya la tengo: ${descripcionEstado(existente)}. No la cargo de nuevo.`,
   notaAgregada: (item: ItemCola) => `Anotado en ${resumen(item)}.`,
@@ -119,6 +120,24 @@ function resumen(item: ItemCola): string {
   const f = item.lectura?.factura;
   if (!f) return item.archivo.nombre;
   return [contraparte(f), comprobante(f), pesos(f.total, f.moneda)].filter(Boolean).join(" · ");
+}
+
+/**
+ * La reacción que queda sobre el mensaje de la factura: 👀 recibida y leyéndose, 👌 lista para
+ * revisar, 🤔 necesita atención (no se pudo leer, ya estaba cargada o ya la habían mandado),
+ * 👍 cargada en la planilla. Al descartarla se saca.
+ */
+export function reaccionDeAviso(aviso: "leida" | "error" | "aprobada" | "descartada", extra: ExtraAviso = { duplicado: false, repetida: null }): Reaccion {
+  switch (aviso) {
+    case "leida":
+      return extra.duplicado || extra.repetida ? "🤔" : "👌";
+    case "error":
+      return "🤔";
+    case "aprobada":
+      return "👍";
+    case "descartada":
+      return null;
+  }
 }
 
 /** El aviso al que mandó el comprobante, según cómo terminó. */

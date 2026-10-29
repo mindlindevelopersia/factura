@@ -30,11 +30,16 @@ export class PestaniaSimple {
         url: `${SHEETS}/${this.sheetId}?fields=sheets.properties.title`,
       });
       if (!r.data.sheets.some((s) => s.properties.title === this.nombre)) {
-        await this.client.request({
-          url: `${SHEETS}/${this.sheetId}:batchUpdate`,
-          method: "POST",
-          data: { requests: [{ addSheet: { properties: { title: this.nombre, gridProperties: { frozenRowCount: 1 } } } }] },
-        });
+        try {
+          await this.client.request({
+            url: `${SHEETS}/${this.sheetId}:batchUpdate`,
+            method: "POST",
+            data: { requests: [{ addSheet: { properties: { title: this.nombre, gridProperties: { frozenRowCount: 1 } } } }] },
+          });
+        } catch (e) {
+          // Dos pedidos a la vez sobre una pestaña nueva: el otro ya la creó.
+          if (!/already exists|ya existe/i.test(JSON.stringify((e as { response?: { data?: unknown } }).response?.data ?? ""))) throw e;
+        }
       }
       const fila1 = await this.client.request<{ values?: string[][] }>({ url: this.url(`A1:${this.ultima}1`) });
       if (!fila1.data.values?.[0]?.some((v) => v !== "")) {
@@ -58,13 +63,19 @@ export class PestaniaSimple {
     return r.data.values ?? [];
   }
 
-  async agregar(valores: string[]): Promise<void> {
+  /**
+   * Agrega una fila al final y devuelve su número. Sheets aplica los agregados de a uno, en
+   * orden: dos agregados simultáneos quedan en filas distintas (lo usa candados.ts).
+   */
+  async agregar(valores: string[]): Promise<number | null> {
     await this.preparar();
-    await this.client.request({
+    const r = await this.client.request<{ updates?: { updatedRange?: string } }>({
       url: `${this.url(`A1:${this.ultima}1`)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
       method: "POST",
       data: { values: [valores] },
     });
+    const n = r.data.updates?.updatedRange?.match(/!A(\d+)/)?.[1];
+    return n ? Number(n) : null;
   }
 
   async escribir(fila: number, valores: string[]): Promise<void> {

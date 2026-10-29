@@ -39,6 +39,15 @@ El cliente pasó una carpeta de Drive con la "Copia para IA de Administración C
 - **Retenciones:** se calculan en otra planilla (iniciativa 11).
 - **Entrada por Telegram:** el cliente quiere mandar las facturas por Telegram más adelante. Se configura después.
 
+## Panel, accesos y Telegram (29/10/2026)
+
+Hecho: panel de inicio con gráficos, accesos directos a la planilla y a Drive solo desde la app, QR para conectar Telegram desde la compu, señales del bot mientras procesa y candados para que nada se cargue dos veces. Falta:
+
+- [ ] **Publicar el script en versión 3** (va incluido en la [puesta en marcha](puesta-en-marcha.md)): sin eso, los botones de Drive del panel aparecen grisados. La app funciona igual con la 2.
+- [ ] **Compartir la planilla y las carpetas con acceso "Restringido"**, solo con las cuentas del equipo. La app esconde los links detrás del login, pero si un link de Google circula, quien lo abre lo decide Google (ver "Accesos a la planilla y a Drive" en el README).
+- [ ] Mirar el panel con los datos reales después de la puesta en marcha: las fechas de la planilla (si alguna fila tiene la fecha como texto raro, no entra en los gráficos) y la moneda.
+- [ ] Probar desde un celular real: mandar una factura y ver 👀, "escribiendo…", 👌 y, al aprobarla, 👍.
+
 ## Puesta en marcha de la cola, la web y Telegram
 
 Ver [puesta-en-marcha.md](puesta-en-marcha.md): carpetas, script de Apps Script en versión 2, planilla de prueba con la estructura real, planilla de la cola, variables en Vercel y prueba de punta a punta. Hasta hacerla, la app desplegada no puede recibir comprobantes.
@@ -103,5 +112,5 @@ Alternativas descartadas por ahora: OAuth con una cuenta de Gmail (hay que publi
 - [x] Controlar que el CUIT receptor de una compra sea el de Mindlin.
 - [x] Formato de las filas nuevas: la app copia el formato de la fila de arriba y pone las fechas en dd/mm/aaaa.
 - [x] Entrada por Telegram.
-- [ ] Si dos personas aprueban la misma factura en el mismo segundo, las dos pueden pasar el control de duplicados. Con el volumen esperado es muy improbable; si pasa, se borra una fila a mano.
+- [x] Si dos personas aprueban la misma factura en el mismo segundo, pasa una sola (candados en la planilla de la cola). Una aprobación cortada a mitad de camino se completa sin duplicar la fila. Ver "La misma factura más de una vez" en el README.
 - [x] Las facturas en revisión ya no viven en la pestaña del navegador: quedan en la cola hasta que alguien las aprueba o descarta.

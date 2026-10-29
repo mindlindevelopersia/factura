@@ -7,17 +7,19 @@ import { FichaRevision } from "./FichaRevision";
 import { EstadoConfiguracion } from "./EstadoConfiguracion";
 import { ErrorRespuesta, leerJson } from "./formato";
 import { Historial } from "./Historial";
+import { Panel } from "./Panel";
 import { Subir } from "./Subir";
 import { TelegramPanel } from "./TelegramPanel";
 
-type Vista = "revisar" | "subir" | "historial";
+type Vista = "inicio" | "revisar" | "subir" | "historial";
 
 /** Cada cuánto se busca si llegaron comprobantes nuevos (por Telegram, o de otra persona). */
 const REFRESCO_MS = 20_000;
 
 /**
- * La pantalla principal: lo que espera revisión (venga de la web o de Telegram), la carga de
- * archivos y el historial de lo aprobado y descartado.
+ * La pantalla principal: el panel de inicio, lo que espera revisión (venga de la web o de
+ * Telegram), la carga de archivos y el historial de lo aprobado y descartado. Un link de
+ * Telegram (?revisar=<id>) abre directo "Para revisar".
  */
 export function Bandeja({ revisar }: { revisar?: string }) {
   const [datos, setDatos] = useState<{ pendientes: Pendiente[]; historial: ItemCola[] } | null>(null);
@@ -25,7 +27,7 @@ export function Bandeja({ revisar }: { revisar?: string }) {
   const [faltaConfigurar, setFaltaConfigurar] = useState(false);
   const [verEstado, setVerEstado] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
-  const [vista, setVista] = useState<Vista>("revisar");
+  const [vista, setVista] = useState<Vista>(revisar ? "revisar" : "inicio");
 
   const cargar = useCallback(async () => {
     try {
@@ -48,6 +50,7 @@ export function Bandeja({ revisar }: { revisar?: string }) {
 
   const pendientes = datos?.pendientes ?? [];
   const pestanias: { vista: Vista; texto: string }[] = [
+    { vista: "inicio", texto: "Inicio" },
     { vista: "revisar", texto: `Para revisar${datos ? ` (${pendientes.length})` : ""}` },
     { vista: "subir", texto: "Subir" },
     { vista: "historial", texto: "Historial" },
@@ -79,6 +82,18 @@ export function Bandeja({ revisar }: { revisar?: string }) {
         <p role="status" className="alerta alerta--ok">
           {aviso}
         </p>
+      )}
+
+      {vista === "inicio" && (
+        <section aria-label="Inicio">
+          <Panel
+            onIrA={(v) => {
+              setAviso(null);
+              setVista(v);
+            }}
+          />
+          <TelegramPanel />
+        </section>
       )}
 
       {vista === "revisar" && (

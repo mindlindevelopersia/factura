@@ -16,7 +16,8 @@ export function fechaHora(iso: string | null): string {
 export function importe(n: number | undefined, moneda = "ARS"): string {
   if (n == null) return "";
   const texto = n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return moneda === "ARS" ? `$ ${texto}` : `${moneda} ${texto}`;
+  // Espacio que no corta: el "$" no queda solo al final de un renglón.
+  return moneda === "ARS" ? `$\u00a0${texto}` : `${moneda}\u00a0${texto}`;
 }
 
 /** Un error del servidor, con su código: 503 quiere decir que falta configurar algo. */

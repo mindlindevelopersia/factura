@@ -94,10 +94,19 @@ export class AppsScriptAlmacen implements Almacen {
   async descartar(id: string): Promise<void> {
     await this.llamar("descartar", { id });
   }
+
+  /**
+   * Los links a las carpetas de Drive configuradas en el script, por categoría. Los devuelve
+   * el script desde la versión 3; con uno anterior, un objeto vacío.
+   */
+  async carpetas(): Promise<Partial<Record<Categoria | "pendientes", string>>> {
+    const r = await this.llamar<{ enlaces?: Partial<Record<Categoria | "pendientes", string>> }>("version", {});
+    return r.enlaces ?? {};
+  }
 }
 
 /** El almacén configurado, o null si faltan APPS_SCRIPT_URL y APPS_SCRIPT_SECRET. */
-export function almacenDesdeEnv(): Almacen | null {
+export function almacenDesdeEnv(): AppsScriptAlmacen | null {
   const url = process.env.APPS_SCRIPT_URL;
   const secreto = process.env.APPS_SCRIPT_SECRET;
   if (!url || !secreto) return null;

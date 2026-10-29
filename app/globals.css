@@ -17,6 +17,14 @@
   --dudoso: #fff3b0; /* campos para revisar: amarillo, distinto del lima */
   --dudoso-borde: #e0b400;
 
+  /* Gráficos. Validados para daltonismo (scripts del skill de dataviz): el oliva, de la familia
+     del lima, tiene poco contraste con el blanco, así que los gráficos llevan valores escritos,
+     tooltip y vista de tabla. */
+  --serie-egresos: #a3ab2c;
+  --serie-ingresos: #3d6fb0;
+  --serie-otros: #b5b5b5;
+  --grilla: #ececec;
+
   --radio-boton: 30px;
   --radio-tarjeta: 16px;
   --radio-campo: 8px;
@@ -717,4 +725,526 @@ a {
   padding: 10px 14px;
   border: 1px solid var(--borde);
   border-radius: var(--radio-campo);
+}
+
+/* Panel de inicio */
+.panel {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.accesos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.acceso {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--radio-boton);
+  background: var(--negro);
+  color: var(--blanco);
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.acceso svg {
+  width: 16px;
+  height: 16px;
+  color: var(--lima);
+}
+
+.acceso:hover {
+  background: var(--lima);
+  color: var(--negro);
+}
+
+.acceso:hover svg {
+  color: var(--negro);
+}
+
+.acceso:focus-visible {
+  outline: 3px solid var(--lima);
+  outline-offset: 2px;
+}
+
+.acceso__flecha {
+  opacity: 0.6;
+}
+
+.acceso--off {
+  background: var(--blanco);
+  color: var(--texto-suave);
+  border: 1px dashed var(--borde);
+  cursor: help;
+}
+
+.acceso--off svg {
+  color: var(--texto-suave);
+}
+
+.panel__cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.cifra {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 20px;
+  background: var(--blanco);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  border: 0;
+}
+
+.cifra__titulo {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+
+.cifra__valor {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--negro);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.cifra__nota {
+  font-size: 0.8125rem;
+  color: var(--texto-suave);
+}
+
+.cifra--hero {
+  background: var(--negro);
+  cursor: pointer;
+  grid-row: span 2;
+}
+
+.cifra--hero .cifra__titulo,
+.cifra--hero .cifra__nota {
+  color: rgb(255 255 255 / 0.75);
+}
+
+.cifra--hero .cifra__valor {
+  font-size: 3.5rem;
+  color: var(--blanco);
+}
+
+.cifra--pendiente .cifra__valor {
+  color: var(--lima);
+}
+
+.cifra__accion {
+  margin-top: 8px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--lima);
+}
+
+.cifra--hero:hover {
+  background: #262626;
+}
+
+.cifra--hero:focus-visible {
+  outline: 3px solid var(--lima);
+  outline-offset: 2px;
+}
+
+.panel__graficos {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 16px;
+}
+
+.grafico {
+  margin: 0;
+  padding: 24px;
+}
+
+.grafico h2,
+.recientes h2 {
+  font-size: 1.0625rem;
+  margin: 0;
+}
+
+.grafico__sub {
+  margin: 2px 0 12px;
+  font-size: 0.8125rem;
+  color: var(--texto-suave);
+}
+
+.leyenda {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 0;
+  margin: 0 0 12px;
+  font-size: 0.8125rem;
+}
+
+.leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.leyenda__marca {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.leyenda__marca--egresos {
+  background: var(--serie-egresos);
+}
+
+.leyenda__marca--ingresos {
+  background: var(--serie-ingresos);
+}
+
+.columnas {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  height: 240px;
+  padding-bottom: 24px;
+}
+
+.columnas__eje {
+  position: relative;
+  font-size: 0.6875rem;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.columnas__eje span {
+  position: absolute;
+  right: 8px;
+  transform: translateY(50%);
+  white-space: nowrap;
+}
+
+.columnas__area {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  border-bottom: 1px solid var(--borde);
+}
+
+.columnas__linea {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--grilla);
+}
+
+.columnas__grupo {
+  position: relative;
+  height: 100%;
+  outline: none;
+  cursor: default;
+}
+
+.columnas__grupo--activo,
+.columnas__grupo:focus-visible {
+  background: rgb(0 0 0 / 0.04);
+  border-radius: 6px 6px 0 0;
+}
+
+.columnas__barras {
+  position: absolute;
+  inset: 0 0 0 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.columnas__barra {
+  width: min(40%, 18px);
+  border-radius: 4px 4px 0 0;
+  min-height: 0;
+}
+
+.columnas__barra--egresos {
+  background: var(--serie-egresos);
+}
+
+.columnas__barra--ingresos {
+  background: var(--serie-ingresos);
+}
+
+.columnas__mes {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding-top: 6px;
+  text-align: center;
+  font-size: 0.6875rem;
+  color: var(--texto-suave);
+}
+
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: grid;
+  gap: 2px;
+  min-width: 200px;
+  padding: 10px 12px;
+  background: var(--negro);
+  color: var(--blanco);
+  border-radius: var(--radio-campo);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltip span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.columnas__grupo .tooltip {
+  bottom: auto;
+  top: 0;
+}
+
+.tooltip--izq {
+  left: 0;
+  transform: none;
+}
+
+.tooltip--der {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.grafico__tabla {
+  margin-top: 16px;
+  font-size: 0.875rem;
+}
+
+.grafico__tabla summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+
+.barras {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.barras__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8125rem;
+}
+
+.barras__nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barras__pista {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.barras__barra {
+  display: block;
+  height: 14px;
+  min-width: 2px;
+  max-width: calc(100% - 64px);
+  border-radius: 0 4px 4px 0;
+  background: var(--serie-egresos);
+}
+
+.barras__barra--otros {
+  background: var(--serie-otros);
+}
+
+.barras__valor {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--texto);
+  font-variant-numeric: tabular-nums;
+}
+
+.recientes {
+  padding: 24px;
+}
+
+.recientes__encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.recientes__lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+}
+
+.recientes__lista li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--borde);
+  font-size: 0.875rem;
+}
+
+.recientes__lista .estado {
+  min-width: 96px;
+  text-align: center;
+}
+
+.recientes__texto {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.recientes__fila {
+  flex-shrink: 0;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Telegram: QR en la compu, botón en el celular */
+.solo-celular {
+  display: none;
+}
+
+@media not ((hover: hover) and (pointer: fine)), (max-width: 640px) {
+  .solo-compu {
+    display: none;
+  }
+  .solo-celular {
+    display: block;
+  }
+}
+
+.telegram__qr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+  margin-top: 8px;
+  padding: 16px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+}
+
+.telegram__qr img {
+  display: block;
+  width: 184px;
+  height: 184px;
+  border-radius: var(--radio-campo);
+}
+
+.telegram__qr > div {
+  flex: 1;
+  min-width: 220px;
+}
+
+.telegram__qr p {
+  margin: 0 0 8px;
+}
+
+.telegram__pasos {
+  margin: 0 0 8px;
+  padding-left: 20px;
+  font-size: 0.9375rem;
+}
+
+.telegram__otro summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+@media (max-width: 820px) {
+  .panel__graficos {
+    grid-template-columns: 1fr;
+  }
+  .cifra--hero {
+    grid-row: auto;
+  }
+  .cifra--hero .cifra__valor {
+    font-size: 2.75rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .columnas {
+    grid-template-columns: 44px minmax(0, 1fr);
+    height: 200px;
+  }
+  .columnas__barra {
+    width: min(45%, 10px);
+  }
+  .barras__fila {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+  .recientes__lista .estado {
+    min-width: 0;
+  }
+  .recientes__lista li {
+    flex-wrap: wrap;
+  }
+  .recientes__texto {
+    flex-basis: 100%;
+  }
+  /* Con poco ancho, un mes sí y uno no: siempre se ve el actual (el último). */
+  .columnas__grupo:nth-of-type(odd) .columnas__mes {
+    visibility: hidden;
+  }
+}
+
+/* El historial en el celular corre el detalle a la derecha; en la actividad reciente, no. */
+.recientes__texto .tabla__sub {
+  padding-left: 0;
+}
+
+.solo-celular .factura__nota {
+  display: block;
+  margin-top: 8px;
 }

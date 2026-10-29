@@ -15,6 +15,24 @@ export interface Registros {
   historial: Historial;
   /** Por clave de duplicado (ver claveDuplicado), las filas cargadas con ese número. */
   cargadas: Map<string, Cargada[]>;
+  /** Todas las filas con importe, para el panel. */
+  movimientos: Movimiento[];
+}
+
+/** Una fila de la planilla, cargada a mano o por la app, resumida para el panel. */
+export interface Movimiento {
+  pestania: "egresos" | "ingresos";
+  fila: number;
+  /** Fecha de la factura, AAAA-MM-DD. null si la celda no tiene una fecha. */
+  fecha: string | null;
+  /** Razón social (egresos) o cliente (ingresos). */
+  contraparte: string;
+  /** CUIT del proveedor (egresos) o del receptor (ingresos), solo dígitos. */
+  cuit: string;
+  /** "Pesos", "Dólares"... como en la planilla. */
+  moneda: string;
+  /** Con signo: las notas de crédito están en negativo. NaN si la celda no tiene un número. */
+  total: number;
 }
 
 /** Primera fila de datos (la 1 tiene los encabezados). */
@@ -26,8 +44,12 @@ export const PRIMERA_FILA = 2;
  */
 export const RANGO_EGRESOS = "C2:T"; // Tipo, Nº, Razón Social, Rubro, CUIT, Concepto, Corresponde a ... Importe Total
 export const RANGO_INGRESOS = "C2:M"; // Tipo, Nº, Cliente, Tipo de Pago, CUIT Receptor, Depto ... Importe Total
+/** Fecha de la factura y de registro, en las dos pestañas. Se piden en el mismo batchGet. */
+export const RANGO_FECHAS = "A2:B";
 const TOTAL_EGRESOS = 17; // T, contando desde C
 const TOTAL_INGRESOS = 10; // M, contando desde C
+const MONEDA_EGRESOS = 9; // L, contando desde C
+const MONEDA_INGRESOS = 6; // I, contando desde C
 
 /** Diferencia de total que se acepta para decir que es la misma factura: la planilla calcula el IVA con fórmulas. */
 export const TOLERANCIA_DUPLICADO = 1;
@@ -35,8 +57,33 @@ export const TOLERANCIA_DUPLICADO = 1;
 type Valor = string | number | boolean | null | undefined;
 const texto = (fila: Valor[], i: number) => String(fila[i] ?? "").trim();
 function total(fila: Valor[], i: number): number {
+  return Math.abs(conSigno(fila, i));
+}
+function conSigno(fila: Valor[], i: number): number {
   const v = fila[i];
-  return typeof v === "number" ? Math.abs(v) : Math.abs(Number(String(v ?? "").replace(/[^\d.-]/g, "")) || Number.NaN);
+  if (typeof v === "number") return v;
+  const limpio = String(v ?? "").replace(/[^\d,.-]/g, "");
+  if (!limpio) return Number.NaN;
+  // "1.234,56" (como lo escribe una persona) o "1234.56".
+  const n = Number(limpio.includes(",") ? limpio.replace(/\./g, "").replace(",", ".") : limpio);
+  return Number.isFinite(n) ? n : Number.NaN;
+}
+
+/** Fechas de Sheets: número de serie (días desde el 30/12/1899) o texto dd/mm/aaaa o aaaa-mm-dd. */
+export function fechaDeCelda(v: Valor): string | null {
+  if (typeof v === "number" && v > 0) {
+    const d = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86_400_000);
+    return d.toISOString().slice(0, 10);
+  }
+  const t = String(v ?? "").trim();
+  let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (m) {
+    const anio = m[3].length === 2 ? `20${m[3]}` : m[3];
+    return `${anio}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  }
+  return null;
 }
 
 /**
@@ -44,8 +91,13 @@ function total(fila: Valor[], i: number): number {
  * pestañas (los rangos de arriba, como los devuelve la API de Sheets). Las filas sin número
  * de comprobante, o de egresos sin CUIT, no cuentan para los duplicados.
  */
-export function leerRegistros(egresos: Valor[][], ingresos: Valor[][]): Registros {
+export function leerRegistros(
+  egresos: Valor[][],
+  ingresos: Valor[][],
+  fechas: { egresos: Valor[][]; ingresos: Valor[][] } = { egresos: [], ingresos: [] },
+): Registros {
   const cargadas = new Map<string, Cargada[]>();
+  const movimientos: Movimiento[] = [];
   const anotar = (clave: string, c: Cargada) => cargadas.set(clave, [...(cargadas.get(clave) ?? []), c]);
   const historialEgresos: EgresoPrevio[] = [];
   const historialIngresos: IngresoPrevio[] = [];
@@ -59,6 +111,10 @@ export function leerRegistros(egresos: Valor[][], ingresos: Valor[][]): Registro
       anotar(claveEgreso(digitos, familiaDeTexto(tipo), n.punto_venta, n.numero), { fila, total: total(f, TOTAL_EGRESOS) });
     }
     if (digitos) historialEgresos.push({ fila, cuit: digitos, razon_social, rubro, concepto, corresponde_a });
+    const monto = conSigno(f, TOTAL_EGRESOS);
+    if (Number.isFinite(monto)) {
+      movimientos.push({ pestania: "egresos", fila, fecha: fechaDeCelda(fechas.egresos[i]?.[0]), contraparte: razon_social, cuit: digitos, moneda: texto(f, MONEDA_EGRESOS), total: monto });
+    }
   });
 
   ingresos.forEach((f, i) => {
@@ -68,9 +124,13 @@ export function leerRegistros(egresos: Valor[][], ingresos: Valor[][]): Registro
     if (n) anotar(claveIngreso(familiaDeTexto(tipo), n.punto_venta, n.numero), { fila, total: total(f, TOTAL_INGRESOS) });
     const digitos = normalizeCuit(cuit_receptor);
     if (digitos) historialIngresos.push({ fila, cuit_receptor: digitos, cliente, tipo_pago, depto });
+    const monto = conSigno(f, TOTAL_INGRESOS);
+    if (Number.isFinite(monto)) {
+      movimientos.push({ pestania: "ingresos", fila, fecha: fechaDeCelda(fechas.ingresos[i]?.[0]), contraparte: cliente, cuit: digitos, moneda: texto(f, MONEDA_INGRESOS), total: monto });
+    }
   });
 
-  return { historial: { egresos: historialEgresos, ingresos: historialIngresos }, cargadas };
+  return { historial: { egresos: historialEgresos, ingresos: historialIngresos }, cargadas, movimientos };
 }
 
 /**
