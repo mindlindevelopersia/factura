@@ -100,7 +100,9 @@ const igualNormalizado =
 const importe =
   (obtener: (inv: Factura) => number): Comparador =>
   (esperado, inv, decimal) => {
-    const obtenido = obtener(inv);
+    // El extractor conserva los importes positivos del PDF. La carga contable descuenta
+    // las notas de crédito: se compara el mismo signo que escribe filaConOpcionales.
+    const obtenido = obtener(inv) * (inv.tipo_comprobante === "nota_credito" ? -1 : 1);
     // En la planilla, una celda vacía en una columna de importes es 0.
     const e = vacio(esperado) ? 0 : parseImporte(esperado, decimal);
     return { acierto: e != null && Math.abs(e - obtenido) <= 0.01, esperado, obtenido: String(obtenido) };

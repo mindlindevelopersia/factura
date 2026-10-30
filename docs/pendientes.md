@@ -2,6 +2,8 @@
 
 La configuración actual de cada servicio está en [configuracion.md](configuracion.md).
 
+**Actualización del 30/10/2026:** evaluación real de los 17 PDF de octubre completada, limpieza de pruebas realizada y tres correos habilitados en Vercel y Google. La app continúa en la copia contable. Ver el estado y los límites actuales en [cierre-2026-10-30.md](cierre-2026-10-30.md) y [mapa.md](mapa.md); las anotaciones anteriores describen el estado de esas fechas.
+
 **Actualización del 29/10/2026:** llegaron los datos del cliente (ver abajo, "Datos de octubre"). La app ya está adaptada a su planilla y a sus tres carpetas, tiene la cola de pendientes, la web para revisar y subir y el bot de Telegram, y está en `main`. Falta la [puesta en marcha](puesta-en-marcha.md) y medir la lectura de la IA con octubre.
 
 **Actualización del 28/10/2026:** el entorno de prueba ya tiene Anthropic, Drive y Sheets conectados. La prueba con la API real está registrada en [verificacion.md](verificacion.md). Se continúa con la planilla de prueba porque la real del cliente todavía no está disponible.
@@ -104,7 +106,7 @@ Alternativas descartadas por ahora: OAuth con una cuenta de Gmail (hay que publi
 ## Desarrollo
 
 - [x] Probar el circuito completo en Production con la API real y comprobantes sintéticos: imagen en ARS, PDF de nota de crédito en USD y rechazo de duplicados. Ver [verificacion.md](verificacion.md).
-- [ ] **Correr la evaluación con octubre** (`scripts/eval/README.md`, "Octubre de 2026") y ajustar el prompt según los resultados. Necesita `ANTHROPIC_API_KEY` donde se corra.
+- [x] **Correr la evaluación con octubre**: hecha el 30/10 con 17 PDF y la API real; resultados revisados contra los documentos. Ver [cierre-2026-10-30.md](cierre-2026-10-30.md).
 - [ ] Leer el QR de ARCA de fotos y PDF. El validador ya existe, pero recibe el texto del QR.
 - [x] Reglas de rubro por proveedor: salen de la carga anterior del mismo CUIT (`lib/invoice/completar.ts`).
 - [x] Controlar que el CUIT receptor de una compra sea el de Mindlin.
