@@ -6,7 +6,7 @@ Procesa un mes de comprobantes y compara, campo por campo, lo que propone la app
 npm run eval -- --dir muestras/2026-10 --mes 2026-10 --decimal punto
 ```
 
-Necesita `ANTHROPIC_API_KEY` en el entorno o en `.env.local`. Cada factura cuesta entre US$0,02 y 0,04.
+Necesita `ANTHROPIC_API_KEY` en el entorno o en `.env.local`. El costo depende de las páginas y los tokens: la corrida real del 30/10 estimó US$0,84 para 17 PDF (US$0,049 por comprobante), con los precios configurados en el script.
 
 ## Entrada
 
@@ -21,13 +21,17 @@ Con `--mes AAAA-MM`, se esperan solo las filas de ese mes, y las anteriores sirv
 
 ### Octubre de 2026
 
-Los datos están en la carpeta de Drive que pasó el cliente: 8 compras y 1 venta en PDF, y la "Copia para IA de Administración Contable". Para correrlo:
+La lectura del Drive del 30/10 encontró 20 PDF: 18 en compras y 2 en ventas. Tres tienen fecha de emisión de septiembre; los **17 de octubre** cubren las 17 filas del mes. La muestra anterior de 9 PDF estaba incompleta. Para correrlo:
 
-1. Bajar las dos subcarpetas a `muestras/2026-10/`, con sus nombres.
+1. Bajar las dos subcarpetas y conservar los PDF con fecha de emisión de octubre en `muestras/2026-10/`. La fecha del CAE, del período facturado o el nombre del archivo no determina el mes de emisión. Dejar aparte las facturas de Matías 114 y 115 y la 5662, emitidas en septiembre.
 2. Abrir la copia de la planilla en Sheets y exportar a CSV las dos pestañas de facturación, como `muestras/2026-10/compras.csv` y `muestras/2026-10/ventas.csv`.
 3. `npm run eval -- --dir muestras/2026-10 --mes 2026-10 --decimal punto` (la copia tiene formato en inglés: `1,234.56`).
 
-En octubre la planilla tiene 17 comprobantes y la carpeta trae 9: las otras 8 filas aparecen en `filas_sin_archivo`.
+Para medir la categoría, ubicar las facturas de **Michelle Mindlin 79** y **Micaela Druck 45** en una subcarpeta `honorarios`, según los socios confirmados en `config/empresa.json`. Florencia Lerer, aunque el archivo se llama "HONORARIOS 10-26", es una compra de servicios: no está en la lista de socios. La muestra queda con 13 compras, 2 honorarios y 2 ventas.
+
+La corrida del 30/10 leyó los 17 PDF con la API real y emparejó todas las filas: [resultados y diferencias revisadas](../../docs/cierre-2026-10-30.md). El 97% de coincidencia contra la carga manual incluye diferencias de concepto y errores de la propia planilla; no es una garantía de precisión futura.
+
+Las notas de crédito se comparan con el signo negativo de la carga contable. El extractor mantiene los importes positivos impresos en el PDF, como en producción.
 
 ### Formato de los CSV
 

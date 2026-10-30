@@ -93,6 +93,15 @@ describe("compararFila", () => {
     expect(r.numero.acierto).toBe(false);
   });
 
+  it("compara las notas de crédito con el signo negativo de la carga contable", () => {
+    const nc = { ...inv, tipo_comprobante: "nota_credito" as const };
+    const r = compararFila({ neto_gravado: "-1.234,56", iva_21: "-259,26", total: "-1.493,82" }, nc, "coma");
+    expect(Object.values(r).every((c) => c.acierto)).toBe(true);
+    expect(r.total.obtenido).toBe("-1493.82");
+    expect(compararFila({ total: "1.493,82" }, nc, "coma").total.acierto).toBe(false);
+    expect(compararFila({ total: "-1.500,00" }, nc, "coma").total.acierto).toBe(false);
+  });
+
   it("no compara la letra si la planilla no la tiene", () => {
     const nc = { ...inv, tipo_comprobante: "nota_credito" as const };
     expect(compararFila({ tipo_comprobante: "Nota de Crédito " }, nc, "coma").tipo_comprobante.acierto).toBe(true);

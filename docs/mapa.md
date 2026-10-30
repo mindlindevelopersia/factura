@@ -68,65 +68,23 @@ Cómo escribe:
 | **Telegram** | Qué cuenta de Telegram corresponde a qué mail |
 | **Candados** | Registro corto que impide que dos personas carguen la misma factura a la vez. Aparece la primera vez que se usa |
 
-## Qué falta, por prioridad
+## Estado al 30/10/2026
 
-1. **Evaluar la IA con octubre.** Medir cuánto acierta con las 10 facturas reales antes de usarla en la planilla real. Necesita una clave de Anthropic en el entorno donde se corre (`ANTHROPIC_API_KEY`) y las facturas y la planilla de octubre en `muestras/2026-10/` ([scripts/eval/README.md](../scripts/eval/README.md)).
-   - 30/10: no se pudo correr. En la sesión no estaba `ANTHROPIC_API_KEY` ni llegaron los archivos. La carpeta del cliente con los PDF no está compartida con mindlindevelopers.ia@gmail.com: solo la planilla .xlsx.
-2. **Limpiar las pruebas.**
-   - Hecho el 29/10: a la papelera las pruebas viejas de la cuenta de Axel ("Facturas (prueba)", "[PRUEBA] Facturación de Egresos" y el script viejo).
-   - Hecho el 30/10, en la cuenta de Mindlin: Drive ordenado como arriba, las dos pruebas del 28/10 archivadas y a la papelera los 5 archivos de prueba de "Facturas Mindlin" (4 en "Pendientes" y 1 en "Facturas Compras Octubre 2026"). Las subcarpetas de mes no se tocan: el script podría reusar una carpeta que esté en la papelera.
-   - Falta: las 5 filas de prueba de la cola (del 28/10, de axellaban@gmail.com). Las 4 "Para revisar" son copias de facturas reales de octubre (Costa Materiales 5-25853, JH 94 NC 1-5, Matías Mindlin C 1-114 y la venta 2-6) y, mientras no se descarten, la app avisa que esas facturas ya están: hay que tocar **Descartar** en cada una desde la web. La aprobada (Proveedor Ejemplo, ficticia) quedó como fila 230 de egresos en la copia de la planilla: borrarla a mano.
-3. **Botones de Drive del Inicio.** Hecho el 30/10: los IDs de compras, honorarios y ventas están en `config/drive.json`. Ya no hace falta publicar la versión 3 del script.
-4. **Acceso "Restringido"** en la carpeta y las dos planillas. Revisado el 30/10: todo restringido. Solo tienen acceso la dueña y, en las dos planillas, la cuenta de servicio como Editor.
-5. **Pasar a la planilla real**, si la evaluación da bien: compartir "Administración Contable" con la cuenta de servicio como Editor y cambiar `SHEET_ID`, `SHEET_TAB_EGRESOS` y `SHEET_TAB_INGRESOS` en Vercel. El panel pasa a mostrar los números reales solo.
-6. **Alta del equipo:** cada mail en `ALLOWED_EMAILS` (Vercel) y como usuario de prueba en la pantalla de consentimiento de Google. Después, cada uno conecta su Telegram con el QR del Inicio.
-7. **Prueba final con una factura real**, por Telegram y por la web: fila en la planilla, PDF en la carpeta del mes, panel actualizado.
+La evaluación y la limpieza ya se completaron. El detalle verificable está en [cierre-2026-10-30.md](cierre-2026-10-30.md).
 
-El panel se probó con números simulados. Si alguna fila de la planilla tiene la fecha vacía o imposible (la auditoría de octubre encontró una con 03/08/2062), ahora lo avisa solo, con link a la fila.
+- **Evaluación:** 17 PDF reales de octubre, 17 lecturas correctas, sin fallback, errores de extracción ni controles de CUIT o suma fallidos. Coincidencia contra la planilla: 289/298 campos (97%). Las nueve diferencias se revisaron contra los PDF: tres errores de la planilla y seis diferencias de concepto. No se modificó el prompt para inventar números de certificación que el documento no trae.
+- **Pruebas:** se descartaron las cuatro copias de facturas reales del 28/10. Se eliminó únicamente la fila ficticia 230 de la copia contable; su registro de cola se conservó como descartado, con nota de auditoría y sin enlace a esa fila reutilizable. No se borró nada definitivamente de Drive.
+- **Bandeja:** quedó sin pendientes tras probar nuevamente la recepción, detección de duplicado y descarte. La aprobación de Costa 25853 fue bloqueada por la fila 214 existente; la planilla no cambió durante la prueba.
+- **Google:** axellaban@gmail.com, mindlindevelopers.ia@gmail.com y matimindlin111@gmail.com están como usuarios de prueba. Google Auth Platform permanece en estado "Prueba".
+- **Vercel:** se agregó el correo de Mindlin a `ALLOWED_EMAILS` de Production y se conservaron los otros dos. Ninguna otra variable se cambió.
+- **Drive:** script versión 2, cuatro destinos configurados; los botones usan los IDs de `config/drive.json`. No hace falta publicar la versión 3 para esos accesos.
+- **Telegram:** bot `@mindlindevelopers_facturas_bot`, webhook activo, sin errores reportados. La cuenta de Axel ya estaba vinculada.
 
-## Prompt para computer use (lo que falta, 30/10)
+## Qué queda para la entrega definitiva
 
-Para un agente con computer use en una compu con Chrome, con las sesiones abiertas de **axellaban@gmail.com** (Drive, Vercel, Google Cloud y claude.ai) y de **mindlindevelopers.ia@gmail.com** (Drive). Antes de pegarlo, completar `<MAILS DEL EQUIPO>`.
+1. **Decidir el paso a la planilla real.** La app sigue en la copia de prueba por indicación del responsable. Compartir la definitiva con la cuenta de servicio como Editor y cambiar `SHEET_ID` y los nombres exactos de sus dos pestañas recién cuando se elija esa planilla.
+2. **Acceso directo a Google del equipo.** Estar habilitado en la app no concede permisos en Drive o Sheets. Verificar con la cuenta de cada integrante los accesos directos; mantener restringidos los archivos internos del sistema.
+3. **Criterios de negocio del cliente.** Siguen las preguntas de [pendientes.md](pendientes.md): pagos, retenciones, "Pagos por Inversor" y convenciones de concepto.
+4. **Muestras fuera de octubre.** La evaluación actual no cubre fotos borrosas, moneda extranjera ni percepciones; conservar la revisión humana antes de aprobar.
 
-````
-Vas a terminar de poner en marcha la app de facturas de Mindlin (https://mindlin-developers.vercel.app). Reglas: no borres nada definitivamente (solo papelera), no copies ni muestres claves o secretos, no cambies variables de Vercel salvo las que digo, y si algo pide pagar o no coincide con lo que espero, frená y avisame.
-
-PASO 1. Evaluación de la IA (se corre en Claude Code, no la corrés vos)
-1. En Chrome, con la cuenta axellaban@gmail.com en Drive, descargá (clic derecho > "Descargar"):
-   - Carpeta "Facturas Compras Octubre": https://drive.google.com/drive/folders/1fta_Ws68vunGHjFCxqU8nfl3fb-S3C11
-   - Carpeta "Facturas Ventas Octubre": https://drive.google.com/drive/folders/1krYdsyfl2J_21aBJWFNYilH65LdqL0oQ
-   - Archivo "Copia para IA de Administración Contable - Mindlin Developers - LERMA 439.xlsx": https://drive.google.com/file/d/1y60VAg8yW10ce6sFcJssSVH_s7cv5T4d/view
-   Descomprimí los dos .zip. Tienen que ser 10 PDF (9 + 1) y 1 .xlsx.
-2. Abrí https://claude.ai/code y empezá una sesión nueva sobre el repo mindlindevelopersia/factura, en el mismo entorno de siempre (el que tiene la clave de Anthropic).
-3. Adjuntá los 10 PDF y el .xlsx (arrastrándolos a la caja de texto) y mandá este mensaje:
-   "Corré la evaluación de octubre (scripts/eval/README.md, 'Octubre de 2026') con estos archivos. Ponelos en muestras/2026-10/ (compras y ventas), nunca en git. Honorarios: 'Copia de HONORARIOS 10-26.pdf' y 'Copia de 27374235643_011_00001_00000045.pdf'. Resumime en pocas líneas el acierto por campo, separando errores de la IA de errores de carga de la planilla. Si hay errores de la IA que se corrijan en el prompt, corregilos, volvé a correr, mergeá a main y actualizá docs/mapa.md."
-4. Esperá a que termine (puede tardar 10 minutos) y copiá su resumen para el informe. Si pide algo, contestá solo si la respuesta está en estas instrucciones; si no, anotalo.
-
-PASO 2. Sacar las pruebas de la app
-1. Abrí https://mindlin-developers.vercel.app (si pide iniciar sesión, entrá con Google como axellaban@gmail.com).
-2. En "Bandeja" hay 4 comprobantes de prueba enviados el 28/10 por axellaban@gmail.com: Costa Materiales 5-25853, JH 94 (nota de crédito 1-5), Matías Mindlin (factura C 1-114) y la venta 2-6. Si coinciden, en cada uno tocá "Descartar" y confirmá. Si hay otros comprobantes, no los toques: anotalos.
-3. En Drive con mindlindevelopers.ia@gmail.com abrí la planilla "[PRUEBA] Administración Contable - copia para la app" (https://docs.google.com/spreadsheets/d/1xCCxb2TRpjal_yydlZV7DqRG04MpgWESXG__pYLx_54/edit), pestaña "Facturación de Egresos (Compras)", fila 230. Si la razón social es "Proveedor Ejemplo", clic derecho en el número de fila > "Borrar fila". Si es otra cosa, no borres nada y avisame.
-
-PASO 3. Alta del equipo
-Mails a habilitar: <MAILS DEL EQUIPO>
-1. Vercel (vercel.com, proyecto de mindlin-developers.vercel.app) > Settings > Environment Variables > Production > ALLOWED_EMAILS: agregá los mails que falten, separados por coma, sin sacar los que ya están. Guardá. Después Deployments > último de Production > "..." > "Redeploy" y esperá "Ready".
-2. Google Cloud (console.cloud.google.com, proyecto "mindlin-developers", cuenta axellaban@gmail.com) > APIs y servicios > Pantalla de consentimiento de OAuth (o "Público") > Usuarios de prueba: agregá los mismos mails. No publiques la app.
-
-PASO 4. Telegram
-1. En la web, pestaña "Inicio", recuadro de Telegram. Si dice que el bot no está recibiendo mensajes, tocá "Activar bot".
-2. Si en esta compu hay Telegram (app o https://web.telegram.org con sesión iniciada), tocá "¿Tenés Telegram en esta compu? Abrilo acá" y después "Iniciar" en el chat del bot. La web tiene que avisar "quedó conectado". Si no hay Telegram en la compu, saltealo y anotalo.
-
-PASO 5. Prueba final
-1. En la web, pestaña "Subir facturas", subí "Copia de FC 25853 MINDLIN.pdf" (de las de octubre). Esa factura ya está cargada en la planilla: la app tiene que leerla y avisar "Posible duplicado" sin dejar aprobarla. Anotá lo que muestra y después tocá "Descartar".
-2. Si conectaste Telegram en el paso 4, mandale al bot "Copia de JH LERMA FACT 1OCT.pdf" como archivo. Anotá las señales: la respuesta "Recibida", la reacción 👀 sobre tu mensaje, "escribiendo…" y el mensaje "Leída" con un link. Abrí el link, verificá que muestre la factura y tocá "Descartar". La reacción tiene que desaparecer.
-3. En "Inicio", tocá cada botón de arriba (Planilla y Drive) y anotá qué abre.
-
-INFORME FINAL (sin secretos)
-- Paso 1: el resumen de la evaluación que dio Claude Code, y si mergeó cambios.
-- Paso 2: qué se descartó y si se borró la fila 230.
-- Paso 3: mails agregados en Vercel y en Google Cloud, y si el redeploy quedó "Ready".
-- Paso 4 y 5: lo que se vio en cada prueba, y cualquier error con su texto exacto.
-- Lo que no se pudo hacer, y por qué.
-````
-
-Lo único que queda después es una decisión: **pasar a la planilla real** (punto 5 de la lista de arriba), con el resultado de la evaluación en la mano.
+El panel señala la fecha futura de egresos, fila 164. Es un dato de la planilla de origen y no se corrigió sin decisión del cliente.
