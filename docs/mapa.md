@@ -14,8 +14,8 @@ Las facturas llegan por Telegram o por la web, la IA las lee y quedan en la **ba
 | **[PRUEBA] Administración Contable - copia para la app** | Copia de la planilla contable del cliente. Es donde la app carga las facturas aprobadas mientras se prueba. Cuando se pase a la real, se reemplaza por "Administración Contable" | Sí (lee y escribe) | Sí: es "la planilla" |
 | **Facturas Mindlin - cola de la app** | Planilla interna de la app: la bandeja, las cuentas de Telegram conectadas y los candados contra duplicados | Sí | No hace falta. No editarla a mano |
 | **Guardar facturas Mindlin** (script) | El programa que guarda, mueve y descarta los PDF en Drive a nombre de esta cuenta. Hace falta porque la app no tiene espacio propio en un Drive de Gmail | Sí | No. Solo se toca para actualizarlo |
-| **Facturas Mindlin (prueba)** (carpeta) | La carpeta de la primera prueba (28/10), antes de las tres categorías | No | No. Archivar |
-| **[PRUEBA] Facturación de Egresos - Mindlin** | La planilla de la primera prueba, con columnas inventadas, antes de tener la del cliente | No, si `SHEET_ID` en Vercel ya apunta a la copia nueva | No. Archivar |
+| **Facturas Mindlin (prueba)** (carpeta) | La carpeta de la primera prueba (28/10), antes de las tres categorías | No | No. Archivada |
+| **[PRUEBA] Facturación de Egresos - Mindlin** | La planilla de la primera prueba, con columnas inventadas, antes de tener la del cliente | No: `SHEET_ID` apunta a la copia nueva (ahí escribió la última aprobación de prueba) | No. Archivada |
 
 Los íconos de "compartido" (dos personas) de las planillas y del script son normales: las planillas están compartidas con la cuenta de servicio de la app, que es como la app las lee y escribe.
 
@@ -23,7 +23,7 @@ En el Drive de axellaban@gmail.com quedan los respaldos de las pruebas del 27 y 
 
 ### Cómo queda ordenado
 
-Mover un archivo en Drive no cambia su ID, así que la app sigue funcionando igual. El prompt de abajo lo deja así:
+Mover un archivo en Drive no cambia su ID, así que la app sigue funcionando igual. Quedó así el 30/10 (IDs en [configuracion.md](configuracion.md)):
 
 ```
 Mi unidad
@@ -71,11 +71,13 @@ Cómo escribe:
 ## Qué falta, por prioridad
 
 1. **Evaluar la IA con octubre.** Medir cuánto acierta con las 10 facturas reales antes de usarla en la planilla real. Necesita una clave de Anthropic en el entorno donde se corre (`ANTHROPIC_API_KEY`) y las facturas y la planilla de octubre en `muestras/2026-10/` ([scripts/eval/README.md](../scripts/eval/README.md)).
+   - 30/10: no se pudo correr. En la sesión no estaba `ANTHROPIC_API_KEY` ni llegaron los archivos. La carpeta del cliente con los PDF no está compartida con mindlindevelopers.ia@gmail.com: solo la planilla .xlsx.
 2. **Limpiar las pruebas.**
    - Hecho el 29/10: a la papelera las pruebas viejas de la cuenta de Axel ("Facturas (prueba)", "[PRUEBA] Facturación de Egresos" y el script viejo).
-   - Falta, en la cuenta de Mindlin: archivar "Facturas Mindlin (prueba)" y "[PRUEBA] Facturación de Egresos - Mindlin", borrar los PDF de prueba de "Facturas Mindlin" y las filas de prueba de la cola, y ordenar el Drive como arriba.
-3. **Botones de Drive del Inicio.** Cargar los IDs de las carpetas de compras, honorarios y ventas en `config/drive.json` (no son secretos). Con eso andan sin tocar el script. La otra forma es publicar la versión 3 del script (prompt de abajo).
-4. **Acceso "Restringido"** en la carpeta y las dos planillas.
+   - Hecho el 30/10, en la cuenta de Mindlin: Drive ordenado como arriba, las dos pruebas del 28/10 archivadas y a la papelera los 5 archivos de prueba de "Facturas Mindlin" (4 en "Pendientes" y 1 en "Facturas Compras Octubre 2026"). Las subcarpetas de mes no se tocan: el script podría reusar una carpeta que esté en la papelera.
+   - Falta: las 5 filas de prueba de la cola (del 28/10, de axellaban@gmail.com). Las 4 "Para revisar" son copias de facturas reales de octubre (Costa Materiales 5-25853, JH 94 NC 1-5, Matías Mindlin C 1-114 y la venta 2-6) y, mientras no se descarten, la app avisa que esas facturas ya están: hay que tocar **Descartar** en cada una desde la web. La aprobada (Proveedor Ejemplo, ficticia) quedó como fila 230 de egresos en la copia de la planilla: borrarla a mano.
+3. **Botones de Drive del Inicio.** Hecho el 30/10: los IDs de compras, honorarios y ventas están en `config/drive.json`. Ya no hace falta publicar la versión 3 del script.
+4. **Acceso "Restringido"** en la carpeta y las dos planillas. Revisado el 30/10: todo restringido. Solo tienen acceso la dueña y, en las dos planillas, la cuenta de servicio como Editor.
 5. **Pasar a la planilla real**, si la evaluación da bien: compartir "Administración Contable" con la cuenta de servicio como Editor y cambiar `SHEET_ID`, `SHEET_TAB_EGRESOS` y `SHEET_TAB_INGRESOS` en Vercel. El panel pasa a mostrar los números reales solo.
 6. **Alta del equipo:** cada mail en `ALLOWED_EMAILS` (Vercel) y como usuario de prueba en la pantalla de consentimiento de Google. Después, cada uno conecta su Telegram con el QR del Inicio.
 7. **Prueba final con una factura real**, por Telegram y por la web: fila en la planilla, PDF en la carpeta del mes, panel actualizado.
@@ -83,6 +85,8 @@ Cómo escribe:
 El panel se probó con números simulados. Si alguna fila de la planilla tiene la fecha vacía o imposible (la auditoría de octubre encontró una con 03/08/2062), ahora lo avisa solo, con link a la fila.
 
 ## Prompt para computer use
+
+**Los pasos 3 y 4 ya están hechos (30/10)**: si se usa, saltearlos. El paso 2 (script versión 3) es opcional desde que los IDs están en `config/drive.json`.
 
 Pegarlo en un agente con computer use que tenga abierta la sesión de **mindlindevelopers.ia@gmail.com** en Chrome y acceso a Vercel.
 

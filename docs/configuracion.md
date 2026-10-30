@@ -30,6 +30,24 @@ Proyecto `mindlin-developers`, en la cuenta **axellaban@gmail.com** (Gmail, no W
 
 ## Drive (cuenta mindlindevelopers.ia@gmail.com)
 
+Ordenado el 30/10/2026 como en el [mapa](mapa.md). Todo con acceso general "Restringido".
+
+| Carpeta o archivo | ID |
+|---|---|
+| App de facturas | `185BuSDy5IV6rey8X-7C3xNF4rd0dVHyl` |
+| └ Facturas Mindlin | `1bNyxX168zdxE0qFzpkW4vQpyqqpHKJFD` |
+| &nbsp;&nbsp;└ Pendientes | `1kgGZQiyRNS3ld0oAslS1wguSCzBhfAtu` |
+| &nbsp;&nbsp;└ Facturas de Compras | `1IYy_RL9Iym4kx1HxUNBTDaDaJcGAs9iT` |
+| &nbsp;&nbsp;└ Facturas de Honorarios de Administración | `1_OZ9SKvRJxQyOYmusnScIZA1rp-lHHjk` |
+| &nbsp;&nbsp;└ Facturas de Ventas | `1EqoTWlEiwpIdlR_Ay4-itMpb8WZm-BmZ` |
+| └ [PRUEBA] Administración Contable - copia para la app (`SHEET_ID`) | `1xCCxb2TRpjal_yydlZV7DqRG04MpgWESXG__pYLx_54` |
+| └ Sistema (no tocar) | `1rknIz_nPZRITksVfbfk0f-5ImyxEzrxf` |
+| &nbsp;&nbsp;└ Facturas Mindlin - cola de la app (`COLA_SHEET_ID`) | `1beptTswzIVeBNLLUTV_9JY5CBdU5PNlfOzs4B50IfUg` |
+| &nbsp;&nbsp;└ Guardar facturas Mindlin (script) | `1gCnlM-tgv2n45WKKe4LEpq8jcI0TH7yakOJYd9Xkjj-3zP3wYuOHL2FJ` |
+| └ Archivo - pruebas del 28-10 | `1KqkKWo1Nh0cQwyfcnlj_hNLw0MzuN2EB` |
+
+Lo que sigue describe la primera prueba (28/10). Esa planilla y esa carpeta ahora están en "Archivo - pruebas del 28-10".
+
 - **Planilla de prueba:** "[PRUEBA] Facturación de Egresos - Mindlin", ID `1ICwVOWj1Bz5htd5j06gnhdpVlnW1Rv-_NYEAEaLM1vA`, pestaña `Hoja 1`. Su propietaria es mindlindevelopers.ia@gmail.com y la cuenta de servicio tiene permiso de Editor. Se copiaron los encabezados y el formato del entorno de prueba; no contiene datos reales del cliente.
 - **Carpeta de prueba:** "Facturas Mindlin (prueba)", ID `1ZzZT4P8YVvQkV4lF1Cu9UC7yMLPvzIaP`, propiedad de Mindlin. Los comprobantes se guardan con Apps Script para usar el almacenamiento de esta cuenta de Gmail.
 
