@@ -84,189 +84,49 @@ Cómo escribe:
 
 El panel se probó con números simulados. Si alguna fila de la planilla tiene la fecha vacía o imposible (la auditoría de octubre encontró una con 03/08/2062), ahora lo avisa solo, con link a la fila.
 
-## Prompt para computer use
+## Prompt para computer use (lo que falta, 30/10)
 
-**Los pasos 3 y 4 ya están hechos (30/10)**: si se usa, saltearlos. El paso 2 (script versión 3) es opcional desde que los IDs están en `config/drive.json`.
-
-Pegarlo en un agente con computer use que tenga abierta la sesión de **mindlindevelopers.ia@gmail.com** en Chrome y acceso a Vercel.
+Para un agente con computer use en una compu con Chrome, con las sesiones abiertas de **axellaban@gmail.com** (Drive, Vercel, Google Cloud y claude.ai) y de **mindlindevelopers.ia@gmail.com** (Drive). Antes de pegarlo, completar `<MAILS DEL EQUIPO>`.
 
 ````
-Vas a actualizar un script de Google Apps Script y ordenar archivos en Google Drive, en la cuenta mindlindevelopers.ia@gmail.com. No borres nada. Si algo pide pagar, permisos de administrador o datos que no tenés, frená y preguntame.
+Vas a terminar de poner en marcha la app de facturas de Mindlin (https://mindlin-developers.vercel.app). Reglas: no borres nada definitivamente (solo papelera), no copies ni muestres claves o secretos, no cambies variables de Vercel salvo las que digo, y si algo pide pagar o no coincide con lo que espero, frená y avisame.
 
-PASO 1. Ver qué planilla usa la app
-1. Entrá a vercel.com, abrí el proyecto de la app (dominio mindlin-developers.vercel.app), "Settings" > "Environment Variables", entorno Production.
-2. Anotá el valor de SHEET_ID (es un ID de planilla, no es secreto). No cambies nada.
+PASO 1. Evaluación de la IA (se corre en Claude Code, no la corrés vos)
+1. En Chrome, con la cuenta axellaban@gmail.com en Drive, descargá (clic derecho > "Descargar"):
+   - Carpeta "Facturas Compras Octubre": https://drive.google.com/drive/folders/1fta_Ws68vunGHjFCxqU8nfl3fb-S3C11
+   - Carpeta "Facturas Ventas Octubre": https://drive.google.com/drive/folders/1krYdsyfl2J_21aBJWFNYilH65LdqL0oQ
+   - Archivo "Copia para IA de Administración Contable - Mindlin Developers - LERMA 439.xlsx": https://drive.google.com/file/d/1y60VAg8yW10ce6sFcJssSVH_s7cv5T4d/view
+   Descomprimí los dos .zip. Tienen que ser 10 PDF (9 + 1) y 1 .xlsx.
+2. Abrí https://claude.ai/code y empezá una sesión nueva sobre el repo mindlindevelopersia/factura, en el mismo entorno de siempre (el que tiene la clave de Anthropic).
+3. Adjuntá los 10 PDF y el .xlsx (arrastrándolos a la caja de texto) y mandá este mensaje:
+   "Corré la evaluación de octubre (scripts/eval/README.md, 'Octubre de 2026') con estos archivos. Ponelos en muestras/2026-10/ (compras y ventas), nunca en git. Honorarios: 'Copia de HONORARIOS 10-26.pdf' y 'Copia de 27374235643_011_00001_00000045.pdf'. Resumime en pocas líneas el acierto por campo, separando errores de la IA de errores de carga de la planilla. Si hay errores de la IA que se corrijan en el prompt, corregilos, volvé a correr, mergeá a main y actualizá docs/mapa.md."
+4. Esperá a que termine (puede tardar 10 minutos) y copiá su resumen para el informe. Si pide algo, contestá solo si la respuesta está en estas instrucciones; si no, anotalo.
 
-PASO 2. Actualizar el script "Guardar facturas Mindlin"
-1. Entrá a https://script.google.com/home y abrí "Guardar facturas Mindlin" (ID 1gCnlM-tgv2n45WKKe4LEpq8jcI0TH7yakOJYd9Xkjj-3zP3wYuOHL2FJ).
-2. Abrí Código.gs, seleccioná todo, borralo y pegá exactamente este código (desde "/**" hasta la última "}"):
+PASO 2. Sacar las pruebas de la app
+1. Abrí https://mindlin-developers.vercel.app (si pide iniciar sesión, entrá con Google como axellaban@gmail.com).
+2. En "Bandeja" hay 4 comprobantes de prueba enviados el 28/10 por axellaban@gmail.com: Costa Materiales 5-25853, JH 94 (nota de crédito 1-5), Matías Mindlin (factura C 1-114) y la venta 2-6. Si coinciden, en cada uno tocá "Descartar" y confirmá. Si hay otros comprobantes, no los toques: anotalos.
+3. En Drive con mindlindevelopers.ia@gmail.com abrí la planilla "[PRUEBA] Administración Contable - copia para la app" (https://docs.google.com/spreadsheets/d/1xCCxb2TRpjal_yydlZV7DqRG04MpgWESXG__pYLx_54/edit), pestaña "Facturación de Egresos (Compras)", fila 230. Si la razón social es "Proveedor Ejemplo", clic derecho en el número de fila > "Borrar fila". Si es otra cosa, no borres nada y avisame.
 
-/**
- * Guarda y ordena en Drive los comprobantes que manda la app (versión 3).
- *
- * Se publica como web app en la cuenta de Google dueña de las carpetas:
- *   Ejecutar como: Yo. Quién tiene acceso: Cualquier usuario.
- * Propiedades del script (Configuración del proyecto > Propiedades del script):
- *   CARPETA_PENDIENTES: donde esperan los comprobantes hasta que alguien los revisa.
- *   CARPETA_COMPRAS, CARPETA_HONORARIOS, CARPETA_VENTAS: una por categoría. Adentro, el
- *     script crea una subcarpeta por mes ("Facturas Compras Octubre 2026").
- *   CARPETA_ID: carpeta por defecto para la que falte (la única de la versión 1).
- *   SECRET: la misma clave que APPS_SCRIPT_SECRET en Vercel.
- * Pasos completos en apps-script/README.md.
- *
- * Acciones (campo "accion"):
- *   guardar   { carpeta, nombre, mimeType, base64 } -> { id, url }
- *   leer      { id } -> { nombre, mimeType, base64 }
- *   archivar  { id, carpeta, subcarpeta, nombre } -> { url }  (mueve y renombra)
- *   descartar { id }  (a la papelera)
- *   version   {} -> { carpetas: { pendientes, compra, honorarios, venta }, enlaces: { ... } }
- *             (qué carpetas están configuradas y sus links, para los accesos del panel; desde la versión 3)
- * Solo toca archivos que estén en las carpetas configuradas o en sus subcarpetas.
- */
-var VERSION = 3;
-var CARPETAS = {
-  pendientes: 'CARPETA_PENDIENTES',
-  compra: 'CARPETA_COMPRAS',
-  honorarios: 'CARPETA_HONORARIOS',
-  venta: 'CARPETA_VENTAS',
-};
+PASO 3. Alta del equipo
+Mails a habilitar: <MAILS DEL EQUIPO>
+1. Vercel (vercel.com, proyecto de mindlin-developers.vercel.app) > Settings > Environment Variables > Production > ALLOWED_EMAILS: agregá los mails que falten, separados por coma, sin sacar los que ya están. Guardá. Después Deployments > último de Production > "..." > "Redeploy" y esperá "Ready".
+2. Google Cloud (console.cloud.google.com, proyecto "mindlin-developers", cuenta axellaban@gmail.com) > APIs y servicios > Pantalla de consentimiento de OAuth (o "Público") > Usuarios de prueba: agregá los mismos mails. No publiques la app.
 
-function doPost(e) {
-  var props = PropertiesService.getScriptProperties();
-  try {
-    var body = JSON.parse(e.postData.contents);
-    if (!props.getProperty('SECRET') || body.secret !== props.getProperty('SECRET')) {
-      return responder({ ok: false, error: 'No autorizado' });
-    }
-    var accion = body.accion || 'guardar';
-    if (accion === 'version') {
-      var carpetas = {};
-      var enlaces = {};
-      Object.keys(CARPETAS).forEach(function (k) {
-        var id = props.getProperty(CARPETAS[k]) || props.getProperty('CARPETA_ID');
-        carpetas[k] = !!id;
-        if (id) enlaces[k] = 'https://drive.google.com/drive/folders/' + id;
-      });
-      return responder({ ok: true, carpetas: carpetas, enlaces: enlaces });
-    }
-    if (accion === 'guardar') {
-      var blob = Utilities.newBlob(Utilities.base64Decode(body.base64), body.mimeType, body.nombre);
-      var nuevo = carpetaPara(body.carpeta, body.subcarpeta).createFile(blob);
-      return responder({ ok: true, id: nuevo.getId(), url: nuevo.getUrl() });
-    }
-    var archivo = DriveApp.getFileById(body.id);
-    if (!esNuestro(archivo)) return responder({ ok: false, error: 'El archivo no está en las carpetas de la app' });
-    if (accion === 'leer') {
-      var contenido = archivo.getBlob();
-      return responder({
-        ok: true,
-        nombre: archivo.getName(),
-        mimeType: contenido.getContentType(),
-        base64: Utilities.base64Encode(contenido.getBytes()),
-      });
-    }
-    if (accion === 'archivar') {
-      archivo.moveTo(carpetaPara(body.carpeta, body.subcarpeta));
-      if (body.nombre) archivo.setName(body.nombre);
-      return responder({ ok: true, url: archivo.getUrl() });
-    }
-    if (accion === 'descartar') {
-      archivo.setTrashed(true);
-      return responder({ ok: true });
-    }
-    return responder({ ok: false, error: 'Acción desconocida: ' + accion });
-  } catch (err) {
-    return responder({ ok: false, error: String(err) });
-  }
-}
+PASO 4. Telegram
+1. En la web, pestaña "Inicio", recuadro de Telegram. Si dice que el bot no está recibiendo mensajes, tocá "Activar bot".
+2. Si en esta compu hay Telegram (app o https://web.telegram.org con sesión iniciada), tocá "¿Tenés Telegram en esta compu? Abrilo acá" y después "Iniciar" en el chat del bot. La web tiene que avisar "quedó conectado". Si no hay Telegram en la compu, saltealo y anotalo.
 
-function responder(datos) {
-  datos.version = VERSION;
-  return ContentService.createTextOutput(JSON.stringify(datos)).setMimeType(ContentService.MimeType.JSON);
-}
+PASO 5. Prueba final
+1. En la web, pestaña "Subir facturas", subí "Copia de FC 25853 MINDLIN.pdf" (de las de octubre). Esa factura ya está cargada en la planilla: la app tiene que leerla y avisar "Posible duplicado" sin dejar aprobarla. Anotá lo que muestra y después tocá "Descartar".
+2. Si conectaste Telegram en el paso 4, mandale al bot "Copia de JH LERMA FACT 1OCT.pdf" como archivo. Anotá las señales: la respuesta "Recibida", la reacción 👀 sobre tu mensaje, "escribiendo…" y el mensaje "Leída" con un link. Abrí el link, verificá que muestre la factura y tocá "Descartar". La reacción tiene que desaparecer.
+3. En "Inicio", tocá cada botón de arriba (Planilla y Drive) y anotá qué abre.
 
-/** IDs de las carpetas configuradas. */
-function carpetasConfiguradas() {
-  var props = PropertiesService.getScriptProperties();
-  var ids = [];
-  Object.keys(CARPETAS)
-    .map(function (k) { return CARPETAS[k]; })
-    .concat(['CARPETA_ID'])
-    .forEach(function (nombre) {
-      var id = props.getProperty(nombre);
-      if (id) ids.push(id);
-    });
-  return ids;
-}
-
-/** La carpeta de una categoría y, si se pide, su subcarpeta (la crea si no existe). */
-function carpetaPara(categoria, subcarpeta) {
-  var props = PropertiesService.getScriptProperties();
-  var id = (CARPETAS[categoria] && props.getProperty(CARPETAS[categoria])) || props.getProperty('CARPETA_ID');
-  if (!id) throw new Error('No hay carpeta configurada para "' + categoria + '"');
-  var base = DriveApp.getFolderById(id);
-  if (!subcarpeta) return base;
-  // Con el lock, dos facturas del mismo mes que llegan juntas no crean dos subcarpetas.
-  var lock = LockService.getScriptLock();
-  lock.waitLock(20000);
-  try {
-    var existentes = base.getFoldersByName(subcarpeta);
-    return existentes.hasNext() ? existentes.next() : base.createFolder(subcarpeta);
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-/** true si el archivo está en una carpeta de la app o en una subcarpeta de ellas. */
-function esNuestro(archivo) {
-  var ids = carpetasConfiguradas();
-  var padres = archivo.getParents();
-  while (padres.hasNext()) {
-    var padre = padres.next();
-    if (ids.indexOf(padre.getId()) >= 0) return true;
-    var abuelos = padre.getParents();
-    while (abuelos.hasNext()) {
-      if (ids.indexOf(abuelos.next().getId()) >= 0) return true;
-    }
-  }
-  return false;
-}
-
-/** Para probar desde el editor: crea y borra un archivo en cada carpeta configurada. */
-function probar() {
-  var props = PropertiesService.getScriptProperties();
-  ['CARPETA_PENDIENTES', 'CARPETA_COMPRAS', 'CARPETA_HONORARIOS', 'CARPETA_VENTAS', 'CARPETA_ID'].forEach(function (nombre) {
-    var id = props.getProperty(nombre);
-    if (!id) return Logger.log(nombre + ': sin configurar');
-    var archivo = DriveApp.getFolderById(id).createFile('prueba.txt', 'prueba');
-    Logger.log(nombre + ' OK: ' + archivo.getUrl());
-    archivo.setTrashed(true);
-  });
-}
-
-3. Guardá. No toques las "Propiedades del script".
-4. "Implementar" > "Administrar implementaciones". Seleccioná la implementación activa (aplicación web), tocá el lápiz, en "Versión" elegí "Nueva versión", descripción "v3", y "Implementar". NO crees una implementación nueva.
-5. Verificá que la URL de la aplicación web siga siendo https://script.google.com/macros/s/AKfycbzsCnZuxRzSt-FqtdK8_ycfCDdjPBP_vNkB5GqLgrkwYbQyVZ-CIe3Q1MixdIMN5RMl/exec. Si cambió, frená y avisame.
-
-PASO 3. Ordenar el Drive
-1. En drive.google.com, en "Mi unidad", creá la carpeta "App de facturas". Adentro, creá "Sistema (no tocar)" y "Archivo - pruebas del 28-10".
-2. Mové (clic derecho > "Organizar" > "Mover") a "App de facturas": la carpeta "Facturas Mindlin" y la planilla "[PRUEBA] Administración Contable - copia para la app".
-3. Mové a "App de facturas/Sistema (no tocar)": la planilla "Facturas Mindlin - cola de la app" y el script "Guardar facturas Mindlin".
-4. Mové a "App de facturas/Archivo - pruebas del 28-10": la carpeta "Facturas Mindlin (prueba)". La planilla "[PRUEBA] Facturación de Egresos - Mindlin" movela ahí SOLO si su ID (lo que está entre /d/ y /edit en su URL) es distinto del SHEET_ID del paso 1. Si es el mismo, dejala donde está y avisame.
-5. Si Drive avisa que al mover cambia quién tiene acceso, aceptá: los permisos de cada archivo se mantienen.
-
-PASO 4. Acceso restringido
-Para "App de facturas" (la carpeta), "[PRUEBA] Administración Contable - copia para la app" y "Facturas Mindlin - cola de la app": abrí "Compartir" y mirá "Acceso general". Tiene que decir "Restringido". Si dice "Cualquier persona con el vínculo", cambialo a "Restringido". No agregues ni quites personas: la cuenta facturas-app@mindlin-developers.iam.gserviceaccount.com tiene que seguir como Editor en las dos planillas.
-
-PASO 5. Verificar en la app
-1. Abrí https://mindlin-developers.vercel.app (si pide iniciar sesión y no hay una sesión de un mail habilitado, frená y pedime que inicie sesión yo).
-2. En la pestaña "Inicio", arriba, los cinco botones (Planilla y Drive) tienen que estar negros. Si alguno está grisado, anotá el texto que aparece al pasar el mouse. Puede tardar hasta 10 minutos en actualizarse después del paso 2; si siguen grisados, esperá y recargá.
-3. Tocá cada botón y anotá qué abre.
-
-INFORME FINAL
-- SHEET_ID del paso 1 y si coincide con "[PRUEBA] Administración Contable - copia para la app".
-- Paso 2: si la URL del script quedó igual.
-- Paso 3: dónde quedó cada archivo, y los ID de las carpetas "Pendientes", "Facturas de Compras", "Facturas de Honorarios de Administración" y "Facturas de Ventas" (lo que está después de /folders/ en la URL).
-- Paso 4: el "Acceso general" de cada uno, antes y después.
-- Paso 5: el estado de cada botón y qué abre.
+INFORME FINAL (sin secretos)
+- Paso 1: el resumen de la evaluación que dio Claude Code, y si mergeó cambios.
+- Paso 2: qué se descartó y si se borró la fila 230.
+- Paso 3: mails agregados en Vercel y en Google Cloud, y si el redeploy quedó "Ready".
+- Paso 4 y 5: lo que se vio en cada prueba, y cualquier error con su texto exacto.
+- Lo que no se pudo hacer, y por qué.
 ````
+
+Lo único que queda después es una decisión: **pasar a la planilla real** (punto 5 de la lista de arriba), con el resultado de la evaluación en la mano.
