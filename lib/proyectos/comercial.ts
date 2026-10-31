@@ -58,6 +58,12 @@ export interface Unidad {
   supVenta: number;
   supAmenities: number;
   supTotal: number;
+  /**
+   * Los m² con los que se calcula el US$/m² (de venta y promedio): los m² de venta (las terrazas al
+   * porcentaje de la planilla) + amenities, igual que el precio de lista. El patio de PB, al
+   * porcentaje que diga el proyecto (en Lerma, 10%): su costo es casi nulo.
+   */
+  supPromedio: number;
   coeficiente: number;
   /** Valor con amenities + aumento por altura: el precio de lista vigente. */
   precioLista: number;
@@ -258,10 +264,11 @@ export function leerListaCompleta(filas: Celda[][]): { unidades: Unidad[]; afuer
       supVenta: num(f[c.venta]) ?? 0,
       supAmenities: num(f[c.amenities]) ?? 0,
       supTotal,
+      supPromedio: 0,
       coeficiente: num(f[c.coeficiente]) ?? 0,
       precioLista,
       aumentoAltura: esCochera ? 0 : altura,
-      precioM2Lista: supTotal ? precioLista / supTotal : null,
+      precioM2Lista: null,
       precioVenta: null,
       precioCuenta: null,
       venta: null,
@@ -334,6 +341,11 @@ export function leerSuperficies(filas: Celda[][]): Superficies {
   return { terreno, construccion, construibles, vendibles };
 }
 
+export interface OpcionesComercial {
+  /** A qué porcentaje cuenta la parte descubierta (patio) de las unidades de PB para el US$/m². */
+  descubiertaPlantaBaja?: number;
+}
+
 export interface CuentaParaCruce {
   unidad: string;
   inversor: string;
@@ -350,12 +362,21 @@ export function armarComercial(
   superficiesFilas: Celda[][],
   cuentas: CuentaParaCruce[] | null,
   ajustes: AjusteUnidad[] = [],
+  opciones: OpcionesComercial = {},
 ): Comercial {
   const { unidades, afuera } = leerListaCompleta(lista);
   const { ventas, promedios } = leerVentas(ventasFilas);
   const superficies = leerSuperficies(superficiesFilas);
   const supuestos: Supuesto[] = [];
   const corregidos: Supuesto[] = [];
+
+  // Los m² para el US$/m²: los de venta + amenities, con el patio de PB al porcentaje del proyecto.
+  const patio = opciones.descubiertaPlantaBaja;
+  for (const u of unidades) {
+    if (u.esCochera) continue;
+    u.supPromedio = u.nivel === 0 && patio != null ? u.supCubierta + u.supSemicubierta + u.supDescubierta * patio + u.supAmenities : u.supVenta + u.supAmenities;
+    u.precioM2Lista = u.supPromedio ? u.precioLista / u.supPromedio : null;
+  }
 
   // Lo que se sabe y la planilla todavía no dice: se aplica antes de cruzar nada.
   for (const a of ajustes) {
@@ -449,6 +470,30 @@ export function armarComercial(
   }
 
   supuestos.push(...corregidos);
+
+  const conDescubierta = unidades.filter((u) => !u.esCochera && u.supDescubierta > 0);
+  if (conDescubierta.length) {
+    const pct = (n: number) => `${Math.round(n * 100)}%`;
+    const como = (u: Unidad) =>
+      u.nivel === 0 && patio != null ? pct(patio) : pct((u.supVenta - u.supCubierta - u.supSemicubierta) / u.supDescubierta);
+    supuestos.push({
+      tipo: "confirmado",
+      titulo: "Cómo se calcula el precio por m²",
+      detalle: `Precio de venta (sin la cochera, si viene incluida) ÷ (m² cubiertos + semicubiertos + descubiertos a un porcentaje + amenities), como el precio de lista. Lo descubierto: ${conDescubierta
+        .map((u) => `${u.codigo} ${u.supDescubierta.toLocaleString("es-AR")} m² al ${como(u)}`)
+        .join(", ")}.${patio != null ? ` El patio de PB va al ${pct(patio)}: su costo es casi nulo (parquizado, parrilla).` : ""} El precio promedio de venta es la suma de los precios ÷ la suma de esos m².`,
+      origen: `Confirmado el 31/10/2026. Las terrazas, al porcentaje de la columna "Ajuste m2 x terraza" de la lista de precios.`,
+    });
+    const terrazas = conDescubierta.filter((u) => !(u.nivel === 0 && patio != null));
+    if (terrazas.length) {
+      supuestos.push({
+        tipo: "por-confirmar",
+        titulo: "Las terrazas, al porcentaje de la planilla",
+        detalle: `${terrazas.map((u) => `${u.codigo}: ${u.supDescubierta.toLocaleString("es-AR")} m² de terraza al ${como(u)}`).join("; ")}. ¿Está bien así o van a otro porcentaje?`,
+        origen: `Lista de precios → "Ajuste m2 x terraza".`,
+      });
+    }
+  }
 
   const vendidas = unidades.filter((u) => u.estado === "vendida" && !u.esCochera);
   if (vendidas.length) {
@@ -549,7 +594,7 @@ export interface ResumenComercial {
   modalidades: Record<Modalidad, number>;
   /** Vendidas que el dueño revende: cuentan como vendidas (la reventa no es del proyecto). */
   enReventa: { cantidad: number; total: number };
-  /** total: lo vendido (con las cocheras que vienen incluidas); deptos: sin ellas; el promedio por m², sin ellas. */
+  /** total: lo vendido (con las cocheras que vienen incluidas); deptos: sin ellas; el promedio por m², sin ellas y sobre Unidad.supPromedio. */
   vendido: { total: number; deptos: number; cocheras: number; m2ConPrecio: number; promedioM2: number | null };
   /** Lo que falta vender, a precio de lista vigente. */
   porVender: number;
@@ -564,7 +609,7 @@ export function resumen(u: Unidad[]): ResumenComercial {
   // Lo que se vendió en total (las cocheras incluidas vienen dentro del precio de su depto) y solo deptos.
   const total = suma(conPrecio, (x) => x.precioVenta!);
   const soloDeptos = suma(conPrecio, (x) => precioDepto(x)!);
-  const m2ConPrecio = suma(conPrecio, (x) => x.supTotal);
+  const m2ConPrecio = suma(conPrecio, (x) => x.supPromedio);
   const cocheras = u.filter((x) => x.esCochera);
   return {
     deptos: deptos.length,

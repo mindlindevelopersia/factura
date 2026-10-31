@@ -295,6 +295,7 @@ export async function datosComercial(id: string, opciones?: { fresco?: boolean }
         superficies,
         cuentas?.map((c) => ({ unidad: c.unidad, inversor: c.inversor, precioUsd: c.precioUsd })) ?? null,
         p.ajustes,
+        p.comercial,
       );
       let hq: GastoHq | null = null;
       if (caja) {
