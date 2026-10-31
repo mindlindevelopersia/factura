@@ -3437,8 +3437,8 @@ h1 .etiqueta-beta {
   vector-effect: non-scaling-stroke;
 }
 .cac__cero {
-  stroke: #bfc5b8;
-  stroke-width: 1;
+  stroke: #9aa292;
+  stroke-width: 1.5;
   vector-effect: non-scaling-stroke;
 }
 .cac__cursor {
@@ -3645,4 +3645,183 @@ h1 .etiqueta-beta {
   .cobranza__total {
     justify-items: start;
   }
+}
+
+/* Indicadores · Panorama y Materiales */
+.indicadores__modulos {
+  margin-top: 28px;
+}
+.panorama__titular .cifra__valor {
+  font-size: 1.5rem;
+}
+.panorama__titular .cifra__nota + .cifra__nota {
+  font-size: 12px;
+}
+.panorama__fila {
+  cursor: default;
+}
+.panorama__hasta {
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--texto-suave);
+}
+.panorama__pista--doble {
+  position: relative;
+}
+.panorama__pista--doble::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  bottom: -4px;
+  border-left: 1px solid #bfc5b8;
+}
+.panorama__barra {
+  border-radius: 3px;
+}
+.panorama__alarmas-titulo {
+  padding: 0 0 12px;
+}
+.panorama__alarmas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: 14px;
+}
+.alarma {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--borde);
+  border-left-width: 4px;
+  border-radius: var(--radio-tarjeta);
+  background: white;
+}
+.alarma header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.alarma__lecturas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0;
+}
+.alarma__lecturas dt {
+  font-size: 11px;
+  color: var(--texto-suave);
+}
+.alarma__lecturas dd {
+  margin: 2px 0 0;
+  font-weight: 700;
+  font-size: 13px;
+}
+.alarma__lecturas dd span {
+  font-weight: 400;
+  color: var(--texto-suave);
+}
+.alarma__motivo {
+  margin: 0;
+  font-size: 13px;
+}
+.alarma__atraso {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 0;
+  font-size: 12px;
+  color: #725b13;
+}
+.senal {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--gris-claro);
+  color: var(--texto);
+}
+.senal--chica {
+  font-size: 11px;
+  padding: 1px 7px;
+}
+.alarma.senal--comprar {
+  border-left-color: var(--verde);
+}
+.alarma.senal--esperar {
+  border-left-color: var(--rojo);
+}
+.alarma.senal--depende {
+  border-left-color: var(--dudoso-borde);
+}
+.alarma.senal--normal {
+  border-left-color: var(--borde);
+}
+.alarma .senal,
+.senal.senal--comprar,
+.senal.senal--esperar,
+.senal.senal--depende,
+.senal.senal--normal {
+  background: var(--gris-claro);
+}
+.senal.senal--comprar,
+.alarma.senal--comprar .senal {
+  background: #e3f1e6;
+  color: #23573a;
+}
+.senal.senal--esperar,
+.alarma.senal--esperar .senal {
+  background: #fbe5e3;
+  color: #8f2826;
+}
+.senal.senal--depende,
+.alarma.senal--depende .senal {
+  background: var(--dudoso);
+  color: #725b13;
+}
+.material__detalle td {
+  background: #fafbf8;
+}
+.material__graficos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 16px;
+  margin-top: 10px;
+}
+.material__grafico {
+  margin: 0;
+  min-width: 0;
+}
+.material__grafico figcaption {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+@media (max-width: 650px) {
+  .alarma__lecturas {
+    grid-template-columns: 1fr;
+  }
+  .material__detalle td:before {
+    display: none;
+  }
+}
+.panorama__recorte {
+  display: flex;
+  gap: 4px;
+  align-items: flex-start;
+  color: #725b13 !important;
+}
+.alarma header {
+  flex-wrap: wrap;
+}
+.alarma header .senal {
+  white-space: normal;
+}
+.cuentas__controles .ingresos__atajos .btn {
+  white-space: normal;
 }
