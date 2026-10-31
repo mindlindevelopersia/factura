@@ -36,6 +36,8 @@ export function Tablero() {
                 <span className="cifra__nota">
                   {pct(r.vendidas / r.deptos)} · quedan {r.libres} · cocheras {r.cocheras.vendidas} de {r.cocheras.total}
                   {r.enReventa.cantidad > 0 && ` · ${r.enReventa.cantidad} en reventa del dueño (${usd(r.enReventa.total)})`}
+                  <br />
+                  {r.modalidades.costo} al costo · {r.modalidades.cerrado} a precio cerrado{r.modalidades.canje ? ` · ${r.modalidades.canje} canje` : ""}
                 </span>
                 <Origen texto='Excel madre → "Lista de precios" → columna Estado (Vendido / Libre), con las correcciones confirmadas (ver "Supuestos"). Las unidades en reventa cuentan como vendidas: la reventa es del dueño, no del proyecto.' />
               </div>

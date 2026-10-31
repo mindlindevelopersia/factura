@@ -102,6 +102,21 @@ describe("comercial", () => {
     expect(com.supuestos.map((s) => s.titulo)).not.toContain("2A: el precio de venta no coincide");
   });
 
+  it("toma la modalidad del machete (Costo, Contado = cerrado, Canjeado) o de una corrección", () => {
+    const ventas = VENTAS.map((f) => (f[1]?.valor === "Beto" ? fila(null, "Beto", "Contado", "2AyB", 80, 84, 180000) : f));
+    const m = armarComercial(LISTA, ventas, SUP, CUENTAS, [{ codigo: "PB", modalidad: "costo", tope: 0.07, aConfirmar: true, motivo: "Tope.", desde: "31/10/2026" }]);
+    const u = (cod: string) => m.unidades.find((x) => x.codigo === cod)!;
+    expect(u("PB")).toMatchObject({ modalidad: "costo", tope: 0.07 });
+    expect(u("2A").modalidad).toBe("cerrado");
+    expect(u("3A").modalidad).toBe(null);
+    expect(u("1A").modalidad).toBe(null);
+    expect(resumen(m.unidades).modalidades).toEqual({ costo: 1, cerrado: 1, canje: 0 });
+    const titulos = m.supuestos.map((s) => s.titulo);
+    expect(titulos).toContain('"Contado" se toma como precio cerrado: 2A');
+    expect(titulos).toContain("El coeficiente supone que se venden todas las unidades");
+    expect(m.supuestos.find((s) => s.titulo.startsWith("PB:"))?.tipo).toBe("por-confirmar");
+  });
+
   it("aplica las correcciones: reventa, venta caída y contrato", () => {
     const aj = armarComercial(LISTA, VENTAS, SUP, CUENTAS, [
       { codigo: "1A", estado: "vendida", contrato: true, reventa: 105000, motivo: "Contratista; se revende.", desde: "31/10/2026" },
@@ -109,7 +124,7 @@ describe("comercial", () => {
       { codigo: "3A", contrato: true, motivo: "Contratista.", desde: "31/10/2026" },
     ]);
     const u = (cod: string) => aj.unidades.find((x) => x.codigo === cod)!;
-    expect(u("1A")).toMatchObject({ estado: "vendida", contrato: true, reventa: 105000, precioVenta: 100000 });
+    expect(u("1A")).toMatchObject({ estado: "vendida", contrato: true, reventa: 105000, precioVenta: 100000, modalidad: "canje" });
     expect(u("2A")).toMatchObject({ estado: "libre", inversor: "", venta: null });
     const titulos = aj.supuestos.map((s) => s.titulo);
     expect(titulos).not.toContain("1A: libre en la lista, pero con inversor");

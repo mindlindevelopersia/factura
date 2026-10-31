@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import type { Unidad } from "@/lib/proyectos/comercial";
+import { MODALIDADES, type Unidad } from "@/lib/proyectos/comercial";
 import { Icono } from "../Icono";
 import { BarraLectura } from "../finanzas/comun";
 import { m2, useComercial, useProyectoId, usd } from "./datos";
@@ -139,7 +139,9 @@ export function Unidades() {
                       <td data-etiqueta="Estado">
                         {x.estado === "vendida" ? "Vendida" : x.estado === "libre" ? "Libre" : x.estadoTexto}
                         {x.inversor && <span className="tabla__sub">{x.inversor}</span>}
-                        {(x.contrato || x.reventa) && <span className="tabla__sub">{[x.contrato && "Pagada con contrato", x.reventa && "En reventa"].filter(Boolean).join(" · ")}</span>}
+                        {(x.modalidad || x.contrato || x.reventa) && (
+                          <span className="tabla__sub">{[modalidad(x), x.contrato && x.modalidad !== "canje" && "Pagada con contrato", x.reventa && "En reventa"].filter(Boolean).join(" · ")}</span>
+                        )}
                         {conConflicto.has(x.codigo) && (
                           <span className="tabla__sub cuentas__aviso">
                             <Icono nombre="alerta" size={12} /> revisar
@@ -186,6 +188,20 @@ function Detalle({ u, base }: { u: Unidad | null; base: string }) {
         {u.estado === "vendida" ? `Vendida · ${u.inversor}` : u.estado === "libre" ? "Libre" : u.estadoTexto}
         {u.contrato && " · pagada con contrato"}
       </p>
+      {u.modalidad && (
+        <p className={`unidad__modalidad unidad__modalidad--${u.modalidad}`}>
+          {modalidad(u)}
+          <span>
+            {u.modalidad === "costo"
+              ? u.tope != null
+                ? ` · al final paga la diferencia del costo real, hasta un ${(u.tope * 100).toLocaleString("es-AR")}% más`
+                : " · al final se ajusta al costo real × su coeficiente"
+              : u.modalidad === "cerrado"
+                ? " · no se ajusta al final de la obra"
+                : " · se pagó con obra"}
+          </span>
+        </p>
+      )}
       {u.ajuste && (
         <p className="unidad__ajuste">
           <Icono nombre="alerta" size={14} />
@@ -290,6 +306,11 @@ function Detalle({ u, base }: { u: Unidad | null; base: string }) {
       )}
     </aside>
   );
+}
+
+function modalidad(u: Unidad): string {
+  if (!u.modalidad) return "";
+  return MODALIDADES[u.modalidad] + (u.tope != null ? ` con tope ${(u.tope * 100).toLocaleString("es-AR")}%` : "");
 }
 
 /** El precio que corresponde: el de venta si está vendida, el de lista vigente si está libre. */

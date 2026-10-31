@@ -19,6 +19,22 @@ export interface Origen {
 
 export type EstadoUnidad = "vendida" | "libre" | "otro";
 
+/**
+ * Cómo se vendió. Lerma es un desarrollo al costo: casi todas se venden a un costo estimado y, al
+ * final de la obra, el costo real × el coeficiente de cada unidad dice si el comprador debe plata
+ * o hay que devolverle (la liquidación, un módulo que viene después).
+ * - "costo": al costo (puede tener un tope de aumento, ver Unidad.tope).
+ * - "cerrado": precio cerrado (por ejemplo, las que pagaron todo de contado): no se ajusta.
+ * - "canje": se pagó con obra (contratistas).
+ */
+export type Modalidad = "costo" | "cerrado" | "canje";
+
+export const MODALIDADES: Record<Modalidad, string> = {
+  costo: "Al costo",
+  cerrado: "Precio cerrado",
+  canje: "Canje",
+};
+
 export interface Unidad {
   /** "1A", "PB", "C1" (cochera). Es la misma unidad que usan el Flujo y "Pagos por Inversor". */
   codigo: string;
@@ -60,6 +76,10 @@ export interface Unidad {
   reventa: number | null;
   /** Qué se corrigió en el hub sobre lo que dice la planilla, si se corrigió algo. */
   ajuste: string | null;
+  /** Cómo se vendió (solo las vendidas): del "Tipo" del machete de Ventas o de una corrección. */
+  modalidad: Modalidad | null;
+  /** Al costo con tope: lo máximo que puede subir sobre el precio de venta (0,07 = 7%). */
+  tope: number | null;
   fila: number;
 }
 
@@ -73,6 +93,10 @@ export interface AjusteUnidad {
   estado?: "vendida" | "libre";
   contrato?: boolean;
   reventa?: number;
+  modalidad?: Modalidad;
+  tope?: number;
+  /** Si es algo que todavía hay que verificar: va a "Supuestos" como "a confirmar". */
+  aConfirmar?: boolean;
   /** Título corto para "Supuestos" cuando no cambia estado, contrato ni reventa. */
   titulo?: string;
   motivo: string;
@@ -232,6 +256,8 @@ export function leerListaCompleta(filas: Celda[][]): { unidades: Unidad[]; afuer
       contrato: false,
       reventa: null,
       ajuste: null,
+      modalidad: null,
+      tope: null,
       fila: r + 1,
     });
   }
@@ -327,13 +353,15 @@ export function armarComercial(
     if (a.estado === "libre") u.inversor = "";
     if (a.contrato) u.contrato = true;
     if (a.reventa) u.reventa = a.reventa;
+    if (a.modalidad) u.modalidad = a.modalidad;
+    if (a.tope != null) u.tope = a.tope;
     u.ajuste = a.motivo;
     const que = [a.estado === "libre" ? "libre" : a.estado === "vendida" ? "vendida" : null, a.contrato ? "pagada con contrato" : null, a.reventa ? "en reventa" : null].filter(Boolean).join(", ");
     corregidos.push({
-      tipo: "confirmado",
+      tipo: a.aConfirmar ? "por-confirmar" : "confirmado",
       titulo: `${u.codigo}: ${[que, a.titulo].filter(Boolean).join(" · ") || "corrección"}`,
       detalle: `${a.motivo}${cambia ? ` La lista de precios dice "${antes}": conviene corregirla también en la planilla.` : ""}`,
-      origen: `Confirmado el ${a.desde}. Corrección cargada en el hub (lib/modulos.ts), no en la planilla.`,
+      origen: `${a.aConfirmar ? "Dicho" : "Confirmado"} el ${a.desde}. Corrección cargada en el hub (lib/modulos.ts), no en la planilla.`,
     });
   }
   const deptos = unidades.filter((u) => !u.esCochera);
@@ -369,6 +397,22 @@ export function armarComercial(
     u.precioVenta ??= u.precioCuenta;
   }
 
+  // Cómo se vendió cada una: lo que diga una corrección y, si no, el "Tipo" del machete de Ventas.
+  const contado: string[] = [];
+  for (const u of unidades) {
+    if (u.estado !== "vendida") {
+      u.modalidad = null;
+      continue;
+    }
+    if (u.modalidad) continue;
+    const t = normalizar(u.venta?.tipo);
+    if (/contado/.test(t)) {
+      u.modalidad = "cerrado";
+      contado.push(u.codigo);
+    } else if (/canje/.test(t) || u.contrato) u.modalidad = "canje";
+    else if (/costo/.test(t)) u.modalidad = "costo";
+  }
+
   // Supuestos confirmados.
   supuestos.push({
     tipo: "confirmado",
@@ -386,6 +430,35 @@ export function armarComercial(
   }
 
   supuestos.push(...corregidos);
+
+  const vendidas = unidades.filter((u) => u.estado === "vendida" && !u.esCochera);
+  if (vendidas.length) {
+    const cuantas = (m: Modalidad) => vendidas.filter((u) => u.modalidad === m);
+    const lista = (m: Modalidad) => cuantas(m).map((u) => u.codigo + (u.tope != null ? ` (tope ${(u.tope * 100).toLocaleString("es-AR")}%)` : "")).join(", ");
+    const sinDato = vendidas.filter((u) => !u.modalidad).map((u) => u.codigo);
+    supuestos.push({
+      tipo: "confirmado",
+      titulo: "Desarrollo al costo: al final se liquida",
+      detalle: `Casi todas se vendieron a un costo estimado. Al terminar la obra, el costo real × el coeficiente de cada unidad dice si el comprador tiene que poner la diferencia o hay que devolverle. Las de precio cerrado no se ajustan. Al costo: ${cuantas("costo").length}; precio cerrado: ${lista("cerrado") || "ninguna"}; canje: ${lista("canje") || "ninguna"}.${sinDato.length ? ` Sin dato: ${sinDato.join(", ")}.` : ""}`,
+      mientras: "La liquidación final es un módulo que viene después: necesita cada gasto de la obra, en pesos y en dólares.",
+      origen: 'Confirmado el 31/10/2026. La modalidad sale del "Tipo" del machete de Ventas (Costo, Contado, Canjeado) y de las correcciones.',
+    });
+    if (contado.length) {
+      supuestos.push({
+        tipo: "por-confirmar",
+        titulo: `"Contado" se toma como precio cerrado: ${contado.join(", ")}`,
+        detalle: `En "Ventas" figuran como "Contado". Las que pagaron todo de contado se vendieron a precio cerrado, así que ${contado.length === 1 ? "esa unidad no se ajusta" : "esas unidades no se ajustan"} en la liquidación. Confirmar que sea así en todas.`,
+        origen: 'Excel madre → "Ventas" → columna "Tipo".',
+      });
+    }
+    supuestos.push({
+      tipo: "por-confirmar",
+      titulo: "El coeficiente supone que se venden todas las unidades",
+      detalle: "El coeficiente de cada unidad (su parte del costo de la obra) está calculado como si se vendieran todas. Pero hay unidades que se van a quedar los desarrolladores: el coeficiente de las vendidas debería ser mayor. Revisarlo antes de la liquidación.",
+      mientras: "Se usa el coeficiente de la lista de precios tal como está.",
+      origen: 'Excel madre → "Lista de precios" → columna "Coeficiente". Dicho el 31/10/2026.',
+    });
+  }
 
   if (afuera.length) {
     supuestos.push({
@@ -462,6 +535,8 @@ export interface ResumenComercial {
   libres: number;
   cocheras: { total: number; vendidas: number };
   m2: { total: number; vendidos: number; libres: number };
+  /** Las vendidas según cómo se vendieron (deptos). */
+  modalidades: Record<Modalidad, number>;
   /** Vendidas que el dueño revende: cuentan como vendidas (la reventa no es del proyecto). */
   enReventa: { cantidad: number; total: number };
   vendido: { total: number; m2ConPrecio: number; promedioM2: number | null };
@@ -484,6 +559,7 @@ export function resumen(u: Unidad[]): ResumenComercial {
     libres: libres.length,
     cocheras: { total: cocheras.length, vendidas: cocheras.filter((x) => x.estado === "vendida").length },
     m2: { total: suma(deptos, (x) => x.supTotal), vendidos: suma(vendidas, (x) => x.supTotal), libres: suma(libres, (x) => x.supTotal) },
+    modalidades: { costo: vendidas.filter((x) => x.modalidad === "costo").length, cerrado: vendidas.filter((x) => x.modalidad === "cerrado").length, canje: vendidas.filter((x) => x.modalidad === "canje").length },
     enReventa: { cantidad: vendidas.filter((x) => x.reventa).length, total: suma(vendidas, (x) => x.reventa ?? 0) },
     vendido: { total, m2ConPrecio, promedioM2: m2ConPrecio ? total / m2ConPrecio : null },
     porVender: suma(libres, (x) => x.precioLista) + suma(cocheras.filter((x) => x.estado === "libre"), (x) => x.precioLista),
