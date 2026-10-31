@@ -38,7 +38,7 @@ Cada número importante tiene "¿De dónde sale?" con la planilla, la pestaña y
 
 ## Verificación con el Excel madre (31/10/2026)
 
-28 unidades y 2 cocheras; 20 vendidas (1A en reventa a US$ 105.000), 8 libres. Correcciones: 1A vendida a un contratista y en reventa, 2C libre (la venta no se firmó), 9A pagada con contrato. Precio promedio de venta US$ 2.214/m²; falta vender US$ 783.654 a lista. Desarrolladores: 15% de 1.299,16 m² = 194,87 m² (EE.RR dice 243,18). Correcciones también: 5D libre (los compradores se pasaron a PB; la venta de 5D en Ventas es la vieja). Conflicto: 4C (US$ 80.000 en Ventas y 90.000 en Pagos por Inversor). HQ: 669 egresos ($52,9 M y US$ 55.628): 587 del banco y 7 que parecen de obra, entre ellos una transferencia de US$ 50.000.
+28 unidades y 2 cocheras; 20 vendidas (1A en reventa a US$ 105.000), 8 libres. Correcciones: 1A vendida a un contratista y en reventa, 2C libre (la venta no se firmó), 9A pagada con contrato. Precio promedio de venta US$ 2.214/m²; falta vender US$ 783.654 a lista. Desarrolladores: 15% de 1.299,16 m² = 194,87 m² (EE.RR dice 243,18). Correcciones también: 5D libre (los compradores se pasaron a PB; la venta de 5D en Ventas es la vieja). 4C: precio real US$ 80.000; en los papeles 90.000 (mutuo, en blanco por 90.000), por eso Pagos por Inversor dice 90.000. HQ: 669 egresos ($52,9 M y US$ 55.628): 587 del banco y 7 que parecen de obra, entre ellos una transferencia de US$ 50.000.
 
 ## Dónde está el código
 

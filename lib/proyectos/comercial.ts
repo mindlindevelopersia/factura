@@ -73,6 +73,8 @@ export interface AjusteUnidad {
   estado?: "vendida" | "libre";
   contrato?: boolean;
   reventa?: number;
+  /** Título corto para "Supuestos" cuando no cambia estado, contrato ni reventa. */
+  titulo?: string;
   motivo: string;
   /** "31/10/2026": cuándo se confirmó. */
   desde: string;
@@ -329,7 +331,7 @@ export function armarComercial(
     const que = [a.estado === "libre" ? "libre" : a.estado === "vendida" ? "vendida" : null, a.contrato ? "pagada con contrato" : null, a.reventa ? "en reventa" : null].filter(Boolean).join(", ");
     corregidos.push({
       tipo: "confirmado",
-      titulo: `${u.codigo}: ${que}`,
+      titulo: `${u.codigo}: ${[que, a.titulo].filter(Boolean).join(" · ") || "corrección"}`,
       detalle: `${a.motivo}${cambia ? ` La lista de precios dice "${antes}": conviene corregirla también en la planilla.` : ""}`,
       origen: `Confirmado el ${a.desde}. Corrección cargada en el hub (lib/modulos.ts), no en la planilla.`,
     });
@@ -431,7 +433,7 @@ export function armarComercial(
         origen: `Lista de precios fila ${u.fila} · Cuentas corrientes`,
       });
     }
-    if (u.estado === "vendida" && u.venta?.costoEstimado != null && u.precioCuenta != null && Math.abs(u.venta.costoEstimado - u.precioCuenta) > Math.max(1, u.precioCuenta * 0.005)) {
+    if (u.estado === "vendida" && !u.ajuste && u.venta?.costoEstimado != null && u.precioCuenta != null && Math.abs(u.venta.costoEstimado - u.precioCuenta) > Math.max(1, u.precioCuenta * 0.005)) {
       supuestos.push({
         tipo: "conflicto",
         titulo: `${u.codigo}: el precio de venta no coincide`,

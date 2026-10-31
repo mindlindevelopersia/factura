@@ -96,6 +96,9 @@ describe("comercial", () => {
     expect(u("2A").precioVenta).toBe(180000);
     expect(u("2A").precioCuenta).toBe(190000);
     expect(otra.supuestos.map((s) => s.titulo)).toContain("2A: el precio de venta no coincide");
+    // Con una corrección que lo explica (por ejemplo, un mutuo por más que lo cobrado), no hay alarma.
+    const explicada = armarComercial(LISTA, ventas, SUP, [...CUENTAS.filter((x) => x.unidad !== "2A"), { unidad: "2A", inversor: "Beto", precioUsd: 190000 }], [{ codigo: "2A", motivo: "Mutuo.", desde: "31/10/2026" }]);
+    expect(explicada.supuestos.map((s) => s.titulo)).not.toContain("2A: el precio de venta no coincide");
     expect(com.supuestos.map((s) => s.titulo)).not.toContain("2A: el precio de venta no coincide");
   });
 

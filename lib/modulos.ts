@@ -75,6 +75,13 @@ export const PROYECTOS: Proyecto[] = [
         motivo: "Está vendida a un contratista (se pagó con obra). El dueño pidió revenderla en US$ 105.000: la que está disponible es esa segunda venta.",
         desde: "31/10/2026",
       },
+      {
+        codigo: "4C",
+        titulo: "precio real US$ 80.000 (mutuo por 90.000)",
+        motivo:
+          "Precio real US$ 80.000 (lo que entró). En los papeles se vendió en US$ 90.000: se hizo un mutuo y en la contabilidad figura en blanco por 90.000. Por eso \"Pagos por Inversor\" dice 90.000 y \"Ventas\" 80.000; vale el de Ventas.",
+        desde: "31/10/2026",
+      },
       { codigo: "2C", estado: "libre", motivo: "La venta no se firmó: está libre.", desde: "31/10/2026" },
       {
         codigo: "5D",
