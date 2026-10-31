@@ -1,5 +1,6 @@
 import "server-only";
 import { googleClient } from "../google/auth";
+import { leerCac, type SerieCac } from "../indicadores/cac";
 import { leerBloques, unirConFlujo, type CuentasCorrientes } from "../inversores/cuentas";
 import { leerCaja, unir, type CajaEgresos } from "./egresos";
 import { colorDe, leerFlujo, mesDeHoy, type Celda, type FlujoIngresos } from "./ingresos";
@@ -39,8 +40,8 @@ interface RespuestaGrilla {
  * Lee una pestaña como grilla de valores (y colores de fondo, si se piden). Solo lee: nunca
  * escribe en la planilla. Las fechas vienen como número de serie.
  */
-async function leerGrilla(pestania: string, a1: string, colores: boolean): Promise<Celda[][]> {
-  const { sheetId } = configFinanzas();
+async function leerGrilla(pestania: string, a1: string, colores: boolean, planilla?: string | null): Promise<Celda[][]> {
+  const sheetId = planilla === undefined ? configFinanzas().sheetId : planilla;
   const client = googleClient();
   if (!client || !sheetId) throw new FlujoSinConfigurar("Falta configurar la planilla (SHEET_ID y la cuenta de servicio de Google).");
   const rango = `'${pestania.replace(/'/g, "''")}'!${a1}`;
@@ -103,4 +104,33 @@ const pagosInversor = conCache(async () => leerGrilla(configFinanzas().pagosInve
 export async function cuentasCorrientes(opciones?: { fresco?: boolean }): Promise<{ cuentas: CuentasCorrientes; leido: string }> {
   const [bloques, { flujo }] = await Promise.all([pagosInversor(opciones), flujoIngresos(opciones)]);
   return { cuentas: unirConFlujo(leerBloques(bloques.valor, flujo.mesActual), flujo), leido: bloques.leido };
+}
+
+/** La planilla "Indicadores - REAL ESTATE", que se carga aparte de la contable. */
+export function configIndicadores() {
+  return {
+    sheetId: process.env.INDICADORES_SHEET_ID || "1k0I2O86bJJzbXmPP8v197-VU1OlAtAbIIQV32FOp_HU",
+    cac: process.env.INDICADORES_TAB_CAC || "Índice CAC",
+  };
+}
+
+const cac = conCache(async () => {
+  const { sheetId, cac: pestania } = configIndicadores();
+  try {
+    return leerCac(await leerGrilla(pestania, "A1:F2000", false, sheetId));
+  } catch (e) {
+    const status = (e as { response?: { status?: number } }).response?.status;
+    if (status === 403 || status === 404) {
+      throw new Error(
+        `La app no tiene acceso a la planilla de indicadores. Compartila como Lector con ${process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ?? "la cuenta de servicio"}.`,
+      );
+    }
+    throw e;
+  }
+});
+
+/** La serie del índice CAC (costo de construcción, materiales y mano de obra). */
+export async function serieCac(opciones?: { fresco?: boolean }): Promise<{ serie: SerieCac; leido: string }> {
+  const { valor, leido } = await cac(opciones);
+  return { serie: valor, leido };
 }

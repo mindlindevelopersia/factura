@@ -22,6 +22,7 @@ const trazos = {
   ensayo: "M9 3h6 M10 3v14a2 2 0 0 0 4 0V3 M10 12h4",
   inversores: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2 M16 3.5a4 4 0 0 1 0 7 M22 21v-2a5 5 0 0 0-3.5-4.8",
   imprimir: "M6 9V3h12v6 M6 18H4v-7h16v7h-2 M6 14h12v7H6z",
+  indicadores: "M3 3v18h18 M7 15l4-5 4 3 5-7",
   hub: "M3 3h8v8H3z M13 3h8v8h-8z M3 13h8v8H3z M13 13h8v8h-8z",
   administracion: "M3 7h18v13H3z M8 7V4h8v3 M3 12h18",
   finanzas: "M3 20h18 M6 16v-4 M11 16V8 M16 16v-6 M20 4l-6 5-4-3-6 5",

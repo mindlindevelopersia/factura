@@ -7,7 +7,7 @@
 /** Dónde vive el módulo de facturas. Lo usan los links que manda el bot de Telegram. */
 export const RUTA_FACTURAS = "/administracion/facturas";
 
-export type IconoArea = "administracion" | "finanzas" | "inversores";
+export type IconoArea = "administracion" | "finanzas" | "inversores" | "indicadores";
 
 export interface Modulo {
   nombre: string;
@@ -69,6 +69,20 @@ export const AREAS: Area[] = [
         nombre: "Cuentas corrientes",
         descripcion: "Pagos, saldo y avance de cada inversor de Lerma, con el plan de pagos que falta y el estado de cuenta para mandarle.",
         href: "/inversores/cuentas-corrientes",
+        beta: true,
+      },
+    ],
+  },
+  {
+    nombre: "Indicadores",
+    descripcion: "Los índices que usa la empresa: CAC, y más adelante dólar, UVA, jornales y precios de materiales.",
+    href: "/indicadores",
+    icono: "indicadores",
+    modulos: [
+      {
+        nombre: "Índice CAC",
+        descripcion: "El costo de la construcción de la Cámara Argentina de la Construcción, mes a mes: general, materiales y mano de obra, con calculadora.",
+        href: "/indicadores/cac",
         beta: true,
       },
     ],
