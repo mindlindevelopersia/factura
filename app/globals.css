@@ -3007,3 +3007,125 @@ h1 .etiqueta-beta {
 .aviso-beta span {
   color: #3e6b39;
 }
+
+/* Finanzas · Egresos */
+.leyenda__marca--sin-dato,
+.columnas__tramo--sin-dato {
+  background: var(--serie-otros);
+}
+.rubros {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.rubros__fila {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr) 150px;
+  align-items: center;
+  gap: 14px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: var(--radio-campo);
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--texto);
+  text-align: left;
+  cursor: pointer;
+}
+.rubros__fila:hover:not(:disabled) {
+  background: var(--gris-claro);
+}
+.rubros__fila:disabled {
+  cursor: default;
+}
+.rubros__fila--elegido {
+  background: #f4f7dd;
+  box-shadow: inset 3px 0 0 var(--lima-oscuro);
+}
+.rubros__nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.rubros--compacto .rubros__nombre {
+  font-weight: 400;
+}
+.rubros__pista {
+  display: block;
+  min-width: 0;
+}
+.rubros__barra {
+  display: block;
+  height: 14px;
+  min-width: 2px;
+  border-radius: 0 4px 4px 0;
+  background: var(--grafito);
+}
+.rubros__barra--otros {
+  background: var(--serie-otros);
+}
+.rubros__valor {
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rubros__parte {
+  display: inline-block;
+  min-width: 46px;
+  margin-left: 6px;
+  font-weight: 400;
+  color: var(--texto-suave);
+}
+.egresos__presupuesto {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--borde);
+  border-radius: var(--radio-campo);
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+.egresos__conceptos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+  gap: 16px;
+}
+.egresos__conceptos .rubros__fila {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 120px;
+}
+.egresos__internos summary {
+  display: grid;
+  gap: 2px;
+  padding: 16px 18px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.egresos__internos summary span {
+  color: var(--texto-suave);
+  font-size: 12px;
+}
+@media (max-width: 650px) {
+  .rubros__fila,
+  .egresos__conceptos .rubros__fila {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 10px;
+  }
+  .rubros__pista {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .rubros__nombre {
+    white-space: normal;
+  }
+  .rubros__parte {
+    min-width: 0;
+  }
+}
