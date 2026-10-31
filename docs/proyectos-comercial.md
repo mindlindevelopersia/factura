@@ -25,8 +25,15 @@ Además se cruzan las cuentas corrientes ("Pagos por Inversor" y el Flujo) y la 
 - **Precio promedio de venta** = suma de los precios de venta ÷ suma de "Sup Total" de esas unidades.
 - **Precio de las vendidas:** el de venta, no el de lista. Sale del machete de "Ventas" ("Costo estimado") y se cruza con "Pagos por Inversor" (costo estimado de la cuenta); si no coinciden, hay alarma y se usa el de "Ventas". La fila "Falta vender" de Ventas no es una venta. El precio de lista vigente es solo para las libres.
 - **Correcciones (`ajustes` del proyecto en `lib/modulos.ts`):** lo que se sabe de una unidad y la planilla todavía no dice. Pueden cambiar el estado (una venta que no se firmó → libre), marcar que se pagó con un **contrato** de obra (contratistas: no tienen cuenta corriente; irán al módulo de Contratos) o que está **en reventa** (vendida, la revende el dueño a un precio: cuenta como vendida y no suma a lo que falta vender, pero aparece en la lista de precios como disponible). Cada corrección aparece en "Supuestos" como confirmada, con lo que dice la planilla. Sin nombres de inversores.
+- **Desarrollo al costo y liquidación final:** casi todas las unidades se venden a un costo estimado. Al terminar la obra, el costo real × el coeficiente de cada unidad dice si el comprador tiene que poner la diferencia o hay que devolverle. Para eso hace falta cada gasto de la obra, en pesos y en dólares (módulo de liquidación, más adelante). Cada unidad vendida tiene su **modalidad**:
+  - **Al costo:** se ajusta al final. Puede tener un **tope** (8B: hasta un 7% más, a verificar en el contrato).
+  - **Precio cerrado:** no se ajusta. Son las que pagaron todo de contado ("Contado" en el "Tipo" de Ventas: 4A y 7A, a confirmar) y la 4C.
+  - **Canje:** se pagó con obra (contratistas: 1A, 9A).
+  - La modalidad sale del "Tipo" del machete de Ventas y de las correcciones.
+- **Coeficiente (a revisar):** está calculado como si se vendieran todas las unidades. Como los desarrolladores se quedan algunas, el de las vendidas debería ser mayor. Hay que revisarlo antes de la liquidación.
 - **Desarrolladores (confirmado el 31/10/2026):** 15% de los m² vendibles sin amenities (suma de "Sup Propia VENTA"). Los amenities no se cuentan. En m²; el valor se elige a mano. Reparto 50% Matías Mindlin, 25% Michelle Mindlin, 25% Micaela Druck (igual en todos los proyectos; la parte de los desarrolladores puede cambiar por proyecto).
-- **HQ:** los egresos de la caja marcados como HQ son de Mindlin Developers, no del edificio. Por ahora quedan en Lerma, con un aviso **para chequear** que los separa en: impuestos y gastos del banco (débitos y créditos, IIBB, comisiones), los que parecen de obra (materiales, hormigón, constructora o más de US$ 5.000) y el resto, de oficina.
+- **HQ:** los egresos de la caja marcados como HQ son de Mindlin Developers, no del edificio. Por ahora quedan en Lerma. En Management → Desarrolladores está la lista **"HQ para revisar con Tadeo"** (con descarga para Excel), fila por fila y agrupada por qué están en duda: parecen de obra (materiales, hormigón, constructora: van a Lerma), préstamos (por ejemplo, a Borok: se devolvieron, no son gasto), grandes en dólares (más de US$ 5.000) e impuestos y gastos del banco. Lo demás se toma como gasto de oficina. Cuando se corrigen en el Excel, el hub los toma solos.
+- **Rubro "Préstamos (se devuelven)"** en Egresos: descripciones con "Borok" o "préstamo".
 
 ## Origen de los datos y supuestos
 
@@ -38,7 +45,7 @@ Cada número importante tiene "¿De dónde sale?" con la planilla, la pestaña y
 
 ## Verificación con el Excel madre (31/10/2026)
 
-28 unidades y 2 cocheras; 20 vendidas (1A en reventa a US$ 105.000), 8 libres. Correcciones: 1A vendida a un contratista y en reventa, 2C libre (la venta no se firmó), 9A pagada con contrato. Precio promedio de venta US$ 2.214/m²; falta vender US$ 783.654 a lista. Desarrolladores: 15% de 1.299,16 m² = 194,87 m² (EE.RR dice 243,18). Correcciones también: 5D libre (los compradores se pasaron a PB; la venta de 5D en Ventas es la vieja). Conflicto: 4C (US$ 80.000 en Ventas y 90.000 en Pagos por Inversor). HQ: 669 egresos ($52,9 M y US$ 55.628): 587 del banco y 7 que parecen de obra, entre ellos una transferencia de US$ 50.000.
+28 unidades y 2 cocheras; 20 vendidas (1A en reventa a US$ 105.000), 8 libres. Correcciones: 1A vendida a un contratista y en reventa, 2C libre (la venta no se firmó), 9A pagada con contrato. Precio promedio de venta US$ 2.214/m²; falta vender US$ 783.654 a lista. Desarrolladores: 15% de 1.299,16 m² = 194,87 m² (EE.RR dice 243,18). Correcciones también: 5D libre (los compradores se pasaron a PB; la venta de 5D en Ventas es la vieja). 4C: precio real US$ 80.000; en los papeles 90.000 (mutuo, en blanco por 90.000), por eso Pagos por Inversor dice 90.000. HQ: 669 egresos ($52,9 M y US$ 55.628): 587 del banco y 7 que parecen de obra, entre ellos una transferencia de US$ 50.000.
 
 ## Dónde está el código
 

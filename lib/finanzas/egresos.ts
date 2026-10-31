@@ -27,6 +27,7 @@ export type IdRubro =
   | "administracion"
   | "servicios"
   | "devoluciones"
+  | "prestamos"
   | "sin-clasificar";
 
 interface Regla {
@@ -44,6 +45,8 @@ interface Regla {
  */
 export const RUBROS: Regla[] = [
   { id: "terreno", nombre: "Terreno", descripcion: /compra (de )?lote|comision inmob/ },
+  // Plata que se prestó y vuelve (por ejemplo, a Borok): sale de la caja, pero no es un gasto.
+  { id: "prestamos", nombre: "Préstamos (se devuelven)", descripcion: /borok|prestamo/ },
   { id: "constructora", nombre: "Constructora (JH / Miranda)", descripcion: /\bjh\b|miranda/ },
   { id: "hormigon", nombre: "Hormigón", descripcion: /hormig/ },
   { id: "hierro", nombre: "Hierro", descripcion: /herpaco|hierro/ },

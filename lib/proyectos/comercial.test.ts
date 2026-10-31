@@ -96,7 +96,25 @@ describe("comercial", () => {
     expect(u("2A").precioVenta).toBe(180000);
     expect(u("2A").precioCuenta).toBe(190000);
     expect(otra.supuestos.map((s) => s.titulo)).toContain("2A: el precio de venta no coincide");
+    // Con una corrección que lo explica (por ejemplo, un mutuo por más que lo cobrado), no hay alarma.
+    const explicada = armarComercial(LISTA, ventas, SUP, [...CUENTAS.filter((x) => x.unidad !== "2A"), { unidad: "2A", inversor: "Beto", precioUsd: 190000 }], [{ codigo: "2A", motivo: "Mutuo.", desde: "31/10/2026" }]);
+    expect(explicada.supuestos.map((s) => s.titulo)).not.toContain("2A: el precio de venta no coincide");
     expect(com.supuestos.map((s) => s.titulo)).not.toContain("2A: el precio de venta no coincide");
+  });
+
+  it("toma la modalidad del machete (Costo, Contado = cerrado, Canjeado) o de una corrección", () => {
+    const ventas = VENTAS.map((f) => (f[1]?.valor === "Beto" ? fila(null, "Beto", "Contado", "2AyB", 80, 84, 180000) : f));
+    const m = armarComercial(LISTA, ventas, SUP, CUENTAS, [{ codigo: "PB", modalidad: "costo", tope: 0.07, aConfirmar: true, motivo: "Tope.", desde: "31/10/2026" }]);
+    const u = (cod: string) => m.unidades.find((x) => x.codigo === cod)!;
+    expect(u("PB")).toMatchObject({ modalidad: "costo", tope: 0.07 });
+    expect(u("2A").modalidad).toBe("cerrado");
+    expect(u("3A").modalidad).toBe(null);
+    expect(u("1A").modalidad).toBe(null);
+    expect(resumen(m.unidades).modalidades).toEqual({ costo: 1, cerrado: 1, canje: 0 });
+    const titulos = m.supuestos.map((s) => s.titulo);
+    expect(titulos).toContain('"Contado" se toma como precio cerrado: 2A');
+    expect(titulos).toContain("El coeficiente supone que se venden todas las unidades");
+    expect(m.supuestos.find((s) => s.titulo.startsWith("PB:"))?.tipo).toBe("por-confirmar");
   });
 
   it("aplica las correcciones: reventa, venta caída y contrato", () => {
@@ -106,7 +124,7 @@ describe("comercial", () => {
       { codigo: "3A", contrato: true, motivo: "Contratista.", desde: "31/10/2026" },
     ]);
     const u = (cod: string) => aj.unidades.find((x) => x.codigo === cod)!;
-    expect(u("1A")).toMatchObject({ estado: "vendida", contrato: true, reventa: 105000, precioVenta: 100000 });
+    expect(u("1A")).toMatchObject({ estado: "vendida", contrato: true, reventa: 105000, precioVenta: 100000, modalidad: "canje" });
     expect(u("2A")).toMatchObject({ estado: "libre", inversor: "", venta: null });
     const titulos = aj.supuestos.map((s) => s.titulo);
     expect(titulos).not.toContain("1A: libre en la lista, pero con inversor");
@@ -156,16 +174,31 @@ describe("management", () => {
     expect(d.supuestos.map((s) => s.tipo)).toEqual(["confirmado", "conflicto", "por-confirmar"]);
   });
 
-  it("separa los egresos de HQ: del banco, de obra y de oficina", () => {
-    const e = (proyecto: string, rubro: string, moneda: "ARS" | "USD", monto: number, descripcion = "") => ({ proyecto, rubro, moneda, monto, descripcion, fecha: null, pestania: "Caja", fila: 1 });
-    const hq = analizarHq([e("HQ", "impuestos", "ARS", 100, "Deb"), e("HQ", "bancarios", "ARS", 50), e("HQ", "hormigon", "ARS", 1000, "Pago Hormigonera"), e("HQ", "sin-clasificar", "USD", 50000, "Transf"), e("HQ", "honorarios", "ARS", 300), e("Lerma 439", "materiales", "ARS", 9)]);
-    expect(hq).toMatchObject({ movimientos: 5, ARS: 1450, USD: 50000, bancarios: { movimientos: 2, ARS: 150, USD: 0 } });
-    expect(hq.sospechosos.map((x) => x.descripcion)).toEqual(["Pago Hormigonera", "Transf"]);
+  it("separa los egresos de HQ en duda (obra, préstamo, grandes, banco) y los de oficina", () => {
+    const e = (proyecto: string, rubro: string, moneda: "ARS" | "USD", monto: number, descripcion = "", fila = 1) => ({ proyecto, rubro, moneda, monto, descripcion, fecha: null, pestania: "Caja", fila });
+    const hq = analizarHq([
+      e("HQ", "impuestos", "ARS", 100, "Deb", 5),
+      e("HQ", "bancarios", "ARS", 50, "", 6),
+      e("HQ", "hormigon", "ARS", 1000, "Pago Hormigonera", 7),
+      e("HQ", "prestamos", "USD", 50000, "Tranf a Borok 1", 2),
+      e("HQ", "sin-clasificar", "USD", 8000, "Otra", 3),
+      e("HQ", "honorarios", "ARS", 300, "Contador", 4),
+      e("Lerma 439", "materiales", "ARS", 9),
+    ]);
+    expect(hq).toMatchObject({ movimientos: 6, ARS: 1450, USD: 58000, oficina: { movimientos: 1, ARS: 300, USD: 0 } });
+    expect(hq.revisar.map((x) => [x.duda, x.descripcion])).toEqual([
+      ["obra", "Pago Hormigonera"],
+      ["prestamo", "Tranf a Borok 1"],
+      ["grande", "Otra"],
+      ["banco", "Deb"],
+      ["banco", ""],
+    ]);
     const d = desarrolladores(com.unidades, 0.15, SOCIOS, null, hq);
     const s = d.supuestos.at(-1)!;
-    expect(s.titulo).toMatch(/Para chequear: 5 egresos/);
-    expect(s.detalle).toMatch(/2 son impuestos y gastos del banco/);
+    expect(s.titulo).toBe("Para que revise Tadeo: 5 de 6 egresos marcados como HQ");
+    expect(s.detalle).toMatch(/1 parecen de la obra .*1 préstamos .*2 impuestos y gastos del banco/);
     expect(s.detalle).toMatch(/Quedan 1 de oficina/);
+    expect(d.hq).toBe(hq);
   });
 
   it("lee los m² de developers de EE.RR", () => {

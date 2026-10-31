@@ -75,6 +75,23 @@ export const PROYECTOS: Proyecto[] = [
         motivo: "Está vendida a un contratista (se pagó con obra). El dueño pidió revenderla en US$ 105.000: la que está disponible es esa segunda venta.",
         desde: "31/10/2026",
       },
+      {
+        codigo: "4C",
+        modalidad: "cerrado",
+        titulo: "precio real US$ 80.000 (mutuo por 90.000), precio cerrado",
+        motivo:
+          "Precio real US$ 80.000 (lo que entró). En los papeles se vendió en US$ 90.000: se hizo un mutuo y en la contabilidad figura en blanco por 90.000. Por eso \"Pagos por Inversor\" dice 90.000 y \"Ventas\" 80.000; vale el de Ventas. Es a precio cerrado: no se ajusta al costo.",
+        desde: "31/10/2026",
+      },
+      {
+        codigo: "8B",
+        modalidad: "costo",
+        tope: 0.07,
+        aConfirmar: true,
+        titulo: "al costo con tope",
+        motivo: "Se vendió al costo, pero con un tope: si el costo final sube, paga como máximo un 7% más que el precio de venta. Verificar el porcentaje en el contrato.",
+        desde: "31/10/2026",
+      },
       { codigo: "2C", estado: "libre", motivo: "La venta no se firmó: está libre.", desde: "31/10/2026" },
       {
         codigo: "5D",
