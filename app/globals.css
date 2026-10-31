@@ -4267,3 +4267,45 @@ h1 .etiqueta-beta {
   font-weight: 400;
   color: var(--texto-suave);
 }
+
+/* Menú: cada grupo se abre y se cierra con su flechita. */
+.navegacion__fila {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.navegacion__fila > a {
+  flex: 1;
+  min-width: 0;
+}
+.navegacion__desplegar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radio-campo);
+  background: none;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+.navegacion__desplegar:hover {
+  background: var(--gris-claro);
+  color: var(--negro);
+}
+.navegacion__desplegar svg {
+  transition: transform 0.15s ease;
+}
+.navegacion__desplegar--abierto svg {
+  transform: rotate(90deg);
+}
+.navegacion__subgrupo .navegacion__subarea {
+  padding: 6px 10px;
+}
+@media (max-width: 1100px) {
+  .navegacion__fila > a {
+    flex: none;
+  }
+}

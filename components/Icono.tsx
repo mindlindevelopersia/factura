@@ -7,6 +7,7 @@ const trazos = {
   historial: "M3 11a9 9 0 1 1 2 7 M3 4v7h7 M12 7v5l3 2",
   buscar: "M21 21l-5-5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
   flecha: "M5 12h14 M14 7l5 5-5 5",
+  desplegar: "M9 6l6 6-6 6",
   volver: "M19 12H5 M10 7l-5 5 5 5",
   check: "M5 12l4 4L19 6",
   alerta: "M12 3L2 21h20L12 3z M12 9v5 M12 17v.1",
