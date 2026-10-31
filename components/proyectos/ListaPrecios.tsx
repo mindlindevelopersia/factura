@@ -115,7 +115,7 @@ export function ListaPrecios() {
                       </td>
                       <td data-etiqueta="Precio de lista" className="tabla__numero">
                         {usd(u.precioLista)}
-                        {u.precioM2Lista && <span className="tabla__sub">{usd(u.precioM2Lista)}/m² total</span>}
+                        {u.precioM2Lista && <span className="tabla__sub">{usd(u.precioM2Lista)}/m²</span>}
                       </td>
                       {simulando && (
                         <td data-etiqueta="Simulado" className="tabla__numero">
@@ -161,7 +161,7 @@ export function ListaPrecios() {
                         </td>
                         <td data-etiqueta="Precio de reventa" className="tabla__numero">
                           <strong>{usd(u.reventa)}</strong>
-                          {u.supTotal > 0 && <span className="tabla__sub">{usd(u.reventa! / u.supTotal)}/m² total</span>}
+                          {u.supPromedio > 0 && <span className="tabla__sub">{usd(u.reventa! / u.supPromedio)}/m²</span>}
                         </td>
                         <td data-etiqueta="Lista vigente" className="tabla__numero">
                           {usd(u.precioLista)}

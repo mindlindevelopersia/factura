@@ -12,7 +12,7 @@ import { Icono } from "./Icono";
  * Cada grupo (Indicadores, un proyecto, un área) se abre y se cierra con su flechita. De entrada
  * está todo cerrado, salvo el camino hasta la página en la que se está.
  */
-export function Navegacion() {
+export function Navegacion({ cerrar }: { cerrar?: ReactNode }) {
   const ruta = usePathname();
   const actual = (href: string) => (ruta === href ? "page" : undefined);
   const dentro = (href: string) => ruta === href || ruta.startsWith(`${href}/`);
@@ -69,10 +69,13 @@ export function Navegacion() {
 
   return (
     <nav className="navegacion" aria-label="Mindlin Developers">
-      <Link href="/" className={`navegacion__area${ruta === "/" ? " navegacion__area--activa" : ""}`} aria-current={actual("/")}>
-        <Icono nombre="hub" size={18} />
-        Inicio
-      </Link>
+      <div className="navegacion__fila">
+        <Link href="/" className={`navegacion__area${ruta === "/" ? " navegacion__area--activa" : ""}`} aria-current={actual("/")}>
+          <Icono nombre="hub" size={18} />
+          Inicio
+        </Link>
+        {cerrar}
+      </div>
       {AREAS_EMPRESA.map((area) => (
         <div key={area.href} className="navegacion__grupo">
           {fila(

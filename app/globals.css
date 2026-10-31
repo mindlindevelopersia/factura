@@ -4309,3 +4309,44 @@ h1 .etiqueta-beta {
     flex: none;
   }
 }
+
+/* Esconder y mostrar el menú de la izquierda. */
+.hub--sin-menu {
+  grid-template-columns: 56px minmax(0, 1fr);
+}
+.hub__riel {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  padding: 30px 0 0 16px;
+}
+.hub__menu-boton {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo);
+  background: var(--blanco);
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+.hub__menu-boton:hover {
+  color: var(--negro);
+  border-color: var(--negro);
+}
+@media (max-width: 1100px) {
+  .hub--sin-menu {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hub__riel {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--borde);
+    background: var(--blanco);
+  }
+  .navegacion .hub__menu-boton {
+    display: none;
+  }
+}

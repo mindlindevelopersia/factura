@@ -120,6 +120,20 @@ describe("comercial", () => {
     expect(m.supuestos.find((s) => s.titulo.startsWith("PB:"))?.tipo).toBe("por-confirmar");
   });
 
+  it("US$/m²: m² de venta + amenities, con el patio de PB al porcentaje del proyecto", () => {
+    // PB: 60 m² cubiertos y 30 m² de patio (la planilla lo cuenta al 30%: 69 m² de venta) + 5 de amenities.
+    const pb = fila("Ana", "Vendido", "PB", "A", 1, "3 ambientes", "Frente", 60, 0, 30, 0.3, 90, 69, 0.1, 5, 0, 0, 0, 95, 0, null, null, 0);
+    const lista = LISTA.map((f) => (f[2]?.valor === "PB" && f[5]?.valor !== "Cochera" ? pb : f));
+    const sin = armarComercial(lista, VENTAS, SUP, CUENTAS);
+    const con = armarComercial(lista, VENTAS, SUP, CUENTAS, [], { descubiertaPlantaBaja: 0.1 });
+    const u = (c: typeof con, cod: string) => c.unidades.find((x) => x.codigo === cod)!;
+    expect(u(sin, "PB").supPromedio).toBeCloseTo(69 + 5);
+    expect(u(con, "PB").supPromedio).toBeCloseTo(60 + 3 + 5);
+    expect(u(con, "2A").supPromedio).toBeCloseTo(84);
+    expect(resumen(con.unidades).vendido.promedioM2).toBeCloseTo(380000 / (68 + 84));
+    expect(con.supuestos.find((s) => s.titulo === "Cómo se calcula el precio por m²")?.detalle).toMatch(/PB 30 m² al 10%/);
+  });
+
   it("cocheras incluidas en el precio de un depto: se descuentan para el US$/m²", () => {
     const m = armarComercial(LISTA, VENTAS, SUP, CUENTAS, [{ codigo: "C1", precio: 20000, incluidaEn: "2A", motivo: "Con la 2A.", desde: "31/10/2026" }]);
     const u = (cod: string) => m.unidades.find((x) => x.codigo === cod)!;

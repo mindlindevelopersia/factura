@@ -7,7 +7,7 @@
  * nuevo, se agrega en esta lista y se crea su página (las de proyecto, en app/(hub)/proyectos/[proyecto]).
  */
 
-import type { AjusteUnidad } from "./proyectos/comercial";
+import type { AjusteUnidad, OpcionesComercial } from "./proyectos/comercial";
 
 export type IconoArea = "administracion" | "finanzas" | "inversores" | "indicadores" | "comercial" | "management" | "proyecto";
 
@@ -46,6 +46,8 @@ export interface Proyecto {
   management?: { parteM2: number; socios: Socio[] };
   /** El "Excel madre" del proyecto (lista de precios, superficies, ventas, EE.RR). */
   planillaMadre?: string;
+  /** Cómo se miden los m² para el US$/m² (ver OpcionesComercial). */
+  comercial?: OpcionesComercial;
   /** Lo que se sabe de algunas unidades y la planilla todavía no dice (reventas, contratos, ventas caídas). */
   ajustes?: AjusteUnidad[];
 }
@@ -66,6 +68,8 @@ export const PROYECTOS: Proyecto[] = [
     estado: "activo",
     management: { parteM2: 0.15, socios: SOCIOS },
     planillaMadre: "1B1cSVA9AtleBLajFwjkXdQOHnv2n0Ijv4sl3NtZP8c0",
+    // El patio de PB casi no tiene costo (parquizado, parrilla): cuenta al 10% para el US$/m².
+    comercial: { descubiertaPlantaBaja: 0.1 },
     ajustes: [
       {
         codigo: "1A",

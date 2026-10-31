@@ -251,7 +251,7 @@ function Detalle({ u, base }: { u: Unidad | null; base: string }) {
                 <strong>{usd(u.precioVenta)}</strong>
                 {u.esCochera
                   ? u.incluidaEn && <span> · incluida en la {u.incluidaEn}</span>
-                  : u.precioVenta != null && u.supTotal > 0 && <span> · {usd(precioDepto(u)! / u.supTotal)}/m²</span>}
+                  : u.precioVenta != null && u.supPromedio > 0 && <span> · {usd(precioDepto(u)! / u.supPromedio)}/m²</span>}
                 {u.precioCochera != null && <span className="tabla__sub">Incluye cochera por {usd(u.precioCochera)}: el US$/m² es sin ella.</span>}
               </dd>
             </div>
@@ -266,7 +266,7 @@ function Detalle({ u, base }: { u: Unidad | null; base: string }) {
                 <dt>En reventa</dt>
                 <dd>
                   <strong>{usd(u.reventa)}</strong>
-                  {u.supTotal > 0 && <span> · {usd(u.reventa / u.supTotal)}/m²</span>}
+                  {u.supPromedio > 0 && <span> · {usd(u.reventa / u.supPromedio)}/m²</span>}
                   <span className="tabla__sub">La revende el dueño: no es plata del proyecto.</span>
                 </dd>
               </div>
@@ -328,7 +328,7 @@ function Precio({ u }: { u: Unidad }) {
             ? "Venta sin precio cargado"
             : u.esCochera
               ? `Venta${u.incluidaEn ? ` · incluida en la ${u.incluidaEn}` : ""}`
-              : `Venta${u.supTotal > 0 ? ` · ${usd(depto! / u.supTotal)}/m²` : ""}${u.precioCochera != null ? ` · con cochera (${usd(u.precioCochera)})` : ""}`}
+              : `Venta${u.supPromedio > 0 ? ` · ${usd(depto! / u.supPromedio)}/m²` : ""}${u.precioCochera != null ? ` · con cochera (${usd(u.precioCochera)})` : ""}`}
         </span>
         {u.reventa && <span className="tabla__sub unidad__reventa">Reventa: {usd(u.reventa)}</span>}
       </>
