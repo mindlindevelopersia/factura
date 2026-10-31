@@ -49,10 +49,33 @@ export interface Unidad {
   aumentoAltura: number;
   /** Precio de lista por m² de superficie total. */
   precioM2Lista: number | null;
-  /** Si está vendida: el precio al que se vendió (de "Ventas"). */
+  /** Si está vendida: el precio al que se vendió (de "Ventas" o, si no está, de "Pagos por Inversor"). */
   precioVenta: number | null;
+  /** El mismo precio según "Pagos por Inversor" (costo estimado de la cuenta), para cruzarlo. */
+  precioCuenta: number | null;
   venta: VentaMachete | null;
+  /** Se pagó con un contrato de obra (un contratista): no tiene cuenta corriente. */
+  contrato: boolean;
+  /** Vendida, pero el dueño la revende a este precio (US$). La reventa es del dueño, no del proyecto. */
+  reventa: number | null;
+  /** Qué se corrigió en el hub sobre lo que dice la planilla, si se corrigió algo. */
+  ajuste: string | null;
   fila: number;
+}
+
+/**
+ * Lo que se sabe de una unidad y la planilla todavía no dice (ver Proyecto.ajustes en lib/modulos.ts).
+ * No llevar nombres de inversores: alcanza con la unidad.
+ */
+export interface AjusteUnidad {
+  codigo: string;
+  /** Pisa el estado de la lista de precios. */
+  estado?: "vendida" | "libre";
+  contrato?: boolean;
+  reventa?: number;
+  motivo: string;
+  /** "31/10/2026": cuándo se confirmó. */
+  desde: string;
 }
 
 export interface VentaMachete {
@@ -202,7 +225,11 @@ export function leerListaCompleta(filas: Celda[][]): { unidades: Unidad[]; afuer
       aumentoAltura: esCochera ? 0 : altura,
       precioM2Lista: supTotal ? precioLista / supTotal : null,
       precioVenta: null,
+      precioCuenta: null,
       venta: null,
+      contrato: false,
+      reventa: null,
+      ajuste: null,
       fila: r + 1,
     });
   }
@@ -275,11 +302,38 @@ export interface CuentaParaCruce {
  * Arma el comercial: une la lista con el machete de ventas (y, si están, las cuentas corrientes),
  * deduce el precio base y el aumento por piso, y junta los supuestos y conflictos.
  */
-export function armarComercial(lista: Celda[][], ventasFilas: Celda[][], superficiesFilas: Celda[][], cuentas: CuentaParaCruce[] | null): Comercial {
+export function armarComercial(
+  lista: Celda[][],
+  ventasFilas: Celda[][],
+  superficiesFilas: Celda[][],
+  cuentas: CuentaParaCruce[] | null,
+  ajustes: AjusteUnidad[] = [],
+): Comercial {
   const { unidades, afuera } = leerListaCompleta(lista);
   const { ventas, promedios } = leerVentas(ventasFilas);
   const superficies = leerSuperficies(superficiesFilas);
   const supuestos: Supuesto[] = [];
+  const corregidos: Supuesto[] = [];
+
+  // Lo que se sabe y la planilla todavía no dice: se aplica antes de cruzar nada.
+  for (const a of ajustes) {
+    const u = unidades.find((x) => x.codigo === a.codigo);
+    if (!u) continue;
+    const antes = u.estadoTexto;
+    const cambia = a.estado && a.estado !== u.estado;
+    if (a.estado) u.estado = a.estado;
+    if (a.estado === "libre") u.inversor = "";
+    if (a.contrato) u.contrato = true;
+    if (a.reventa) u.reventa = a.reventa;
+    u.ajuste = a.motivo;
+    const que = [a.estado === "libre" ? "libre" : a.estado === "vendida" ? "vendida" : null, a.contrato ? "pagada con contrato" : null, a.reventa ? "en reventa" : null].filter(Boolean).join(", ");
+    corregidos.push({
+      tipo: "confirmado",
+      titulo: `${u.codigo}: ${que}`,
+      detalle: `${a.motivo}${cambia ? ` La lista de precios dice "${antes}": conviene corregirla también en la planilla.` : ""}`,
+      origen: `Confirmado el ${a.desde}. Corrección cargada en el hub (lib/modulos.ts), no en la planilla.`,
+    });
+  }
   const deptos = unidades.filter((u) => !u.esCochera);
 
   // Precio base y aumento por piso, de la lista misma: (precio − aumento) ÷ (m² de venta + amenities),
@@ -293,7 +347,8 @@ export function armarComercial(lista: Celda[][], ventasFilas: Celda[][], superfi
   const porCodigo = new Map<string, VentaMachete>();
   for (const v of ventas) {
     const cod = codigoDeVentas(v.unidad);
-    if (cod) porCodigo.set(cod, v);
+    // "Falta vender" no es una venta: no es el machete de nadie.
+    if (cod && !/falta vender/i.test(v.nombre)) porCodigo.set(cod, v);
   }
   for (const u of unidades) {
     const v = porCodigo.get(u.codigo);
@@ -305,17 +360,18 @@ export function armarComercial(lista: Celda[][], ventasFilas: Celda[][], superfi
   const cuentasPorUnidad = new Map<string, CuentaParaCruce[]>();
   for (const c of cuentas ?? []) cuentasPorUnidad.set(c.unidad.toUpperCase(), [...(cuentasPorUnidad.get(c.unidad.toUpperCase()) ?? []), c]);
   for (const u of unidades) {
-    if (u.estado === "vendida" && u.precioVenta == null) {
-      const c = cuentasPorUnidad.get(u.codigo);
-      if (c?.length) u.precioVenta = c.reduce((s, x) => s + (x.precioUsd ?? 0), 0) || null;
-    }
+    if (u.estado !== "vendida") continue;
+    // Una unidad puede tener varias cuentas (4D: tres titulares): se suman.
+    const c = cuentasPorUnidad.get(u.codigo);
+    u.precioCuenta = c?.length ? c.reduce((s, x) => s + (x.precioUsd ?? 0), 0) || null : null;
+    u.precioVenta ??= u.precioCuenta;
   }
 
   // Supuestos confirmados.
   supuestos.push({
     tipo: "confirmado",
     titulo: "La lista de precios manda",
-    detalle: "El estado de cada unidad (vendida o libre) sale de la \"Lista de precios\". \"Ventas\" se usa solo para el detalle de cada venta.",
+    detalle: `El estado de cada unidad (vendida o libre) sale de la "Lista de precios"${corregidos.length ? ", salvo las correcciones de abajo" : ""}. "Ventas" se usa solo para el detalle de cada venta.`,
     origen: "Confirmado el 31/10/2026.",
   });
   if (base) {
@@ -326,6 +382,8 @@ export function armarComercial(lista: Celda[][], ventasFilas: Celda[][], superfi
       origen: 'Excel madre → "Lista de precios": valor con amenities ÷ (m² de venta + amenities) y "Aumento por altura". En la planilla viene de EE.RR (M56 y J77).',
     });
   }
+
+  supuestos.push(...corregidos);
 
   if (afuera.length) {
     supuestos.push({
@@ -339,7 +397,7 @@ export function armarComercial(lista: Celda[][], ventasFilas: Celda[][], superfi
   // Conflictos entre la lista y el machete de ventas o las cuentas.
   for (const u of deptos) {
     const v = porCodigo.get(u.codigo);
-    if (u.estado === "libre" && v && v.nombre && !/falta vender/i.test(v.nombre)) {
+    if (u.estado === "libre" && v && v.nombre) {
       supuestos.push({
         tipo: "conflicto",
         titulo: `${u.codigo}: libre en la lista, con venta en el machete`,
@@ -355,7 +413,7 @@ export function armarComercial(lista: Celda[][], ventasFilas: Celda[][], superfi
         origen: `Lista de precios fila ${u.fila}`,
       });
     }
-    if (cuentas && u.estado === "vendida" && !cuentasPorUnidad.has(u.codigo)) {
+    if (cuentas && u.estado === "vendida" && !u.contrato && !cuentasPorUnidad.has(u.codigo)) {
       supuestos.push({
         tipo: "conflicto",
         titulo: `${u.codigo}: vendida, sin cuenta corriente`,
@@ -370,6 +428,14 @@ export function armarComercial(lista: Celda[][], ventasFilas: Celda[][], superfi
         titulo: `${u.codigo}: libre en la lista, con cuenta corriente`,
         detalle: `Tiene cuenta a nombre de ${c.map((x) => x.inversor).join(", ")}.`,
         origen: `Lista de precios fila ${u.fila} · Cuentas corrientes`,
+      });
+    }
+    if (u.estado === "vendida" && u.venta?.costoEstimado != null && u.precioCuenta != null && Math.abs(u.venta.costoEstimado - u.precioCuenta) > Math.max(1, u.precioCuenta * 0.005)) {
+      supuestos.push({
+        tipo: "conflicto",
+        titulo: `${u.codigo}: el precio de venta no coincide`,
+        detalle: `En "Ventas" dice US$ ${Math.round(u.venta.costoEstimado).toLocaleString("es-AR")} y en "Pagos por Inversor" (costo estimado de la cuenta) US$ ${Math.round(u.precioCuenta).toLocaleString("es-AR")}. Se usa el de "Ventas".`,
+        origen: `Ventas fila ${u.venta.fila} · Pagos por Inversor`,
       });
     }
     if (u.estado === "vendida" && u.precioVenta == null) {
@@ -393,6 +459,8 @@ export interface ResumenComercial {
   libres: number;
   cocheras: { total: number; vendidas: number };
   m2: { total: number; vendidos: number; libres: number };
+  /** Vendidas que el dueño revende: cuentan como vendidas (la reventa no es del proyecto). */
+  enReventa: { cantidad: number; total: number };
   vendido: { total: number; m2ConPrecio: number; promedioM2: number | null };
   /** Lo que falta vender, a precio de lista vigente. */
   porVender: number;
@@ -413,6 +481,7 @@ export function resumen(u: Unidad[]): ResumenComercial {
     libres: libres.length,
     cocheras: { total: cocheras.length, vendidas: cocheras.filter((x) => x.estado === "vendida").length },
     m2: { total: suma(deptos, (x) => x.supTotal), vendidos: suma(vendidas, (x) => x.supTotal), libres: suma(libres, (x) => x.supTotal) },
+    enReventa: { cantidad: vendidas.filter((x) => x.reventa).length, total: suma(vendidas, (x) => x.reventa ?? 0) },
     vendido: { total, m2ConPrecio, promedioM2: m2ConPrecio ? total / m2ConPrecio : null },
     porVender: suma(libres, (x) => x.precioLista) + suma(cocheras.filter((x) => x.estado === "libre"), (x) => x.precioLista),
   };

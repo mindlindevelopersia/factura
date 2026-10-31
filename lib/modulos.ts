@@ -7,6 +7,8 @@
  * nuevo, se agrega en esta lista y se crea su página (las de proyecto, en app/(hub)/proyectos/[proyecto]).
  */
 
+import type { AjusteUnidad } from "./proyectos/comercial";
+
 export type IconoArea = "administracion" | "finanzas" | "inversores" | "indicadores" | "comercial" | "management" | "proyecto";
 
 export interface Modulo {
@@ -44,6 +46,8 @@ export interface Proyecto {
   management?: { parteM2: number; socios: Socio[] };
   /** El "Excel madre" del proyecto (lista de precios, superficies, ventas, EE.RR). */
   planillaMadre?: string;
+  /** Lo que se sabe de algunas unidades y la planilla todavía no dice (reventas, contratos, ventas caídas). */
+  ajustes?: AjusteUnidad[];
 }
 
 /** El reparto entre los desarrolladores es el mismo en todos los proyectos. */
@@ -62,6 +66,23 @@ export const PROYECTOS: Proyecto[] = [
     estado: "activo",
     management: { parteM2: 0.15, socios: SOCIOS },
     planillaMadre: "1B1cSVA9AtleBLajFwjkXdQOHnv2n0Ijv4sl3NtZP8c0",
+    ajustes: [
+      {
+        codigo: "1A",
+        estado: "vendida",
+        contrato: true,
+        reventa: 105000,
+        motivo: "Está vendida a un contratista (se pagó con obra). El dueño pidió revenderla en US$ 105.000: la que está disponible es esa segunda venta.",
+        desde: "31/10/2026",
+      },
+      { codigo: "2C", estado: "libre", motivo: "La venta no se firmó: está libre.", desde: "31/10/2026" },
+      {
+        codigo: "9A",
+        contrato: true,
+        motivo: "Es de un contratista: se paga con un contrato de obra, por eso no tiene cuenta corriente. Va a ir al módulo de Contratos.",
+        desde: "31/10/2026",
+      },
+    ],
   },
   {
     id: "guemes-4676",

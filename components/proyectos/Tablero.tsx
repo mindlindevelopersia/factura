@@ -1,20 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import { resumen } from "@/lib/proyectos/comercial";
 import { Icono } from "../Icono";
 import { BarraLectura } from "../finanzas/comun";
-import { m2, pct, useComercial, useProyectoId, usd } from "./datos";
+import { m2, pct, useComercial, usd } from "./datos";
 import { Origen } from "./Origen";
 import { Supuestos } from "./Supuestos";
 
 /** El tablero de un proyecto: avance comercial, plata, superficies y lo que hay que revisar. */
 export function Tablero() {
   const { datos, error, cargando, actualizar } = useComercial();
-  const id = useProyectoId();
   const c = datos?.comercial;
   const r = c ? resumen(c.unidades) : null;
-  const dev = datos?.desarrolladores;
   const s = c?.superficies;
 
   return (
@@ -38,8 +35,9 @@ export function Tablero() {
                 </span>
                 <span className="cifra__nota">
                   {pct(r.vendidas / r.deptos)} · quedan {r.libres} · cocheras {r.cocheras.vendidas} de {r.cocheras.total}
+                  {r.enReventa.cantidad > 0 && ` · ${r.enReventa.cantidad} en reventa del dueño (${usd(r.enReventa.total)})`}
                 </span>
-                <Origen texto='Excel madre → "Lista de precios" → columna Estado (Vendido / Libre). La lista manda.' />
+                <Origen texto='Excel madre → "Lista de precios" → columna Estado (Vendido / Libre), con las correcciones confirmadas (ver "Supuestos"). Las unidades en reventa cuentan como vendidas: la reventa es del dueño, no del proyecto.' />
               </div>
               <div className="cifra">
                 <span className="cifra__titulo">m² vendidos</span>
@@ -68,12 +66,7 @@ export function Tablero() {
                 <span className="cifra__titulo">Falta vender, a precio de lista</span>
                 <span className="cifra__valor">{usd(r.porVender)}</span>
                 <span className="cifra__nota">Vendido: {usd(r.vendido.total)} · total del proyecto {usd(r.vendido.total + r.porVender)}</span>
-                <Origen
-                  marca="por-confirmar"
-                  texto={`Suma del precio de lista vigente (valor con amenities + aumento por altura) de las unidades libres.${
-                    dev ? ` Incluye los ${m2(dev.m2.total, 1)} que les tocarían a los desarrolladores (ver Management).` : ""
-                  }`}
-                />
+                <Origen texto="Suma del precio de lista vigente (valor con amenities + aumento por altura) de las unidades libres. Lo vendido, al precio de venta de cada unidad." />
               </div>
             </div>
           </section>
@@ -122,29 +115,9 @@ export function Tablero() {
               <Origen texto='Excel madre → "Superficies" (filas "Superficie total", "TOTALES" y "TOTAL CONSTRUIBLE" de la tabla de vendibles) y "Lista de precios" (suma de "Sup Total").' />
             </section>
 
-            {dev && (
-              <section className="card grafico">
-                <h2>Desarrolladores</h2>
-                <p className="tablero__dev">
-                  <strong>{m2(dev.m2.total, 1)}</strong> para los desarrolladores ({pct(dev.parte)}).
-                </p>
-                <ul className="tablero__socios">
-                  {dev.socios.map((x) => (
-                    <li key={x.nombre}>
-                      {x.nombre} <span>{pct(x.parte)}</span> <strong>{m2(x.m2, 1)}</strong>
-                    </li>
-                  ))}
-                </ul>
-                <Origen marca="por-confirmar" texto="15% de los m² de venta sin amenities + 15% del 85% de los amenities. Ver los detalles en Management." />
-                <Link href={`/proyectos/${id}/management/desarrolladores`} className="btn btn--borde btn--chico tablero__ir">
-                  Ver Management
-                  <Icono nombre="flecha" size={16} />
-                </Link>
-              </section>
-            )}
           </div>
 
-          <Supuestos supuestos={[...c.supuestos, ...(dev?.supuestos ?? [])]} />
+          <Supuestos supuestos={c.supuestos} />
         </>
       )}
     </div>

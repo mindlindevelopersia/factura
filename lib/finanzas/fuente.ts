@@ -19,7 +19,7 @@ import { leerBloques, unirConFlujo, type CuentasCorrientes } from "../inversores
 import { PestaniaSimple } from "../google/pestania";
 import { proyecto as buscarProyecto } from "../modulos";
 import { armarComercial, type Comercial } from "../proyectos/comercial";
-import { desarrolladores, m2DesarrolladoresEnPlanilla, type Desarrolladores, type GastoHq } from "../proyectos/management";
+import { analizarHq, desarrolladores, m2DesarrolladoresEnPlanilla, type Desarrolladores, type GastoHq } from "../proyectos/management";
 import { leerCaja, unir, type CajaEgresos } from "./egresos";
 import { colorDe, leerFlujo, mesDeHoy, type Celda, type FlujoIngresos } from "./ingresos";
 
@@ -294,11 +294,11 @@ export async function datosComercial(id: string, opciones?: { fresco?: boolean }
         ventas,
         superficies,
         cuentas?.map((c) => ({ unidad: c.unidad, inversor: c.inversor, precioUsd: c.precioUsd })) ?? null,
+        p.ajustes,
       );
       let hq: GastoHq | null = null;
       if (caja) {
-        const deHq = caja.egresos.filter((e) => /^hq$/i.test(e.proyecto.trim()));
-        hq = { ARS: deHq.filter((e) => e.moneda === "ARS").reduce((s, e) => s + e.monto, 0), USD: deHq.filter((e) => e.moneda === "USD").reduce((s, e) => s + e.monto, 0), movimientos: deHq.length };
+        hq = analizarHq(caja.egresos);
       }
       const dev = p.management ? desarrolladores(comercial.unidades, p.management.parteM2, p.management.socios, m2DesarrolladoresEnPlanilla(eerr), hq) : null;
       return { comercial, desarrolladores: dev };

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Celda } from "../finanzas/ingresos";
 import { SOCIOS } from "../modulos";
 import { armarComercial, codigoDeVentas, leerSuperficies, precioSimulado, resumen } from "./comercial";
-import { desarrolladores, m2DesarrolladoresEnPlanilla } from "./management";
+import { analizarHq, desarrolladores, m2DesarrolladoresEnPlanilla } from "./management";
 
 const c = (valor: Celda["valor"]): Celda => ({ valor, color: null });
 const fila = (...v: Celda["valor"][]) => v.map(c);
@@ -85,6 +85,39 @@ describe("comercial", () => {
     expect(titulos).toContain("3A: vendida, sin cuenta corriente");
   });
 
+  it("cruza el precio de venta de Ventas con el de Pagos por Inversor y salta la fila 'Falta vender'", () => {
+    const ventas = [...VENTAS.slice(0, 1), fila(null, "Falta vender", null, "Planta Baja", 90, 95, 999999), ...VENTAS.slice(2)];
+    const otra = armarComercial(LISTA, ventas, SUP, [...CUENTAS.filter((x) => x.unidad !== "2A"), { unidad: "2A", inversor: "Beto", precioUsd: 190000 }]);
+    const u = (cod: string) => otra.unidades.find((x) => x.codigo === cod)!;
+    // PB no tiene machete (la fila es "Falta vender"): el precio sale de la cuenta.
+    expect(u("PB").venta).toBe(null);
+    expect(u("PB").precioVenta).toBe(200000);
+    // 2A: Ventas dice 180.000 y la cuenta 190.000 → manda Ventas, con alarma.
+    expect(u("2A").precioVenta).toBe(180000);
+    expect(u("2A").precioCuenta).toBe(190000);
+    expect(otra.supuestos.map((s) => s.titulo)).toContain("2A: el precio de venta no coincide");
+    expect(com.supuestos.map((s) => s.titulo)).not.toContain("2A: el precio de venta no coincide");
+  });
+
+  it("aplica las correcciones: reventa, venta caída y contrato", () => {
+    const aj = armarComercial(LISTA, VENTAS, SUP, CUENTAS, [
+      { codigo: "1A", estado: "vendida", contrato: true, reventa: 105000, motivo: "Contratista; se revende.", desde: "31/10/2026" },
+      { codigo: "2A", estado: "libre", motivo: "No se firmó.", desde: "31/10/2026" },
+      { codigo: "3A", contrato: true, motivo: "Contratista.", desde: "31/10/2026" },
+    ]);
+    const u = (cod: string) => aj.unidades.find((x) => x.codigo === cod)!;
+    expect(u("1A")).toMatchObject({ estado: "vendida", contrato: true, reventa: 105000, precioVenta: 100000 });
+    expect(u("2A")).toMatchObject({ estado: "libre", inversor: "", venta: null });
+    const titulos = aj.supuestos.map((s) => s.titulo);
+    expect(titulos).not.toContain("1A: libre en la lista, pero con inversor");
+    expect(titulos).not.toContain("3A: vendida, sin cuenta corriente");
+    expect(titulos).toContain("1A: vendida, pagada con contrato, en reventa");
+    expect(aj.supuestos.find((s) => s.titulo === "2A: libre")?.detalle).toMatch(/dice "Vendido"/);
+    const r = resumen(aj.unidades);
+    expect(r.enReventa).toEqual({ cantidad: 1, total: 105000 });
+    expect(r.vendidas).toBe(3);
+  });
+
   it("resumen: vendidas, m², promedio de venta y lo que falta vender a lista", () => {
     const r = resumen(com.unidades);
     expect(r).toMatchObject({ deptos: 5, vendidas: 3, libres: 2, cocheras: { total: 1, vendidas: 1 } });
@@ -113,13 +146,24 @@ describe("comercial", () => {
 });
 
 describe("management", () => {
-  it("15% de los m² de venta + 15% del 85% de los amenities, repartido 50/25/25", () => {
-    const d = desarrolladores(com.unidades, 0.15, SOCIOS, 50, { ARS: 1000, USD: 0, movimientos: 3 });
-    expect(d.m2.propios).toBeCloseTo(0.15 * (90 + 40 + 30 + 80 + 40));
-    expect(d.m2.amenities).toBeCloseTo(0.15 * 0.85 * (5 + 2 + 2 + 4 + 2));
-    expect(d.socios.map((s) => s.m2 / d.m2.total)).toEqual([0.5, 0.25, 0.25]);
-    expect(d.supuestos.map((s) => s.tipo)).toEqual(["por-confirmar", "conflicto", "por-confirmar", "conflicto"]);
-    expect(d.supuestos[3].titulo).toMatch(/HQ/);
+  it("15% de los m² de venta, sin amenities, repartido 50/25/25", () => {
+    const hq = analizarHq([]);
+    const d = desarrolladores(com.unidades, 0.15, SOCIOS, 50, hq);
+    expect(d.m2).toBeCloseTo(0.15 * (90 + 40 + 30 + 80 + 40));
+    expect(d.socios.map((s) => s.m2 / d.m2)).toEqual([0.5, 0.25, 0.25]);
+    expect(d.supuestos.map((s) => s.tipo)).toEqual(["confirmado", "conflicto", "por-confirmar"]);
+  });
+
+  it("separa los egresos de HQ: del banco, de obra y de oficina", () => {
+    const e = (proyecto: string, rubro: string, moneda: "ARS" | "USD", monto: number, descripcion = "") => ({ proyecto, rubro, moneda, monto, descripcion, fecha: null, pestania: "Caja", fila: 1 });
+    const hq = analizarHq([e("HQ", "impuestos", "ARS", 100, "Deb"), e("HQ", "bancarios", "ARS", 50), e("HQ", "hormigon", "ARS", 1000, "Pago Hormigonera"), e("HQ", "sin-clasificar", "USD", 50000, "Transf"), e("HQ", "honorarios", "ARS", 300), e("Lerma 439", "materiales", "ARS", 9)]);
+    expect(hq).toMatchObject({ movimientos: 5, ARS: 1450, USD: 50000, bancarios: { movimientos: 2, ARS: 150, USD: 0 } });
+    expect(hq.sospechosos.map((x) => x.descripcion)).toEqual(["Pago Hormigonera", "Transf"]);
+    const d = desarrolladores(com.unidades, 0.15, SOCIOS, null, hq);
+    const s = d.supuestos.at(-1)!;
+    expect(s.titulo).toMatch(/Para chequear: 5 egresos/);
+    expect(s.detalle).toMatch(/2 son impuestos y gastos del banco/);
+    expect(s.detalle).toMatch(/Quedan 1 de oficina/);
   });
 
   it("lee los m² de developers de EE.RR", () => {

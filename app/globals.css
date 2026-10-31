@@ -3998,8 +3998,11 @@ h1 .etiqueta-beta {
 }
 .tablero__fila {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
+}
+.tablero__fila .tablero__superficies {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
 }
 .tablero__superficies {
   display: grid;
@@ -4112,6 +4115,12 @@ h1 .etiqueta-beta {
 .edificio__unidad--otro {
   background: var(--gris-claro);
 }
+/* Vendida, pero el dueño la revende: oscura (cuenta como vendida) con rayas lima. */
+.edificio__unidad--reventa,
+.edificio__marca--reventa {
+  background: repeating-linear-gradient(135deg, var(--grafito) 0 7px, #6b7318 7px 10px);
+  color: white;
+}
 .edificio__unidad--revisar,
 .edificio__marca--revisar {
   border-color: var(--dudoso-borde);
@@ -4192,4 +4201,25 @@ h1 .etiqueta-beta {
   .unidad__detalle {
     position: static;
   }
+}
+
+/* Unidades: corrección cargada en el hub y reventa. */
+.unidad__ajuste {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--radio-campo);
+  background: var(--dudoso);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.unidad__ajuste svg {
+  flex: none;
+  margin-top: 1px;
+}
+.unidad__reventa {
+  color: #5d6413;
+  font-weight: 700;
 }

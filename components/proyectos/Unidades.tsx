@@ -49,6 +49,9 @@ export function Unidades() {
                   <span className="leyenda__marca edificio__marca--libre" /> Libre
                 </li>
                 <li>
+                  <span className="leyenda__marca edificio__marca--reventa" /> En reventa
+                </li>
+                <li>
                   <span className="leyenda__marca edificio__marca--revisar" /> Revisar
                 </li>
               </ul>
@@ -63,11 +66,11 @@ export function Unidades() {
                           <button
                             key={x.codigo}
                             type="button"
-                            className={`edificio__unidad edificio__unidad--${x.estado}${conConflicto.has(x.codigo) ? " edificio__unidad--revisar" : ""}${elegida === x.codigo ? " edificio__unidad--elegida" : ""}`}
+                            className={`edificio__unidad edificio__unidad--${x.estado}${x.reventa ? " edificio__unidad--reventa" : ""}${conConflicto.has(x.codigo) ? " edificio__unidad--revisar" : ""}${elegida === x.codigo ? " edificio__unidad--elegida" : ""}`}
                             style={{ flexGrow: Math.max(1, x.supTotal) }}
                             onClick={() => setElegida(elegida === x.codigo ? null : x.codigo)}
                             aria-pressed={elegida === x.codigo}
-                            title={`${x.codigo} · ${x.tipologia} · ${m2(x.supTotal, 1)} · ${x.estado === "vendida" ? x.inversor : "libre"}`}
+                            title={`${x.codigo} · ${x.tipologia} · ${m2(x.supTotal, 1)} · ${x.estado === "vendida" ? x.inversor : "libre"}${x.reventa ? " · en reventa" : ""}`}
                           >
                             <strong>{x.codigo}</strong>
                             <span>{m2(x.supTotal, 0)}</span>
@@ -118,8 +121,7 @@ export function Unidades() {
                     <th>Unidad</th>
                     <th>Estado</th>
                     <th className="tabla__numero">Sup. total</th>
-                    <th className="tabla__numero">Precio de lista</th>
-                    <th className="tabla__numero">Precio de venta</th>
+                    <th className="tabla__numero">Precio</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -137,6 +139,7 @@ export function Unidades() {
                       <td data-etiqueta="Estado">
                         {x.estado === "vendida" ? "Vendida" : x.estado === "libre" ? "Libre" : x.estadoTexto}
                         {x.inversor && <span className="tabla__sub">{x.inversor}</span>}
+                        {(x.contrato || x.reventa) && <span className="tabla__sub">{[x.contrato && "Pagada con contrato", x.reventa && "En reventa"].filter(Boolean).join(" · ")}</span>}
                         {conConflicto.has(x.codigo) && (
                           <span className="tabla__sub cuentas__aviso">
                             <Icono nombre="alerta" size={12} /> revisar
@@ -146,13 +149,8 @@ export function Unidades() {
                       <td data-etiqueta="Sup. total" className="tabla__numero">
                         {x.esCochera ? "—" : m2(x.supTotal)}
                       </td>
-                      <td data-etiqueta="Precio de lista" className="tabla__numero">
-                        {usd(x.precioLista)}
-                        {x.precioM2Lista && <span className="tabla__sub">{usd(x.precioM2Lista)}/m²</span>}
-                      </td>
-                      <td data-etiqueta="Precio de venta" className="tabla__numero">
-                        {x.precioVenta != null ? usd(x.precioVenta) : "—"}
-                        {x.precioVenta != null && x.supTotal > 0 && <span className="tabla__sub">{usd(x.precioVenta / x.supTotal)}/m²</span>}
+                      <td data-etiqueta="Precio" className="tabla__numero">
+                        <Precio u={x} />
                       </td>
                     </tr>
                   ))}
@@ -184,7 +182,16 @@ function Detalle({ u, base }: { u: Unidad | null; base: string }) {
       <h2>
         {u.codigo} {!u.esCochera && <span className="unidad__tipo">{u.tipologia}</span>}
       </h2>
-      <p className={`unidad__estado unidad__estado--${u.estado}`}>{u.estado === "vendida" ? `Vendida · ${u.inversor}` : u.estado === "libre" ? "Libre" : u.estadoTexto}</p>
+      <p className={`unidad__estado unidad__estado--${u.estado}`}>
+        {u.estado === "vendida" ? `Vendida · ${u.inversor}` : u.estado === "libre" ? "Libre" : u.estadoTexto}
+        {u.contrato && " · pagada con contrato"}
+      </p>
+      {u.ajuste && (
+        <p className="unidad__ajuste">
+          <Icono nombre="alerta" size={14} />
+          <span>{u.ajuste}</span>
+        </p>
+      )}
       {!u.esCochera && (
         <dl className="unidad__datos">
           <div>
@@ -220,19 +227,38 @@ function Detalle({ u, base }: { u: Unidad | null; base: string }) {
         </dl>
       )}
       <dl className="unidad__datos">
-        <div>
-          <dt>Precio de lista</dt>
-          <dd>
-            <strong>{usd(u.precioLista)}</strong>
-            {u.precioM2Lista && <span> · {usd(u.precioM2Lista)}/m²</span>}
-          </dd>
-        </div>
-        {u.estado === "vendida" && (
+        {u.estado === "vendida" ? (
+          <>
+            <div>
+              <dt>Precio de venta</dt>
+              <dd>
+                <strong>{usd(u.precioVenta)}</strong>
+                {u.precioVenta != null && u.supTotal > 0 && <span> · {usd(u.precioVenta / u.supTotal)}/m²</span>}
+              </dd>
+            </div>
+            <div>
+              <dt>Según cada planilla</dt>
+              <dd>
+                Ventas {usd(u.venta?.costoEstimado)} · Pagos por Inversor {u.contrato && u.precioCuenta == null ? "no tiene (contrato)" : usd(u.precioCuenta)}
+              </dd>
+            </div>
+            {u.reventa && (
+              <div>
+                <dt>En reventa</dt>
+                <dd>
+                  <strong>{usd(u.reventa)}</strong>
+                  {u.supTotal > 0 && <span> · {usd(u.reventa / u.supTotal)}/m²</span>}
+                  <span className="tabla__sub">La revende el dueño: no es plata del proyecto.</span>
+                </dd>
+              </div>
+            )}
+          </>
+        ) : (
           <div>
-            <dt>Precio de venta</dt>
+            <dt>Precio de lista vigente</dt>
             <dd>
-              <strong>{usd(u.precioVenta)}</strong>
-              {u.precioVenta != null && u.supTotal > 0 && <span> · {usd(u.precioVenta / u.supTotal)}/m²</span>}
+              <strong>{usd(u.precioLista)}</strong>
+              {u.precioM2Lista && <span> · {usd(u.precioM2Lista)}/m²</span>}
             </dd>
           </div>
         )}
@@ -249,13 +275,40 @@ function Detalle({ u, base }: { u: Unidad | null; base: string }) {
           <Origen texto={`Excel madre → "Ventas", fila ${v.fila}.`} />
         </div>
       )}
-      <Origen texto={`Excel madre → "Lista de precios", fila ${u.fila}. Precio de lista = valor con amenities + aumento por altura.`} />
-      {u.estado === "vendida" && (
+      <Origen
+        texto={
+          u.estado === "vendida"
+            ? `Estado: Excel madre → "Lista de precios", fila ${u.fila}. Precio de venta: "Costo estimado" del machete de "Ventas"${u.venta ? ` (fila ${u.venta.fila})` : ""}; si no está, el "Costo Estimado Departamento" de "Pagos por Inversor".`
+            : `Excel madre → "Lista de precios", fila ${u.fila}. Precio de lista = valor con amenities + aumento por altura.`
+        }
+      />
+      {u.estado === "vendida" && !u.contrato && (
         <Link href={`${base}/inversores/cuentas-corrientes`} className="btn btn--borde btn--chico">
           Ver cuentas corrientes
           <Icono nombre="flecha" size={16} />
         </Link>
       )}
     </aside>
+  );
+}
+
+/** El precio que corresponde: el de venta si está vendida, el de lista vigente si está libre. */
+function Precio({ u }: { u: Unidad }) {
+  if (u.estado === "vendida") {
+    return (
+      <>
+        {u.precioVenta != null ? usd(u.precioVenta) : "—"}
+        <span className="tabla__sub">
+          {u.precioVenta == null ? "Venta sin precio cargado" : `Venta${u.supTotal > 0 ? ` · ${usd(u.precioVenta / u.supTotal)}/m²` : ""}`}
+        </span>
+        {u.reventa && <span className="tabla__sub unidad__reventa">Reventa: {usd(u.reventa)}</span>}
+      </>
+    );
+  }
+  return (
+    <>
+      {usd(u.precioLista)}
+      <span className="tabla__sub">Lista vigente{u.precioM2Lista ? ` · ${usd(u.precioM2Lista)}/m²` : ""}</span>
+    </>
   );
 }

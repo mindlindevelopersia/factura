@@ -35,21 +35,21 @@ export function Desarrolladores() {
           <div className="ingresos__cifras">
             <div className="cifra cifra--destacada">
               <span className="cifra__titulo">m² de los desarrolladores</span>
-              <span className="cifra__valor">{m2(dev.m2.total, 2)}</span>
+              <span className="cifra__valor">{m2(dev.m2, 2)}</span>
               <span className="cifra__nota">
-                {m2(dev.m2.propios, 2)} propios + {m2(dev.m2.amenities, 2)} de amenities
+                {pct(dev.parte)} de {m2(dev.m2Venta, 2)} vendibles · sin amenities
               </span>
-              <Origen marca="por-confirmar" texto={`${pct(dev.parte)} de ${m2(dev.m2Venta)} de venta sin amenities + ${pct(dev.parte)} del ${pct(1 - dev.parte)} de ${m2(dev.m2Amenities)} de amenities.`} />
+              <Origen texto={`${pct(dev.parte)} de la suma de "Sup Propia VENTA" de la lista de precios (${m2(dev.m2Venta)}). Los amenities (${m2(dev.m2Amenities)}) no se cuentan.`} />
             </div>
             <div className="cifra">
               <span className="cifra__titulo">Valuados a {usd(valorM2)}/m²</span>
-              <span className="cifra__valor">{usd(dev.m2.total * valorM2)}</span>
+              <span className="cifra__valor">{usd(dev.m2 * valorM2)}</span>
               <span className="cifra__nota">El valor se elige abajo</span>
             </div>
             <div className="cifra">
               <span className="cifra__titulo">Stock sin vender</span>
               <span className="cifra__valor">{m2(r.m2.libres, 1)}</span>
-              <span className="cifra__nota">Para terceros quedarían {m2(Math.max(0, r.m2.libres - dev.m2.total), 1)} si lo de los desarrolladores sale de ahí</span>
+              <span className="cifra__nota">Para terceros quedarían {m2(Math.max(0, r.m2.libres - dev.m2), 1)} si lo de los desarrolladores sale de ahí</span>
             </div>
           </div>
 

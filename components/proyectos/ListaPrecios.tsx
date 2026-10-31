@@ -18,6 +18,7 @@ export function ListaPrecios() {
   const baseSim = Number(base.replace(",", ".")) || baseActual;
   const aumentoSim = aumento ? Number(aumento.replace(",", ".")) / 100 : aumentoActual;
   const libres = (c?.unidades ?? []).filter((u) => u.estado === "libre");
+  const reventas = (c?.unidades ?? []).filter((u) => u.reventa);
   const totalActual = libres.reduce((s, u) => s + u.precioLista, 0);
   const totalSim = libres.reduce((s, u) => s + precioSimulado(u, baseSim, aumentoSim), 0);
   const simulando = baseSim !== baseActual || aumentoSim !== aumentoActual;
@@ -131,6 +132,49 @@ export function ListaPrecios() {
               &quot;Ajuste m2 x terraza&quot;.
             </p>
           </section>
+
+          {reventas.length > 0 && (
+            <section className="card ingresos__seccion">
+              <h2>En reventa</h2>
+              <p className="ficha__nota">Ya están vendidas: las revende su dueño. No suman a lo que falta vender del proyecto, pero también están disponibles.</p>
+              <div className="tabla-contenedor">
+                <table className="tabla">
+                  <thead>
+                    <tr>
+                      <th>Unidad</th>
+                      <th className="tabla__numero">Sup. total</th>
+                      <th className="tabla__numero">Precio de reventa</th>
+                      <th className="tabla__numero">Lista vigente</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reventas.map((u) => (
+                      <tr key={u.codigo}>
+                        <td data-etiqueta="Unidad">
+                          <strong>{u.codigo}</strong>
+                          <span className="tabla__sub">
+                            {u.tipologia} · {u.orientacion}
+                          </span>
+                        </td>
+                        <td data-etiqueta="Sup. total" className="tabla__numero">
+                          {m2(u.supTotal)}
+                        </td>
+                        <td data-etiqueta="Precio de reventa" className="tabla__numero">
+                          <strong>{usd(u.reventa)}</strong>
+                          {u.supTotal > 0 && <span className="tabla__sub">{usd(u.reventa! / u.supTotal)}/m² total</span>}
+                        </td>
+                        <td data-etiqueta="Lista vigente" className="tabla__numero">
+                          {usd(u.precioLista)}
+                          <span className="tabla__sub">para comparar</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Origen texto="Precio que pidió el dueño, confirmado el 31/10/2026 (cargado en el hub). La lista vigente es la de la planilla, para comparar." />
+            </section>
+          )}
         </>
       )}
     </div>
