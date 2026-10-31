@@ -78,8 +78,26 @@ const cc = unirConFlujo(bloques, FLUJO);
 const ana = cc.cuentas.find((c) => c.inversor === "Ana Pérez")!;
 
 describe("leerBloques", () => {
-  it("ignora los bloques con unidad inválida (retirados o rotos)", () => {
-    expect(bloques.map((b) => b.inversor)).toEqual(["Ana Pérez", "Beto Druck", "Iony Druck"]);
+  it("marca los bloques con unidad inválida y no los cuenta si sus pagos no son de nadie del Flujo", () => {
+    expect(bloques.filter((b) => !b.sinUnidad).map((b) => b.inversor)).toEqual(["Ana Pérez", "Beto Druck", "Iony Druck"]);
+    expect(bloques.some((b) => b.sinUnidad)).toBe(true);
+    expect(cc.cuentas.some((c) => c.sinUnidad)).toBe(false);
+  });
+
+  it("une un bloque con el encabezado roto a quien tiene esos pagos en el Flujo", () => {
+    const original = bloques.find((b) => b.inversor === "Ana Pérez")!;
+    const roto = { ...original, inversor: "Otro Nombre", unidad: "#REF!", sinUnidad: true, columna: "AP" };
+    const cobros = original.pagos.slice(0, 3).map((p, i) => ({ ...flujoPago("Valen Nuevo", "9Z", `2026-0${i + 1}`, p.monto, "cobrado"), moneda: p.moneda }));
+    expect(cobros.length).toBe(3);
+    const u = unirConFlujo([roto], { ...FLUJO, pagos: [...cobros, flujoPago("Valen Nuevo", "9Z", "2026-11", 10, "a-cobrar")] });
+    const valen = u.cuentas.find((c) => c.inversor === "Valen Nuevo")!;
+    expect(valen).toMatchObject({ unidad: "9Z", origen: "planilla", columna: "AP", precioUsd: null });
+    expect(valen.pagos.length).toBe(original.pagos.length);
+    expect(valen.avisos.map((a) => a.tipo)).toContain("encabezado");
+    expect(u.cuentas.some((c) => c.inversor === "Otro Nombre")).toBe(false);
+    // Sin precio: lo pagado no baja el saldo total.
+    const t = totalesCuentas(u.cuentas, "2026-10");
+    expect(t).toMatchObject({ precio: 0, saldo: 0, sinPrecio: ["9Z"] });
   });
 
   it("lee la ficha, el precio, los montos formal e informal, notas y comentarios", () => {

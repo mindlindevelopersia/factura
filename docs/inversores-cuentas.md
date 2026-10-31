@@ -45,3 +45,7 @@ No se compara lo pagado en pesos con lo marcado en verde en el Flujo: algunos in
 ## Verificación con la copia de prueba (31/10/2026)
 
 21 cuentas (20 con bloque y 2D solo del Flujo). Vendido US$ 2.296.485, pagado US$ 1.317.813 (57%). Los totales pagados de cada bloque coinciden con la suma de su columna "Monto en Dólares". Avisos: fechas en 1A ("31/06/2026"), 3A (dos fechas futuras) y PB (2062).
+
+## Bloques con el encabezado roto
+
+Si un bloque de "Pagos por Inversor" tiene la unidad rota (#REF!, NINGUNO o vacía), no se descarta enseguida: si al menos 3 de sus pagos coinciden (mismo monto y moneda) con los cobros del Flujo de alguien que no tiene bloque, el bloque es de esa persona. Se usan sus pagos, pero no su encabezado (nombre, unidad, CUIT, teléfono, costo): está copiado de otra cuenta. La cuenta queda sin precio, con el aviso "Encabezado copiado de otra cuenta", y no suma al saldo ni al avance del total hasta que se corrija. Caso real: 2D (Valentín Italiano), bloque de la columna AP con el encabezado de otra cuenta.
