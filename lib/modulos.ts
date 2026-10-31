@@ -42,6 +42,12 @@ export const AREAS: Area[] = [
     descripcion: "Flujo de fondos, cobranzas, pagos y presupuesto.",
     href: "/finanzas",
     icono: "finanzas",
-    modulos: [],
+    modulos: [
+      {
+        nombre: "Ingresos",
+        descripcion: "Lo cobrado y lo que falta cobrar de los inversores de Lerma, por mes, moneda, inversor y blanco o negro.",
+        href: "/finanzas/ingresos",
+      },
+    ],
   },
 ];

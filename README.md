@@ -55,6 +55,7 @@ Nada de esto va al repo. En local, en `.env.local`. En Vercel, en Settings > Env
 | `SHEET_TAB_INGRESOS` | Pestaña de ventas. Sin esto, la app no carga ventas | Ventas |
 | `APPS_SCRIPT_URL`, `APPS_SCRIPT_SECRET` | Script que guarda y ordena los PDF en Drive (`apps-script/`, versión 2) | Siempre: la cola guarda cada archivo al llegar |
 | `COLA_SHEET_ID` | Planilla aparte para la cola y las cuentas de Telegram conectadas. **No** la de Administración Contable. La app crea sus pestañas ("Cola", "Telegram" y "Candados") | Siempre |
+| `FINANZAS_SHEET_ID`, `FINANZAS_TAB_FLUJO` | Planilla y pestaña del flujo de fondos para Finanzas · Ingresos. Por defecto, `SHEET_ID` y "Flujo de fondos LERMA" | Opcional |
 | `COLA_TAB`, `COLA_TAB_TELEGRAM`, `COLA_TAB_CANDADOS` | Nombres de esas pestañas. Por defecto, "Cola", "Telegram" y "Candados" | Opcional |
 | `TELEGRAM_API_KEY` | Token del bot de Telegram (de BotFather). También se acepta `TELEGRAM_BOT_TOKEN` | Telegram |
 
@@ -95,7 +96,7 @@ Auth.js (`next-auth` v5) con Google. Solo entran los mails de `ALLOWED_EMAILS`, 
 
 ## Hub de áreas
 
-La app es el hub de Mindlin: al entrar se ve el inicio con las áreas de la empresa y, a la izquierda, un menú con cada área y sus módulos. Hoy hay dos áreas: **Administración**, con el módulo **Facturas y comprobantes** (`/administracion/facturas`), y **Finanzas**, todavía sin módulos ("Próximamente").
+La app es el hub de Mindlin: al entrar se ve el inicio con las áreas de la empresa y, a la izquierda, un menú con cada área y sus módulos. Hoy hay dos áreas: **Administración**, con el módulo **Facturas y comprobantes** (`/administracion/facturas`), y **Finanzas**, con el módulo **Ingresos** (`/finanzas/ingresos`): lo cobrado y lo que falta cobrar de los inversores de Lerma, leído de la pestaña "Flujo de fondos LERMA". Cómo lee esa pestaña y qué reglas usa: [docs/finanzas-ingresos.md](docs/finanzas-ingresos.md).
 
 Las áreas y los módulos se definen en `lib/modulos.ts`; de ahí salen el menú (`components/Navegacion.tsx`), el inicio y la página de cada área. Para sumar un módulo: agregarlo en esa lista y crear su página en `app/(hub)/<área>/<módulo>/page.tsx`. Todo lo que está dentro de `app/(hub)/` lleva el encabezado y el menú, y pide login.
 

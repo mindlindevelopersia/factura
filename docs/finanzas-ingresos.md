@@ -60,10 +60,31 @@ Para el módulo, la API de Sheets tiene que pedir el formato de las celdas (`spr
 - La suma de todas las celdas de meses en pesos coincide exactamente con la suma de la fila 111 de marzo de 2025 a diciembre de 2028.
 - **Diferencia en la planilla:** el total general (`L111 = SUM(M111:BB111)`) llega hasta agosto de 2028 y deja afuera septiembre a diciembre de 2028. El subtotal de cuotas (`L107`) llega hasta septiembre de 2028. Por eso el total de la planilla es menor que la suma de todos los meses.
 
-## Preguntas abiertas
+## Reglas que usa el módulo (acordadas el 31/10/2026)
 
-1. ¿Verde = cobrado y rosa = a cobrar, siempre? ¿Qué significan el amarillo y el celeste?
-2. Los rosas en meses pasados, ¿son pagos atrasados?
-3. Anticipos en USD: ¿se toman todos como cobrados? ¿En qué fecha (la de contrato)?
-4. "Falta vender": ¿se muestran como ingreso esperado o se excluyen?
-5. ¿Se corrige en la planilla el total general para que incluya hasta diciembre de 2028?
+| Caso | Cómo se cuenta | ¿Va a "Para revisar"? |
+|---|---|---|
+| Verde | Cobrado, aunque sea de un mes futuro (pago adelantado) | No |
+| Rosa de este mes en adelante | A cobrar | No |
+| Rosa de un mes pasado | A cobrar, marcado como **vencido** | Sí: verificar si se cobró y que el monto esté actualizado por CAC a hoy |
+| Amarillo | A cobrar (es un monto que hay que actualizar) | Sí |
+| Celeste | No se cuenta (unidad sin vender) | Sí, si tiene monto |
+| Inversor "Falta vender" | No se cuenta | Sí, si tiene montos |
+| Sin color | A cobrar | Sí |
+| Texto en vez de número | No se cuenta | Sí |
+| Anticipo | En dólares y **cobrado**, en el mes siguiente al "Mes Base CAC" (base febrero → cobrado en marzo) | Solo si no tiene mes base, o si la columna MONEDA no dice USD (se cuenta en dólares igual) |
+| Fila sin blanco/negro o con tipo desconocido | No se cuenta | Sí |
+| Fila de totales cuyo total no da la suma de los meses | El módulo usa la suma de los meses | Sí |
+
+Pesos y dólares nunca se suman entre sí.
+
+## Dónde está el código
+
+- `lib/finanzas/ingresos.ts`: lectura de la tabla, reglas, filtros y totales. Sin red; con tests en `ingresos.test.ts`.
+- `lib/finanzas/fuente.ts`: lee la pestaña con la cuenta de servicio (valores y colores) y guarda la lectura 5 minutos.
+- `GET /api/finanzas/ingresos` (`?fresco=1` vuelve a leer) y la pantalla `/finanzas/ingresos` (`components/finanzas/Ingresos.tsx`).
+- Variables opcionales: `FINANZAS_SHEET_ID` (por defecto, `SHEET_ID`) y `FINANZAS_TAB_FLUJO` (por defecto, "Flujo de fondos LERMA").
+
+## Verificación con la copia de prueba (31/10/2026)
+
+Con la planilla bajada ese día, el módulo da exactamente lo mismo que la planilla: en pesos, la suma de la fila de totales mes por mes; en dólares, los anticipos de las filas 105 y 106. Aparecen 17 cosas para revisar (pagos vencidos, anticipos sin mes base, un anticipo con "ARS" en la columna MONEDA, la fila amarilla y el total general que no incluye los últimos meses).
