@@ -112,6 +112,8 @@ describe("comercial", () => {
     expect(titulos).not.toContain("1A: libre en la lista, pero con inversor");
     expect(titulos).not.toContain("3A: vendida, sin cuenta corriente");
     expect(titulos).toContain("1A: vendida, pagada con contrato, en reventa");
+    // 2A pasó a libre con corrección: su machete viejo no es conflicto.
+    expect(titulos).not.toContain("2A: libre en la lista, con venta en el machete");
     expect(aj.supuestos.find((s) => s.titulo === "2A: libre")?.detalle).toMatch(/dice "Vendido"/);
     const r = resumen(aj.unidades);
     expect(r.enReventa).toEqual({ cantidad: 1, total: 105000 });

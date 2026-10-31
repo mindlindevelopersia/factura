@@ -397,7 +397,8 @@ export function armarComercial(
   // Conflictos entre la lista y el machete de ventas o las cuentas.
   for (const u of deptos) {
     const v = porCodigo.get(u.codigo);
-    if (u.estado === "libre" && v && v.nombre) {
+    // Si una corrección ya explica la unidad (una venta caída o un cambio de unidad), el machete viejo no es conflicto.
+    if (u.estado === "libre" && v && v.nombre && !u.ajuste) {
       supuestos.push({
         tipo: "conflicto",
         titulo: `${u.codigo}: libre en la lista, con venta en el machete`,

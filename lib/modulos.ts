@@ -77,6 +77,12 @@ export const PROYECTOS: Proyecto[] = [
       },
       { codigo: "2C", estado: "libre", motivo: "La venta no se firmó: está libre.", desde: "31/10/2026" },
       {
+        codigo: "5D",
+        estado: "libre",
+        motivo: "Está libre: los compradores se pasaron a PB (empezaron pagando una cuota menor y se la agrandaron por la unidad más grande). La venta de 5D que figura en \"Ventas\" es la vieja.",
+        desde: "31/10/2026",
+      },
+      {
         codigo: "9A",
         contrato: true,
         motivo: "Es de un contratista: se paga con un contrato de obra, por eso no tiene cuenta corriente. Va a ir al módulo de Contratos.",
