@@ -241,6 +241,8 @@ const panorama = conCache(async (): Promise<Panorama> => {
 
 /** Todo lo del Panorama de indicadores y la alarma de materiales. */
 export async function datosPanorama(opciones?: { fresco?: boolean }): Promise<Panorama & { leido: string }> {
+  // "Actualizar" también vuelve a leer el CAC (el Panorama usa la lectura guardada del Índice CAC).
+  if (opciones?.fresco) await serieCac({ fresco: true }).catch(() => undefined);
   const { valor, leido } = await panorama(opciones);
   return { ...valor, leido };
 }
