@@ -83,6 +83,7 @@ export function Cuentas() {
             <div className="cifra">
               <span className="cifra__titulo">Saldo</span>
               <span className="cifra__valor">{usd(totales.saldo)}</span>
+              {totales.sinPrecio.length > 0 && <span className="cifra__nota">Sin contar {totales.sinPrecio.join(", ")}: no tiene precio en su bloque</span>}
               <Origen texto='Vendido menos pagado, en dólares. Cada pago en pesos se pasa a dólares con el tipo de cambio de ese pago ("Pagos por Inversor"), no con el de hoy.' />
             </div>
             <div className="cifra">

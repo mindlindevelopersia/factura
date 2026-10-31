@@ -59,9 +59,14 @@ export interface Cuenta {
   /** Columna donde empieza el bloque ("L"), para ir a buscarlo. */
   columna: string | null;
   avisos: AvisoCuenta[];
+  /**
+   * Bloque con el encabezado roto (la unidad dice #REF!, NINGUNO o nada): no se sabe de quién es.
+   * Si sus pagos coinciden con los de alguien del Flujo, se une a esa cuenta (ver unirConFlujo).
+   */
+  sinUnidad?: boolean;
 }
 
-export type TipoAvisoCuenta = "fecha" | "sin-usd" | "sin-tipo" | "solo-flujo" | "mas-del-100";
+export type TipoAvisoCuenta = "fecha" | "sin-usd" | "sin-tipo" | "solo-flujo" | "mas-del-100" | "encabezado";
 
 export interface AvisoCuenta {
   tipo: TipoAvisoCuenta;
@@ -144,7 +149,9 @@ export function leerBloques(filas: Celda[][], mesActual: string): Omit<Cuenta, "
     };
     const unidad = texto(datoFicha("departamento"));
     const inversor = texto(datoFicha("inversor"));
-    if (!inversor || UNIDAD_INVALIDA.test(unidad)) return;
+    if (!inversor) return;
+    // Con la unidad rota se lee igual: puede ser un bloque copiado de otro con los pagos de alguien más.
+    const sinUnidad = UNIDAD_INVALIDA.test(unidad);
 
     const montos = (...etiquetas: string[]) => {
       const p = buscar(...etiquetas);
@@ -269,6 +276,7 @@ export function leerBloques(filas: Celda[][], mesActual: string): Omit<Cuenta, "
       origen: "planilla",
       columna: letra(inicio),
       avisos,
+      ...(sinUnidad ? { sinUnidad: true } : {}),
     });
   });
   return cuentas;
@@ -301,7 +309,8 @@ export function parecido(a: string, b: string): number {
  * Lo que no se puede unir arma una cuenta solo con el Flujo.
  */
 export function unirConFlujo(bloques: Omit<Cuenta, "pendientes" | "cobradoFlujo">[], flujo: FlujoIngresos): CuentasCorrientes {
-  const cuentas: Cuenta[] = bloques.map((b) => ({ ...b, pendientes: [], cobradoFlujo: [] }));
+  const cuentas: Cuenta[] = bloques.filter((b) => !b.sinUnidad).map((b) => ({ ...b, pendientes: [], cobradoFlujo: [] }));
+  const sinUnidad = bloques.filter((b) => b.sinUnidad && b.pagos.length);
   const porUnidad = (u: string) => cuentas.filter((c) => c.origen === "planilla" && normalizar(c.unidad) === normalizar(u));
   const nombresFlujo = new Map<string, string[]>();
   for (const p of flujo.pagos) {
@@ -359,6 +368,41 @@ export function unirConFlujo(bloques: Omit<Cuenta, "pendientes" | "cobradoFlujo"
     cache.set(clave, cuenta);
     if (p.estado === "cobrado") cuenta.cobradoFlujo.push(p);
     else cuenta.pendientes.push(p);
+  }
+
+  // Bloques con el encabezado roto: si sus pagos coinciden con los cobros del Flujo de alguien que no
+  // tiene bloque (al menos 3 montos iguales), son de esa persona.
+  for (const b of sinUnidad) {
+    const candidatas = cuentas
+      .filter((c) => c.origen === "flujo")
+      .map((c) => ({ c, iguales: b.pagos.filter((p) => c.cobradoFlujo.some((f) => f.moneda === p.moneda && Math.abs(f.monto - p.monto) < 1)).length }))
+      .sort((x, y) => y.iguales - x.iguales);
+    const mejor = candidatas[0];
+    if (!mejor || mejor.iguales < 3) continue;
+    const c = mejor.c;
+    const precio = b.precioUsd != null ? `US$ ${Math.round(b.precioUsd).toLocaleString("es-AR")}` : "sin costo";
+    Object.assign(c, {
+      pagos: b.pagos,
+      notas: b.notas,
+      comentarios: b.comentarios,
+      // Nombre, unidad, CUIT, teléfono y costo del encabezado son de otra cuenta: no se usan.
+      origen: "planilla" as const,
+      columna: b.columna,
+      // El encabezado está copiado de otra cuenta: su costo estimado no es de esta unidad.
+      precioUsd: null,
+      precioArs: null,
+      formalUsd: null,
+      informalUsd: null,
+      avisos: [
+        ...b.avisos,
+        {
+          tipo: "encabezado" as const,
+          titulo: "Encabezado copiado de otra cuenta",
+          detalle: `Sus pagos están en el bloque de la columna ${b.columna} de "Pagos por Inversor" (${mejor.iguales} de ${b.pagos.length} coinciden con el Flujo), pero el encabezado dice "${b.inversor}", unidad "${b.unidad || "vacía"}" y ${precio}. Hay que corregir nombre, unidad, CUIT, teléfono y costo estimado. Mientras tanto no hay precio: no se calcula el saldo ni el avance.`,
+          filas: [],
+        },
+      ],
+    });
   }
 
   for (const c of cuentas) {
@@ -446,15 +490,21 @@ export function conAcumulado(pagos: Movimiento[], baseUsd: number | null): (Movi
 export function totalesCuentas(cuentas: Cuenta[], mesActual: string) {
   let precio = 0;
   let pagado = 0;
+  /** Lo pagado por las cuentas que tienen precio: contra eso se calcula el saldo y el avance. */
+  let pagadoConPrecio = 0;
+  const sinPrecio: string[] = [];
   let conVencidos = 0;
   const pendiente: Record<Moneda, number> = { ARS: 0, USD: 0 };
   for (const c of cuentas) {
     const r = resumenCuenta(c, mesActual);
-    if (c.precioUsd) precio += c.precioUsd;
     pagado += r.pagadoUsd;
+    if (c.precioUsd) {
+      precio += c.precioUsd;
+      pagadoConPrecio += r.pagadoUsd;
+    } else if (r.pagadoUsd > 0) sinPrecio.push(c.unidad);
     if (r.vencidos.length) conVencidos++;
     pendiente.ARS += r.pendienteFlujo.ARS;
     pendiente.USD += r.pendienteFlujo.USD;
   }
-  return { cuentas: cuentas.length, precio, pagado, saldo: precio - pagado, avance: precio ? pagado / precio : null, conVencidos, pendiente };
+  return { cuentas: cuentas.length, precio, pagado, saldo: precio - pagadoConPrecio, avance: precio ? pagadoConPrecio / precio : null, sinPrecio, conVencidos, pendiente };
 }
