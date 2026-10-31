@@ -10,28 +10,21 @@ import {
   nombreMes,
   porInversor,
   porMes,
-  sumarMeses,
+  SIN_FILTROS,
   totalesPorMoneda,
-  type Aviso,
   type Filtros,
   type FlujoIngresos,
   type Moneda,
   type Pago,
 } from "@/lib/finanzas/ingresos";
-import { fechaHora, importe, leerJson } from "../formato";
+import { leerJson } from "../formato";
 import { Icono } from "../Icono";
+import { Atajos, BarraLectura, descargar, GraficoMeses, MONEDAS, monto, nombreMoneda, opcionesDeMeses, redondo, Revisar, Selector } from "./comun";
 
 interface Respuesta {
   flujo: FlujoIngresos;
   leido: string;
 }
-
-const MONEDAS: Moneda[] = ["ARS", "USD"];
-const compacto = new Intl.NumberFormat("es-AR", { notation: "compact", maximumFractionDigits: 1 });
-const corto = (n: number, moneda: Moneda) => `${moneda === "ARS" ? "$" : "US$"} ${compacto.format(n)}`;
-const monto = (n: number, moneda: Moneda) => importe(n, moneda === "USD" ? "US$" : "ARS");
-/** Sin centavos, para las cifras grandes del resumen. */
-const redondo = (n: number, moneda: Moneda) => `${moneda === "ARS" ? "$" : "US$"}\u00a0${Math.round(n).toLocaleString("es-AR")}`;
 
 /** Ingresos: filtros arriba (guardados en la URL), lo que hay que revisar, totales, por mes, por inversor y el detalle. */
 export function Ingresos() {
@@ -69,13 +62,7 @@ export function Ingresos() {
 
   return (
     <div className="ingresos">
-      <div className="ingresos__barra">
-        <span className="ingresos__leido">{datos ? `Planilla leída a las ${fechaHora(datos.leido)}` : cargando ? "Leyendo la planilla…" : ""}</span>
-        <button type="button" className="btn btn--borde btn--chico" onClick={() => cargar(true)} disabled={cargando}>
-          <Icono nombre="recargar" size={16} className={cargando ? "girando" : undefined} />
-          Actualizar
-        </button>
-      </div>
+      <BarraLectura leido={datos?.leido ?? null} cargando={cargando} actualizar={() => cargar(true)} />
 
       {error && (
         <p role="alert" className="alerta alerta--error">
@@ -87,14 +74,27 @@ export function Ingresos() {
       {flujo && (
         <>
           <FiltrosIngresos flujo={flujo} filtros={filtros} cambiar={cambiar} />
-          <Revisar avisos={flujo.avisos} />
+          <Revisar
+            avisos={flujo.avisos.map((a) => ({ ...a, donde: [a.inversor, a.unidad && `UF ${a.unidad}`, `fila ${a.fila}`].filter(Boolean).join(" · ") }))}
+          />
           {pagos.length === 0 ? (
             <p className="card ingresos__vacio">No hay pagos con estos filtros.</p>
           ) : (
             <>
               <Resumen pagos={pagos} />
               {MONEDAS.filter((m) => pagos.some((p) => p.moneda === m && p.mes)).map((m) => (
-                <GraficoMeses key={m} pagos={pagos} moneda={m} filtros={filtros} mesActual={flujo.mesActual} />
+                <GraficoMeses
+                  key={m}
+                  titulo={`¿Con cuánto cuento? En ${nombreMoneda(m)}`}
+                  sub="Lo que entra cada mes, con los filtros de arriba. Pasá el mouse por un mes para ver el detalle y el acumulado."
+                  moneda={m}
+                  meses={porMes(pagos, m, filtros.desde, filtros.hasta)}
+                  mesActual={flujo.mesActual}
+                  extra={[
+                    { titulo: "Cobrado", valor: (x) => x.cobrado },
+                    { titulo: "A cobrar", valor: (x) => x.aCobrar },
+                  ]}
+                />
               ))}
               <TablaInversores pagos={pagos} mesActual={flujo.mesActual} elegir={(inversor) => cambiar({ inversor })} />
               <Detalle pagos={pagos} />
@@ -107,107 +107,29 @@ export function Ingresos() {
 }
 
 function FiltrosIngresos({ flujo, filtros, cambiar }: { flujo: FlujoIngresos; filtros: Filtros; cambiar: (f: Partial<Filtros>) => void }) {
-  const hoy = flujo.mesActual;
-  const anio = hoy.slice(0, 4);
-  const meses = useMemo(() => {
-    const todos = flujo.pagos.map((p) => p.mes).filter((m): m is string => !!m).sort();
-    if (!todos.length) return [];
-    const r: string[] = [];
-    for (let m = todos[0]; m <= todos.at(-1)!; m = sumarMeses(m, 1)) r.push(m);
-    return r;
-  }, [flujo]);
+  const opcionesMes = useMemo(() => opcionesDeMeses(flujo.pagos.map((p) => p.mes)), [flujo]);
   const inversores = useMemo(() => [...new Set(flujo.pagos.map((p) => p.inversor))].sort((a, b) => a.localeCompare(b, "es")), [flujo]);
-
-  const atajos: { texto: string; desde: string | null; hasta: string | null }[] = [
-    { texto: "Todo", desde: null, hasta: null },
-    { texto: "Este mes", desde: hoy, hasta: hoy },
-    { texto: "Próximo mes", desde: sumarMeses(hoy, 1), hasta: sumarMeses(hoy, 1) },
-    { texto: "Próximos 6 meses", desde: sumarMeses(hoy, 1), hasta: sumarMeses(hoy, 6) },
-    { texto: "Este año", desde: `${anio}-01`, hasta: `${anio}-12` },
-    { texto: "Desde hoy", desde: hoy, hasta: null },
-  ];
   const hayFiltros = Object.values(filtros).some(Boolean);
-
-  const selector = (etiqueta: string, valor: string | null, opciones: [string, string][], alCambiar: (v: string | null) => void, todos: string) => (
-    <label className="campo campo--filtro">
-      {etiqueta}
-      <select value={valor ?? ""} onChange={(e) => alCambiar(e.target.value || null)}>
-        <option value="">{todos}</option>
-        {opciones.map(([v, t]) => (
-          <option key={v} value={v}>
-            {t}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-  const opcionesMes = meses.map((m) => [m, nombreMes(m)] as [string, string]);
 
   return (
     <section className="card ingresos__filtros" aria-label="Filtros">
-      <div className="ingresos__atajos" role="group" aria-label="Rango de fechas">
-        {atajos.map((a) => {
-          const activo = filtros.desde === a.desde && filtros.hasta === a.hasta;
-          return (
-            <button
-              key={a.texto}
-              type="button"
-              className={`btn btn--chico ${activo ? "btn--primario" : "btn--borde"}`}
-              aria-pressed={activo}
-              onClick={() => cambiar({ desde: a.desde, hasta: a.hasta })}
-            >
-              {a.texto}
-            </button>
-          );
-        })}
-      </div>
+      <Atajos mesActual={flujo.mesActual} desde={filtros.desde} hasta={filtros.hasta} cambiar={(desde, hasta) => cambiar({ desde, hasta })} />
       <div className="ingresos__campos">
-        {selector("Desde", filtros.desde, opcionesMes, (v) => cambiar({ desde: v }), "El principio")}
-        {selector("Hasta", filtros.hasta, opcionesMes, (v) => cambiar({ hasta: v }), "El final")}
-        {selector("Moneda", filtros.moneda, [["ARS", "Pesos"], ["USD", "Dólares"]], (v) => cambiar({ moneda: v as Moneda | null }), "Las dos")}
-        {selector("Blanco o negro", filtros.bn, [["blanco", "Blanco"], ["negro", "Negro"]], (v) => cambiar({ bn: v as Filtros["bn"] }), "Todo")}
-        {selector("Estado", filtros.estado, [["cobrado", "Cobrado"], ["a-cobrar", "A cobrar"]], (v) => cambiar({ estado: v as Filtros["estado"] }), "Todos")}
-        {selector("Tipo", filtros.tipo, [["anticipo", "Anticipos"], ["cuota", "Cuotas"], ["refuerzo", "Refuerzos"]], (v) => cambiar({ tipo: v as Filtros["tipo"] }), "Todos")}
-        {selector("Inversor", filtros.inversor, inversores.map((i) => [i, i] as [string, string]), (v) => cambiar({ inversor: v }), "Todos")}
+        <Selector etiqueta="Desde" valor={filtros.desde} opciones={opcionesMes} cambiar={(v) => cambiar({ desde: v })} todos="El principio" />
+        <Selector etiqueta="Hasta" valor={filtros.hasta} opciones={opcionesMes} cambiar={(v) => cambiar({ hasta: v })} todos="El final" />
+        <Selector etiqueta="Moneda" valor={filtros.moneda} opciones={[["ARS", "Pesos"], ["USD", "Dólares"]]} cambiar={(v) => cambiar({ moneda: v as Moneda | null })} todos="Las dos" />
+        <Selector etiqueta="Blanco o negro" valor={filtros.bn} opciones={[["blanco", "Blanco"], ["negro", "Negro"]]} cambiar={(v) => cambiar({ bn: v as Filtros["bn"] })} todos="Todo" />
+        <Selector etiqueta="Estado" valor={filtros.estado} opciones={[["cobrado", "Cobrado"], ["a-cobrar", "A cobrar"]]} cambiar={(v) => cambiar({ estado: v as Filtros["estado"] })} todos="Todos" />
+        <Selector etiqueta="Tipo" valor={filtros.tipo} opciones={[["anticipo", "Anticipos"], ["cuota", "Cuotas"], ["refuerzo", "Refuerzos"]]} cambiar={(v) => cambiar({ tipo: v as Filtros["tipo"] })} todos="Todos" />
+        <Selector etiqueta="Inversor" valor={filtros.inversor} opciones={inversores.map((i) => [i, i] as [string, string])} cambiar={(v) => cambiar({ inversor: v })} todos="Todos" />
       </div>
       {hayFiltros && (
-        <button
-          type="button"
-          className="btn btn--texto btn--chico"
-          onClick={() => cambiar({ desde: null, hasta: null, moneda: null, inversor: null, bn: null, tipo: null, estado: null })}
-        >
+        <button type="button" className="btn btn--texto btn--chico" onClick={() => cambiar({ ...SIN_FILTROS })}>
           <Icono nombre="cerrar" size={14} />
           Sacar los filtros
         </button>
       )}
     </section>
-  );
-}
-
-function Revisar({ avisos }: { avisos: Aviso[] }) {
-  if (!avisos.length) return null;
-  return (
-    <details className="card revisar" open={avisos.length <= 6}>
-      <summary>
-        <Icono nombre="alerta" size={18} />
-        <strong>Para revisar en la planilla</strong>
-        <span className="revisar__cantidad">{avisos.length}</span>
-      </summary>
-      <ul className="revisar__lista">
-        {avisos.map((a, i) => (
-          <li key={i}>
-            <div>
-              <strong>{a.titulo}</strong>
-              <span className="revisar__quien">
-                {[a.inversor, a.unidad && `UF ${a.unidad}`, `fila ${a.fila}`].filter(Boolean).join(" · ")}
-              </span>
-              <p>{a.detalle}</p>
-            </div>
-            {a.monto != null && a.moneda && <span className="revisar__monto">{monto(a.monto, a.moneda)}</span>}
-          </li>
-        ))}
-      </ul>
-    </details>
   );
 }
 
@@ -240,134 +162,6 @@ function Resumen({ pagos }: { pagos: Pago[] }) {
         );
       })}
     </div>
-  );
-}
-
-/** Un máximo redondo para el eje y sus marcas: 0, 1/4, 1/2, 3/4 y el máximo. */
-function escala(maximo: number): number[] {
-  if (maximo <= 0) return [0, 1];
-  const paso = 10 ** Math.floor(Math.log10(maximo / 4));
-  const tope = Math.ceil(maximo / 4 / paso) * paso * 4;
-  return [0, tope / 4, tope / 2, (tope * 3) / 4, tope];
-}
-
-function GraficoMeses({ pagos, moneda, filtros, mesActual }: { pagos: Pago[]; moneda: Moneda; filtros: Filtros; mesActual: string }) {
-  const [activo, setActivo] = useState<number | null>(null);
-  const meses = porMes(pagos, moneda, filtros.desde, filtros.hasta);
-  const marcas = escala(Math.max(...meses.map((m) => m.total), 0));
-  const tope = marcas.at(-1)!;
-  const alto = (n: number) => `${(Math.max(n, 0) / tope) * 100}%`;
-  // Con muchos meses, una etiqueta cada tanto para que no se pisen.
-  const cada = Math.ceil(meses.length / 14);
-  const hoy = meses.findIndex((m) => m.mes === mesActual);
-  const conEtiqueta = (i: number) => i === hoy || (i % cada === 0 && (hoy < 0 || Math.abs(i - hoy) > 1));
-  const nombre = moneda === "ARS" ? "pesos" : "dólares";
-
-  return (
-    <figure className="card grafico">
-      <figcaption>
-        <h2>¿Con cuánto cuento? En {nombre}</h2>
-        <p className="grafico__sub">
-          Lo que entra cada mes, con los filtros de arriba. Pasá el mouse por un mes para ver el detalle y el acumulado.
-        </p>
-      </figcaption>
-      <ul className="leyenda">
-        <li>
-          <span className="leyenda__marca leyenda__marca--blanco" /> Blanco
-        </li>
-        <li>
-          <span className="leyenda__marca leyenda__marca--negro" /> Negro
-        </li>
-      </ul>
-      <div className="ingresos__desplazable">
-        <div
-          className="columnas"
-          style={{ minWidth: `${94 + meses.length * 22}px` }}
-          role="img"
-          aria-label={`Ingresos en ${nombre} por mes. El detalle está en la tabla de abajo.`}
-        >
-          <div className="columnas__eje" aria-hidden="true">
-            {marcas.map((m) => (
-              <span key={m} style={{ bottom: alto(m) }}>
-                {m === 0 ? "0" : corto(m, moneda)}
-              </span>
-            ))}
-          </div>
-          <div className="columnas__area" style={{ gridTemplateColumns: `repeat(${meses.length}, minmax(0, 1fr))` }}>
-            {marcas.map((m) => (
-              <span key={m} className="columnas__linea" style={{ bottom: alto(m) }} aria-hidden="true" />
-            ))}
-            {meses.map((m, i) => (
-              <div
-                key={m.mes}
-                className={`columnas__grupo${activo === i ? " columnas__grupo--activo" : ""}${m.mes === mesActual ? " columnas__grupo--hoy" : ""}`}
-                tabIndex={0}
-                onMouseEnter={() => setActivo(i)}
-                onMouseLeave={() => setActivo(null)}
-                onFocus={() => setActivo(i)}
-                onBlur={() => setActivo(null)}
-                aria-label={`${nombreMes(m.mes)}: ${monto(m.total, moneda)}, acumulado ${monto(m.acumulado, moneda)}`}
-              >
-                <div className="columnas__barras">
-                  <span className="columnas__pila" style={{ height: alto(m.total) }}>
-                    {m.negro > 0 && <span className="columnas__tramo columnas__tramo--negro" style={{ flexGrow: m.negro }} />}
-                    {m.blanco > 0 && <span className="columnas__tramo columnas__tramo--blanco" style={{ flexGrow: m.blanco }} />}
-                  </span>
-                </div>
-                {conEtiqueta(i) && (
-                  <span className="columnas__mes">{m.mes === mesActual ? "hoy" : nombreMes(m.mes, true)}</span>
-                )}
-                {activo === i && (
-                  <div className={`tooltip${i < 3 ? " tooltip--izq" : i > meses.length - 4 ? " tooltip--der" : ""}`} role="tooltip">
-                    <strong>{nombreMes(m.mes)}</strong>
-                    <span>
-                      <i className="leyenda__marca leyenda__marca--blanco" /> Blanco {monto(m.blanco, moneda)}
-                    </span>
-                    <span>
-                      <i className="leyenda__marca leyenda__marca--negro" /> Negro {monto(m.negro, moneda)}
-                    </span>
-                    <span>Total del mes {monto(m.total, moneda)}</span>
-                    <span>
-                      Cobrado {monto(m.cobrado, moneda)} · a cobrar {monto(m.aCobrar, moneda)}
-                    </span>
-                    <span>Acumulado {monto(m.acumulado, moneda)}</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <details className="grafico__tabla">
-        <summary>Ver como tabla</summary>
-        <div className="tabla-contenedor">
-          <table className="tabla">
-            <thead>
-              <tr>
-                <th>Mes</th>
-                <th className="tabla__numero">Blanco</th>
-                <th className="tabla__numero">Negro</th>
-                <th className="tabla__numero">Total</th>
-                <th className="tabla__numero">A cobrar</th>
-                <th className="tabla__numero">Acumulado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {meses.map((m) => (
-                <tr key={m.mes}>
-                  <td>{nombreMes(m.mes)}</td>
-                  <td className="tabla__numero">{monto(m.blanco, moneda)}</td>
-                  <td className="tabla__numero">{monto(m.negro, moneda)}</td>
-                  <td className="tabla__numero">{monto(m.total, moneda)}</td>
-                  <td className="tabla__numero">{monto(m.aCobrar, moneda)}</td>
-                  <td className="tabla__numero">{monto(m.acumulado, moneda)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
-    </figure>
   );
 }
 
@@ -442,14 +236,6 @@ function Detalle({ pagos }: { pagos: Pago[] }) {
   }, [pagos, orden]);
   const visibles = todos ? ordenados : ordenados.slice(0, LIMITE);
 
-  const descargar = () => {
-    const url = URL.createObjectURL(new Blob([aCsv(ordenados)], { type: "text/csv;charset=utf-8" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "ingresos-lerma.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   const encabezado = (por: Orden, texto: string, numero = false) => (
     <th className={numero ? "tabla__numero" : undefined} aria-sort={orden.por === por ? (orden.asc ? "ascending" : "descending") : undefined}>
@@ -464,7 +250,7 @@ function Detalle({ pagos }: { pagos: Pago[] }) {
     <section className="card ingresos__seccion">
       <div className="ingresos__titulo">
         <h2>Detalle de pagos ({pagos.length})</h2>
-        <button type="button" className="btn btn--borde btn--chico" onClick={descargar}>
+        <button type="button" className="btn btn--borde btn--chico" onClick={() => descargar("ingresos-lerma.csv", aCsv(ordenados))}>
           <Icono nombre="archivo" size={16} />
           Descargar CSV
         </button>

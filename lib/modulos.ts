@@ -51,6 +51,12 @@ export const AREAS: Area[] = [
         href: "/finanzas/ingresos",
         beta: true,
       },
+      {
+        nombre: "Egresos",
+        descripcion: "Lo que se pagó en pesos y en dólares, por rubro, proyecto y blanco o negro: en qué se va la plata.",
+        href: "/finanzas/egresos",
+        beta: true,
+      },
     ],
   },
 ];
