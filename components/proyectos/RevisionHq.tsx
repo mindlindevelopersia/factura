@@ -18,11 +18,12 @@ const ABIERTOS: DudaHq[] = ["obra", "prestamo", "grande"];
 function descargar(hq: GastoHq) {
   const celda = (v: string) => `"${v.replace(/"/g, '""')}"`;
   const filas = [
-    ["Qué revisar", "Pestaña", "Fila", "Fecha", "Descripción", "Rubro", "Moneda", "Monto", "Qué hacer"],
+    ["Qué revisar", "Pestaña", "Fila", "Corresponde", "Fecha", "Descripción", "Rubro", "Moneda", "Monto", "Qué hacer"],
     ...hq.revisar.map((e) => [
       DUDAS_HQ[e.duda].titulo,
       e.pestania,
       String(e.fila),
+      e.proyecto,
       fecha(e.fecha),
       e.descripcion,
       e.rubro,
@@ -50,7 +51,7 @@ export function RevisionHq({ hq }: { hq: GastoHq }) {
         <div>
           <h2>HQ para revisar con Tadeo</h2>
           <p className="ficha__nota">
-            {hq.revisar.length} de {hq.movimientos} egresos marcados como HQ están en duda. Quedan {hq.oficina.movimientos} de oficina ({plata(hq.oficina)}). Cada fila dice en qué pestaña y fila del Excel
+            {hq.enDudaHq} de {hq.movimientos} egresos marcados como HQ están en duda (los préstamos van todos, estén marcados como HQ o no). Quedan {hq.oficina.movimientos} de oficina ({plata(hq.oficina)}). Cada fila dice en qué pestaña y fila del Excel
             está.
           </p>
         </div>
@@ -83,7 +84,10 @@ export function RevisionHq({ hq }: { hq: GastoHq }) {
                   <tr key={`${e.pestania}-${e.fila}`}>
                     <td data-etiqueta="Dónde">
                       Fila {e.fila}
-                      <span className="tabla__sub">{e.pestania}</span>
+                      <span className="tabla__sub">
+                        {e.pestania}
+                        {!/^hq$/i.test(e.proyecto.trim()) && ` · ${e.proyecto || "sin proyecto"}`}
+                      </span>
                     </td>
                     <td data-etiqueta="Fecha">{fecha(e.fecha)}</td>
                     <td data-etiqueta="Descripción">{e.descripcion || "—"}</td>

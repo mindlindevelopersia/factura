@@ -174,7 +174,7 @@ describe("management", () => {
     const d = desarrolladores(com.unidades, 0.15, SOCIOS, 50, hq);
     expect(d.m2).toBeCloseTo(0.15 * (90 + 40 + 30 + 80 + 40));
     expect(d.socios.map((s) => s.m2 / d.m2)).toEqual([0.5, 0.25, 0.25]);
-    expect(d.supuestos.map((s) => s.tipo)).toEqual(["confirmado", "conflicto", "por-confirmar"]);
+    expect(d.supuestos.map((s) => s.tipo)).toEqual(["confirmado", "por-confirmar", "confirmado"]);
   });
 
   it("separa los egresos de HQ en duda (obra, préstamo, grandes, banco) y los de oficina", () => {
@@ -187,11 +187,13 @@ describe("management", () => {
       e("HQ", "sin-clasificar", "USD", 8000, "Otra", 3),
       e("HQ", "honorarios", "ARS", 300, "Contador", 4),
       e("Lerma 439", "materiales", "ARS", 9),
+      e("Sin proyecto", "prestamos", "USD", 75000, "Egresos Borok", 68),
     ]);
     expect(hq).toMatchObject({ movimientos: 6, ARS: 1450, USD: 58000, oficina: { movimientos: 1, ARS: 300, USD: 0 } });
     expect(hq.revisar.map((x) => [x.duda, x.descripcion])).toEqual([
       ["obra", "Pago Hormigonera"],
       ["prestamo", "Tranf a Borok 1"],
+      ["prestamo", "Egresos Borok"],
       ["grande", "Otra"],
       ["banco", "Deb"],
       ["banco", ""],
@@ -199,7 +201,7 @@ describe("management", () => {
     const d = desarrolladores(com.unidades, 0.15, SOCIOS, null, hq);
     const s = d.supuestos.at(-1)!;
     expect(s.titulo).toBe("Para que revise Tadeo: 5 de 6 egresos marcados como HQ");
-    expect(s.detalle).toMatch(/1 parecen de la obra .*1 préstamos .*2 impuestos y gastos del banco/);
+    expect(s.detalle).toMatch(/1 parecen de la obra .*2 préstamos \(US\$ 125\.000\).*2 impuestos y gastos del banco/);
     expect(s.detalle).toMatch(/Quedan 1 de oficina/);
     expect(d.hq).toBe(hq);
   });

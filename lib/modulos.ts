@@ -72,7 +72,7 @@ export const PROYECTOS: Proyecto[] = [
         estado: "vendida",
         contrato: true,
         reventa: 105000,
-        motivo: "Está vendida a un contratista (se pagó con obra). El dueño pidió revenderla en US$ 105.000: la que está disponible es esa segunda venta.",
+        motivo: "Está vendida a un contratista (se pagó con obra). El dueño pidió revenderla en US$ 105.000: la que está disponible es esa segunda venta. La vende él; la unidad la amortiza con la certificación de sus trabajos (módulo de Contratos).",
         desde: "31/10/2026",
       },
       {

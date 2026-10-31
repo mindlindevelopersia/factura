@@ -36,6 +36,8 @@ export interface MontoHq {
 
 export interface EgresoHq {
   fecha: string | null;
+  /** La columna "Corresponde": "HQ", "Lerma 439", "Sin proyecto"… */
+  proyecto: string;
   descripcion: string;
   rubro: string;
   moneda: "ARS" | "USD";
@@ -54,7 +56,8 @@ export const DUDAS_HQ: Record<DudaHq, { titulo: string; queHacer: string }> = {
   },
   prestamo: {
     titulo: "Préstamos",
-    queHacer: "Plata prestada que después se devolvió: no es gasto de HQ ni de Lerma. Marcarlo como préstamo y anotar al lado la fila de la devolución.",
+    queHacer:
+      "Plata prestada que después se devolvió (a Borok: US$ 125.000 en dos pagos): no es gasto de HQ ni de Lerma. Van todos, estén marcados como HQ o no. Marcarlos como préstamo y anotar al lado la fila de la devolución.",
   },
   grande: {
     titulo: "Grandes en dólares",
@@ -71,8 +74,13 @@ export interface EgresoHqEnDuda extends EgresoHq {
 }
 
 export interface GastoHq extends MontoHq {
-  /** Lo que está en duda, para que lo revise Tadeo en el Excel, en el orden de DUDAS_HQ. */
+  /**
+   * Lo que está en duda, para que lo revise Tadeo en el Excel, en el orden de DUDAS_HQ: los marcados
+   * como HQ y, además, todos los préstamos (estén marcados como HQ o no).
+   */
   revisar: EgresoHqEnDuda[];
+  /** Cuántos de los marcados como HQ están en duda (incluye los préstamos marcados como HQ). */
+  enDudaHq: number;
   /** Lo que no está en duda: gastos de oficina (honorarios, sueldos, servicios…). */
   oficina: MontoHq;
 }
@@ -97,18 +105,20 @@ export function sumarHq(xs: EgresoHq[]): MontoHq {
 }
 
 /** Separa los egresos marcados como HQ: lo que está en duda (por qué) y lo de oficina. */
-export function analizarHq(egresos: (EgresoHq & { proyecto: string })[]): GastoHq {
-  const deHq = egresos
-    .filter((e) => /^hq$/i.test(e.proyecto.trim()))
-    .map(({ fecha, descripcion, rubro, moneda, monto, pestania, fila }) => ({ fecha, descripcion, rubro, moneda, monto, pestania, fila }));
+export function analizarHq(egresos: EgresoHq[]): GastoHq {
+  const esHq = (e: EgresoHq) => /^hq$/i.test(e.proyecto.trim());
+  const limpio = ({ fecha, proyecto, descripcion, rubro, moneda, monto, pestania, fila }: EgresoHq): EgresoHq => ({ fecha, proyecto, descripcion, rubro, moneda, monto, pestania, fila });
+  const deHq = egresos.filter(esHq).map(limpio);
   const orden = Object.keys(DUDAS_HQ) as DudaHq[];
-  const revisar = deHq
-    .flatMap((e) => {
+  const revisar = [
+    ...deHq.flatMap((e) => {
       const duda = dudaDe(e);
-      return duda ? [{ ...e, duda }] : [];
-    })
-    .sort((a, b) => orden.indexOf(a.duda) - orden.indexOf(b.duda) || a.pestania.localeCompare(b.pestania) || a.fila - b.fila);
-  return { ...sumarHq(deHq), revisar, oficina: sumarHq(deHq.filter((e) => !dudaDe(e))) };
+      return duda && duda !== "prestamo" ? [{ ...e, duda }] : [];
+    }),
+    // Los préstamos van todos: el de Borok, por ejemplo, tiene una parte marcada como HQ y otra sin proyecto.
+    ...egresos.filter((e) => e.rubro === "prestamos").map((e) => ({ ...limpio(e), duda: "prestamo" as const })),
+  ].sort((a, b) => orden.indexOf(a.duda) - orden.indexOf(b.duda) || a.pestania.localeCompare(b.pestania) || a.fila - b.fila);
+  return { ...sumarHq(deHq), revisar, enDudaHq: deHq.filter((e) => dudaDe(e)).length, oficina: sumarHq(deHq.filter((e) => !dudaDe(e))) };
 }
 
 /** "M2 canjeados a Developers" en la pestaña EE.RR del Excel madre. */
@@ -143,17 +153,18 @@ export function desarrolladores(unidades: Unidad[], parte: number, socios: Socio
   ];
   if (m2EnPlanilla != null && Math.abs(m2EnPlanilla - total) > 1) {
     supuestos.push({
-      tipo: "conflicto",
-      titulo: "La planilla dice otra cosa",
-      detalle: `En EE.RR, "M2 canjeados a Developers" dice ${m2(m2EnPlanilla)}. Con la regla de arriba da ${m2(total)}. ¿Cuál vale?`,
+      tipo: "por-confirmar",
+      titulo: "EE.RR tiene un valor viejo",
+      detalle: `En EE.RR, "M2 canjeados a Developers" dice ${m2(m2EnPlanilla)}: quedó viejo. Vale la regla de arriba: ${m2(total)}. Conviene corregir la planilla.`,
       origen: 'Excel madre → "EE.RR" → "M2 canjeados a Developers".',
     });
   }
   supuestos.push({
-    tipo: "por-confirmar",
-    titulo: "Lo que falta vender y los m² de los desarrolladores",
-    detalle: `Quedan ${m2(m2Libres)} sin vender y a los desarrolladores les corresponden ${m2(total)}. Si esos m² salen del stock sin vender, para terceros quedan ${m2(Math.max(0, m2Libres - total))}.`,
+    tipo: "confirmado",
+    titulo: "Los desarrolladores se quedan con lo último que quede sin vender",
+    detalle: `No hay unidades fijas: se vende lo que aparezca y los desarrolladores se quedan con las últimas, hasta completar ${m2(total)}. Hoy quedan ${m2(m2Libres)} sin vender: para terceros quedan ${m2(Math.max(0, m2Libres - total))}. Lo que valen depende del precio al que se valúen (elegilo arriba).`,
     mientras: "El tablero muestra lo que falta vender completo, a precio de lista, sin descontar lo de los desarrolladores.",
+    origen: "Confirmado el 31/10/2026.",
   });
   if (hq && hq.movimientos > 0) {
     const plata = (x: MontoHq) => [x.ARS ? `$ ${Math.round(x.ARS).toLocaleString("es-AR")}` : null, x.USD ? `US$ ${Math.round(x.USD).toLocaleString("es-AR")}` : null].filter(Boolean).join(" y ");
@@ -163,7 +174,7 @@ export function desarrolladores(unidades: Unidad[], parte: number, socios: Socio
       .map(([d, xs]) => `${xs.length} ${DUDAS_HQ[d].titulo.toLowerCase()} (${plata(sumarHq(xs))})`);
     supuestos.push({
       tipo: "conflicto",
-      titulo: `Para que revise Tadeo: ${hq.revisar.length} de ${hq.movimientos} egresos marcados como HQ`,
+      titulo: `Para que revise Tadeo: ${hq.enDudaHq} de ${hq.movimientos} egresos marcados como HQ`,
       detalle: `En la caja del proyecto hay ${hq.movimientos} egresos marcados como HQ (${plata(hq)}). Parecen demasiados. En duda: ${grupos.join("; ")}. Quedan ${hq.oficina.movimientos} de oficina (${plata(hq.oficina)}). La lista fila por fila está abajo, para descargar.`,
       mientras: "Por ahora quedan dentro del proyecto, como en la planilla. Cuando se corrijan en el Excel, el hub los toma solos.",
       origen: 'Pestañas de caja → columna "Corresponde" = HQ.',
