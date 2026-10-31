@@ -7,7 +7,7 @@
 /** Dónde vive el módulo de facturas. Lo usan los links que manda el bot de Telegram. */
 export const RUTA_FACTURAS = "/administracion/facturas";
 
-export type IconoArea = "administracion" | "finanzas";
+export type IconoArea = "administracion" | "finanzas" | "inversores";
 
 export interface Modulo {
   nombre: string;
@@ -55,6 +55,20 @@ export const AREAS: Area[] = [
         nombre: "Egresos",
         descripcion: "Lo que se pagó en pesos y en dólares, por rubro, proyecto y blanco o negro: en qué se va la plata.",
         href: "/finanzas/egresos",
+        beta: true,
+      },
+    ],
+  },
+  {
+    nombre: "Inversores",
+    descripcion: "Las cuentas de cada inversor: cuánto pagó, cuánto le falta y su estado de cuenta.",
+    href: "/inversores",
+    icono: "inversores",
+    modulos: [
+      {
+        nombre: "Cuentas corrientes",
+        descripcion: "Pagos, saldo y avance de cada inversor de Lerma, con el plan de pagos que falta y el estado de cuenta para mandarle.",
+        href: "/inversores/cuentas-corrientes",
         beta: true,
       },
     ],

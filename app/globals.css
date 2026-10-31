@@ -3129,3 +3129,235 @@ h1 .etiqueta-beta {
     min-width: 0;
   }
 }
+
+/* Inversores · Cuentas corrientes */
+.cuentas__cifras {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.cuentas__controles {
+  flex-wrap: wrap;
+}
+.cuentas__controles h2 {
+  margin-right: auto;
+}
+.cuentas__controles .campo {
+  min-width: 200px;
+}
+.cuentas__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.cuentas__check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--negro);
+}
+.cuentas__leyenda {
+  padding: 0 20px;
+}
+.cuentas__aviso {
+  color: #8a6a12;
+}
+.cuentas__aviso svg {
+  vertical-align: -2px;
+}
+.cuentas__avance {
+  min-width: 170px;
+}
+.cuentas__avance .avance {
+  display: inline-flex;
+  width: 110px;
+  vertical-align: middle;
+}
+.cuentas__pct {
+  margin-left: 8px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.avance {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--gris-claro);
+  overflow: hidden;
+}
+.avance--grande {
+  height: 14px;
+}
+.avance__tramo {
+  display: block;
+  height: 100%;
+}
+.avance__tramo--formal {
+  background: var(--serie-blanco);
+}
+.avance__tramo--informal {
+  background: var(--serie-negro);
+}
+.ficha__barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ficha__barra .ingresos__barra {
+  margin: 0;
+}
+.ficha__datos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px 24px;
+  padding: 20px;
+}
+.ficha__nombre {
+  font-size: 1.5rem;
+  margin: 4px 0 0;
+}
+.ficha__datos dl {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin: 0;
+}
+.ficha__datos dt {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+.ficha__datos dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+.ficha__acciones {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  align-self: start;
+}
+.ficha__avance {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+}
+.ficha__avance-texto {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.ficha__vacio,
+.ficha__nota {
+  margin: 0;
+  padding: 0 20px 14px;
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+.ficha__vencido td {
+  background: #fff6f5;
+}
+.tabla tfoot td {
+  border-top: 1px solid var(--borde);
+  border-bottom: 0;
+}
+.ficha__notas {
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+.ficha__notas p {
+  margin: 0 0 4px;
+}
+.ficha__comentarios {
+  padding: 0 20px 12px;
+  font-size: 13px;
+}
+.ficha__comentarios p {
+  margin: 0 0 6px;
+}
+.solo-impresion {
+  display: none;
+}
+@media (max-width: 900px) {
+  .cuentas__cifras {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ficha__datos {
+    grid-template-columns: 1fr;
+  }
+  .ficha__acciones {
+    grid-column: 1;
+    grid-row: auto;
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 650px) {
+  .cuentas__cifras {
+    grid-template-columns: 1fr;
+  }
+  .cuentas__controles .campo {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+}
+
+/* Estado de cuenta impreso: sin el marco del hub ni lo interno. */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  body {
+    background: white;
+    font-size: 11px;
+  }
+  .app-header,
+  .navegacion,
+  .solo-pantalla,
+  .saltar-contenido {
+    display: none !important;
+  }
+  .solo-impresion {
+    display: flex;
+  }
+  .hub {
+    display: block;
+  }
+  .app-main {
+    padding: 0;
+  }
+  .card,
+  .cifra {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+  .tabla th,
+  .tabla td {
+    padding: 6px 8px;
+  }
+  .tabla tr {
+    break-inside: avoid;
+  }
+  .ficha__membrete {
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .ficha__logo {
+    height: 34px;
+    width: auto;
+  }
+  .avance__tramo,
+  .leyenda__marca {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

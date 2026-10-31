@@ -295,9 +295,9 @@ function Internos({ internos }: { internos: CajaEgresos["internos"] }) {
           <tbody>
             {resumen.map((r) => (
               <tr key={`${r.tipo}-${r.moneda}`}>
-                <td>{r.tipo}</td>
-                <td className="tabla__numero">{r.cantidad}</td>
-                <td className="tabla__numero">{monto(r.total, r.moneda)}</td>
+                <td data-etiqueta="Tipo">{r.tipo}</td>
+                <td data-etiqueta="Movimientos" className="tabla__numero">{r.cantidad}</td>
+                <td data-etiqueta="Total" className="tabla__numero">{monto(r.total, r.moneda)}</td>
               </tr>
             ))}
           </tbody>
@@ -356,18 +356,18 @@ function Detalle({ egresos }: { egresos: Egreso[] }) {
           <tbody>
             {visibles.map((e) => (
               <tr key={`${e.pestania}-${e.fila}`}>
-                <td>{fecha(e.fecha)}</td>
-                <td>
+                <td data-etiqueta="Fecha">{fecha(e.fecha)}</td>
+                <td data-etiqueta="Descripción">
                   {e.descripcion || "(sin descripción)"}
                   <span className="tabla__sub">
                     {[e.proyecto, e.bn === "blanco" ? "Blanco" : e.bn === "negro" ? "Negro" : "Sin blanco/negro", e.forma].filter(Boolean).join(" · ")}
                   </span>
                 </td>
-                <td>
+                <td data-etiqueta="Rubro">
                   {nombreRubro(e.rubro)}
                   <span className="tabla__sub">Fila {e.fila}</span>
                 </td>
-                <td className="tabla__numero">{monto(e.monto, e.moneda)}</td>
+                <td data-etiqueta="Monto" className="tabla__numero">{monto(e.monto, e.moneda)}</td>
               </tr>
             ))}
           </tbody>

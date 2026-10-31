@@ -20,6 +20,8 @@ const trazos = {
     "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0 M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5 M12 17v.1",
   telegram: "M22 3L2 11l7 3 3 7 10-18z M9 14l13-11",
   ensayo: "M9 3h6 M10 3v14a2 2 0 0 0 4 0V3 M10 12h4",
+  inversores: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2 M16 3.5a4 4 0 0 1 0 7 M22 21v-2a5 5 0 0 0-3.5-4.8",
+  imprimir: "M6 9V3h12v6 M6 18H4v-7h16v7h-2 M6 14h12v7H6z",
   hub: "M3 3h8v8H3z M13 3h8v8h-8z M3 13h8v8H3z M13 13h8v8h-8z",
   administracion: "M3 7h18v13H3z M8 7V4h8v3 M3 12h18",
   finanzas: "M3 20h18 M6 16v-4 M11 16V8 M16 16v-6 M20 4l-6 5-4-3-6 5",
