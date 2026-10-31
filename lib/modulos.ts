@@ -1,13 +1,13 @@
 /**
- * Las áreas del hub de Mindlin y sus módulos. El menú lateral, el inicio y la página de cada área
- * salen de acá: para sumar un área o un módulo nuevo, se agrega en esta lista y se crea su página.
- * Un área sin módulos se muestra como "Próximamente".
+ * Cómo se organiza el hub: la empresa (Mindlin Developers) tiene áreas propias (Indicadores) y
+ * proyectos (Lerma 439, Güemes 4676…). Cada proyecto es su propio vehículo, con su administración,
+ * sus finanzas, su comercial, sus inversores y su management; todos usan las mismas áreas.
+ *
+ * El menú lateral, el inicio y la página de cada área salen de acá: para sumar un área o un módulo
+ * nuevo, se agrega en esta lista y se crea su página (las de proyecto, en app/(hub)/proyectos/[proyecto]).
  */
 
-/** Dónde vive el módulo de facturas. Lo usan los links que manda el bot de Telegram. */
-export const RUTA_FACTURAS = "/administracion/facturas";
-
-export type IconoArea = "administracion" | "finanzas" | "inversores" | "indicadores";
+export type IconoArea = "administracion" | "finanzas" | "inversores" | "indicadores" | "comercial" | "management" | "proyecto";
 
 export interface Modulo {
   nombre: string;
@@ -25,60 +25,171 @@ export interface Area {
   modulos: Modulo[];
 }
 
-export const AREAS: Area[] = [
+export interface Socio {
+  nombre: string;
+  /** De 0 a 1. */
+  parte: number;
+}
+
+export interface Proyecto {
+  /** Para la URL: /proyectos/<id>. */
+  id: string;
+  nombre: string;
+  /** Con qué vehículo se hace: cada uno tiene su contabilidad y su caja. */
+  vehiculo: string;
+  descripcion: string;
+  /** "bloqueado": aparece en el menú como beta, pero todavía no se puede entrar. */
+  estado: "activo" | "bloqueado";
+  /** Lo que se quedan los desarrolladores: parte de los m² vendibles. */
+  management?: { parteM2: number; socios: Socio[] };
+}
+
+/** El reparto entre los desarrolladores es el mismo en todos los proyectos. */
+export const SOCIOS: Socio[] = [
+  { nombre: "Matías Mindlin", parte: 0.5 },
+  { nombre: "Michelle Mindlin", parte: 0.25 },
+  { nombre: "Micaela Druck", parte: 0.25 },
+];
+
+export const PROYECTOS: Proyecto[] = [
   {
+    id: "lerma-439",
+    nombre: "Lerma 439",
+    vehiculo: "Mindlin Developers S.A.",
+    descripcion: "Villa Crespo · 28 unidades y 2 cocheras",
+    estado: "activo",
+    management: { parteM2: 0.15, socios: SOCIOS },
+  },
+  {
+    id: "guemes-4676",
+    nombre: "Güemes 4676",
+    vehiculo: "Fideicomiso",
+    descripcion: "En preparación",
+    estado: "bloqueado",
+  },
+];
+
+export const PROYECTO_PRINCIPAL = PROYECTOS[0];
+
+export function rutaProyecto(id: string, sub = ""): string {
+  return `/proyectos/${id}${sub ? `/${sub}` : ""}`;
+}
+
+export function proyecto(id: string): Proyecto | undefined {
+  return PROYECTOS.find((p) => p.id === id);
+}
+
+/** Dónde vive el módulo de facturas de Lerma. Lo usan los links que manda el bot de Telegram. */
+export const RUTA_FACTURAS = rutaProyecto("lerma-439", "administracion/facturas");
+
+/** Las áreas que tiene cada proyecto (las rutas son relativas al proyecto). */
+const AREAS_DE_PROYECTO: { sub: string; nombre: string; descripcion: string; icono: IconoArea; modulos: { sub: string; nombre: string; descripcion: string; beta?: boolean }[] }[] = [
+  {
+    sub: "comercial",
+    nombre: "Comercial",
+    descripcion: "Las unidades, la lista de precios vigente y lo que falta vender.",
+    icono: "comercial",
+    modulos: [
+      {
+        sub: "comercial/unidades",
+        nombre: "Unidades",
+        descripcion: "Cada unidad con sus superficies, su estado, su precio de lista o de venta y su inversor, piso por piso.",
+        beta: true,
+      },
+      {
+        sub: "comercial/lista-de-precios",
+        nombre: "Lista de precios",
+        descripcion: "La lista vigente: precio por m², ajuste por altura y simulador de lo que vale lo que falta vender.",
+        beta: true,
+      },
+    ],
+  },
+  {
+    sub: "administracion",
     nombre: "Administración",
-    descripcion: "Comprobantes, registro contable y papeles de la empresa.",
-    href: "/administracion",
+    descripcion: "Comprobantes, registro contable y papeles del proyecto.",
     icono: "administracion",
     modulos: [
       {
+        sub: "administracion/facturas",
         nombre: "Facturas y comprobantes",
         descripcion: "Compras, honorarios y ventas: la IA propone los datos y una persona revisa y aprueba.",
-        href: RUTA_FACTURAS,
       },
     ],
   },
   {
+    sub: "finanzas",
     nombre: "Finanzas",
-    descripcion: "Flujo de fondos, cobranzas, pagos y presupuesto.",
-    href: "/finanzas",
+    descripcion: "Lo que entra y lo que sale del proyecto, en pesos y en dólares.",
     icono: "finanzas",
     modulos: [
       {
+        sub: "finanzas/ingresos",
         nombre: "Ingresos",
-        descripcion: "Lo cobrado y lo que falta cobrar de los inversores de Lerma, por mes, moneda, inversor y blanco o negro.",
-        href: "/finanzas/ingresos",
+        descripcion: "Lo cobrado y lo que falta cobrar de los inversores, por mes, moneda, inversor y blanco o negro.",
         beta: true,
       },
       {
+        sub: "finanzas/egresos",
         nombre: "Egresos",
         descripcion: "Lo que se pagó en pesos y en dólares, por rubro, proyecto y blanco o negro: en qué se va la plata.",
-        href: "/finanzas/egresos",
         beta: true,
       },
     ],
   },
   {
+    sub: "inversores",
     nombre: "Inversores",
-    descripcion: "Las cuentas de cada inversor: cuánto pagó, cuánto le falta y su estado de cuenta.",
-    href: "/inversores",
+    descripcion: "Las cuentas de cada inversor: cuánto pagó, cuánto le falta, su estado de cuenta y las cobranzas.",
     icono: "inversores",
     modulos: [
       {
+        sub: "inversores/cuentas-corrientes",
         nombre: "Cuentas corrientes",
-        descripcion: "Pagos, saldo y avance de cada inversor de Lerma, con el plan de pagos que falta y el estado de cuenta para mandarle.",
-        href: "/inversores/cuentas-corrientes",
+        descripcion: "Pagos, saldo y avance de cada inversor, con el plan de pagos que falta y el estado de cuenta para mandarle.",
         beta: true,
       },
       {
+        sub: "inversores/cobranzas",
         nombre: "Cobranzas",
         descripcion: "Qué tiene vencido cada inversor actualizado por CAC, qué vence este mes, el aviso por WhatsApp y el seguimiento.",
-        href: "/inversores/cobranzas",
         beta: true,
       },
     ],
   },
+  {
+    sub: "management",
+    nombre: "Management",
+    descripcion: "Lo que les corresponde a los desarrolladores de este proyecto y cómo se reparte.",
+    icono: "management",
+    modulos: [
+      {
+        sub: "management/desarrolladores",
+        nombre: "Desarrolladores",
+        descripcion: "Los m² que se quedan los desarrolladores, a qué valor y el reparto entre socios.",
+        beta: true,
+      },
+    ],
+  },
+];
+
+/** Las áreas de un proyecto, con las rutas completas. */
+export function areasDeProyecto(id: string): Area[] {
+  return AREAS_DE_PROYECTO.map((a) => ({
+    nombre: a.nombre,
+    descripcion: a.descripcion,
+    href: rutaProyecto(id, a.sub),
+    icono: a.icono,
+    modulos: a.modulos.map((m) => ({ nombre: m.nombre, descripcion: m.descripcion, href: rutaProyecto(id, m.sub), beta: m.beta })),
+  }));
+}
+
+export function areaDeProyecto(id: string, sub: string): Area | undefined {
+  return areasDeProyecto(id).find((a) => a.href === rutaProyecto(id, sub));
+}
+
+/** Las áreas de la empresa, fuera de los proyectos. */
+export const AREAS_EMPRESA: Area[] = [
   {
     nombre: "Indicadores",
     descripcion: "El CAC contra la inflación y el dólar, qué subió más y si es momento de comprar materiales.",
@@ -100,3 +211,6 @@ export const AREAS: Area[] = [
     ],
   },
 ];
+
+/** Las áreas que se mudaron a los proyectos: sus rutas viejas llevan a Lerma (ver next.config.ts). */
+export const RUTAS_MUDADAS = ["administracion", "finanzas", "inversores"];

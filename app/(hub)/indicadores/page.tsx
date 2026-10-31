@@ -3,11 +3,11 @@ import { AvisoBeta, EtiquetaBeta } from "@/components/Beta";
 import { Panorama } from "@/components/indicadores/Panorama";
 import { TarjetasModulos } from "@/components/TarjetasModulos";
 import { requireUser } from "@/lib/auth/session";
-import { AREAS } from "@/lib/modulos";
+import { AREAS_EMPRESA } from "@/lib/modulos";
 
 export const metadata: Metadata = { title: "Indicadores" };
 
-const area = AREAS.find((a) => a.href === "/indicadores")!;
+const area = AREAS_EMPRESA.find((a) => a.href === "/indicadores")!;
 
 /** El inicio de Indicadores: el Panorama y los módulos del área. */
 export default async function Indicadores() {

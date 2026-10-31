@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { EtiquetaBeta } from "@/components/Beta";
+import { Icono } from "@/components/Icono";
 import { TarjetasModulos } from "@/components/TarjetasModulos";
-import { AREAS, RUTA_FACTURAS } from "@/lib/modulos";
+import { AREAS_EMPRESA, PROYECTOS, RUTA_FACTURAS, rutaProyecto } from "@/lib/modulos";
 
 export const metadata: Metadata = { title: "Inicio" };
 
@@ -20,10 +23,44 @@ export default async function Inicio({
         <div>
           <span className="eyebrow">Mindlin Developers</span>
           <h1>Hub de la empresa</h1>
-          <p>Elegí un área para empezar.</p>
+          <p>Cada proyecto con su administración, sus finanzas, su comercial y sus inversores. Arriba, lo que es de toda la empresa.</p>
         </div>
       </div>
-      <TarjetasModulos items={AREAS} />
+      <h2 className="cac__titulo-seccion">Proyectos</h2>
+      <ul className="tarjetas-modulos">
+        {PROYECTOS.map((p) => (
+          <li key={p.id}>
+            {p.estado === "activo" ? (
+              <Link href={rutaProyecto(p.id)} className="tarjeta-modulo">
+                <span className="tarjeta-modulo__icono">
+                  <Icono nombre="proyecto" size={22} />
+                </span>
+                <span className="tarjeta-modulo__texto">
+                  <strong>{p.nombre}</strong>
+                  <span>{p.descripcion}</span>
+                  <span className="tarjeta-modulo__lista">{p.vehiculo}</span>
+                </span>
+                <Icono nombre="flecha" size={18} className="tarjeta-modulo__flecha" />
+              </Link>
+            ) : (
+              <div className="tarjeta-modulo tarjeta-modulo--bloqueada" aria-disabled="true">
+                <span className="tarjeta-modulo__icono">
+                  <Icono nombre="proyecto" size={22} />
+                </span>
+                <span className="tarjeta-modulo__texto">
+                  <strong>
+                    {p.nombre} <EtiquetaBeta />
+                  </strong>
+                  <span>{p.descripcion}: todavía no se puede entrar.</span>
+                  <span className="tarjeta-modulo__lista">{p.vehiculo}</span>
+                </span>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+      <h2 className="cac__titulo-seccion indicadores__modulos">De toda la empresa</h2>
+      <TarjetasModulos items={AREAS_EMPRESA} />
     </main>
   );
 }
