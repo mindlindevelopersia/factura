@@ -35,6 +35,10 @@ export interface Pago {
   atrasado: boolean;
   /** Celda de la planilla, "AF8", para ir a buscarla. */
   celda: string;
+  /** Color de fondo de la celda (amarillo: hay que actualizar el monto). */
+  color?: Color;
+  /** "Mes Base CAC" de la fila: desde ahí se ajustan los refuerzos. */
+  mesBase?: string | null;
 }
 
 export type TipoAviso = "atrasado" | "amarillo" | "sin-color" | "falta-vender" | "dato-raro" | "sin-mes-base" | "fila-incompleta" | "total";
@@ -249,7 +253,8 @@ export function leerFlujo(filas: Celda[][], mesActual: string): FlujoIngresos {
       return;
     }
 
-    const pago = (mes: string | null, monto: number, estado: Estado, celda: string): Pago => ({
+    const mesBaseFila = c.base >= 0 ? mesDeFecha(fila[c.base]?.valor ?? null) : null;
+    const pago = (mes: string | null, monto: number, estado: Estado, celda: string, color: Color = null): Pago => ({
       inversor,
       unidad,
       tipo: tipo.tipo,
@@ -261,14 +266,15 @@ export function leerFlujo(filas: Celda[][], mesActual: string): FlujoIngresos {
       estado,
       atrasado: estado === "a-cobrar" && mes != null && mes < mesActual,
       celda,
+      color,
+      mesBase: mesBaseFila,
     });
 
     if (tipo.tipo === "anticipo") {
       const monto = fila[c.anticipo]?.valor;
       if (typeof monto !== "number" || monto === 0) return;
       // Los anticipos están todos cobrados: entran el mes siguiente al mes base del CAC.
-      const mesBase = c.base >= 0 ? mesDeFecha(fila[c.base]?.valor ?? null) : null;
-      const mes = mesBase ? sumarMeses(mesBase, 1) : null;
+      const mes = mesBaseFila ? sumarMeses(mesBaseFila, 1) : null;
       pagos.push(pago(mes, monto, "cobrado", `${letra(c.anticipo)}${nroFila}`));
       if (!mes) {
         avisos.push({ ...base, tipo: "sin-mes-base", titulo: "Anticipo sin mes base CAC", detalle: "Se cuenta como cobrado, pero no se puede ubicar en un mes.", monto, moneda });
@@ -297,7 +303,7 @@ export function leerFlujo(filas: Celda[][], mesActual: string): FlujoIngresos {
         continue;
       }
       const estado: Estado = celda.color === "verde" ? "cobrado" : "a-cobrar";
-      const p = pago(mes, monto, estado, ref);
+      const p = pago(mes, monto, estado, ref, celda.color);
       pagos.push(p);
       if (celda.color === "amarillo") anotar("amarillo", mes, monto);
       else if (celda.color !== "verde" && celda.color !== "rosa") anotar("sin-color", mes, monto);

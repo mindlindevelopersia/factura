@@ -3542,3 +3542,107 @@ h1 .etiqueta-beta {
     background: none;
   }
 }
+
+/* Inversores · Cobranzas */
+.cobranzas__nota {
+  margin: 0;
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+.cobranzas__lista {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+.cobranza .tabla__numero .tabla__sub {
+  white-space: normal;
+  max-width: 340px;
+  margin-left: auto;
+}
+.cobranza {
+  padding: 18px 0 14px;
+}
+.cobranza--verificar {
+  border-color: #ead9a2;
+}
+.cobranza__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 0 20px 10px;
+}
+.cobranza__cabecera h2 {
+  font-size: 1.0625rem;
+  margin: 0 0 2px;
+}
+.cobranza__total {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cobranza__total span {
+  font-size: 12px;
+}
+.cobranza__ultimo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 20px 10px;
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+.cobranza__verificar {
+  margin: 0 20px 12px;
+}
+.cobranza__verificar .cuentas__check {
+  margin-top: 8px;
+  font-weight: 700;
+}
+.cobranza__mensaje {
+  margin: 10px 20px 0;
+  font-size: 13px;
+}
+.cobranza__mensaje summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.cobranza__mensaje pre {
+  margin: 8px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--radio-campo);
+  background: var(--gris-claro);
+  font: inherit;
+  white-space: pre-wrap;
+}
+.cobranza__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px 0;
+}
+.cobranza__formulario {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 12px 20px 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--borde);
+  border-radius: var(--radio-campo);
+}
+.cobranza__nota {
+  flex: 1 1 220px;
+}
+@media (max-width: 650px) {
+  .cobranza__cabecera {
+    flex-direction: column;
+  }
+  .cobranza__total {
+    justify-items: start;
+  }
+}

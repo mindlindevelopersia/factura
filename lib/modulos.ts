@@ -71,6 +71,12 @@ export const AREAS: Area[] = [
         href: "/inversores/cuentas-corrientes",
         beta: true,
       },
+      {
+        nombre: "Cobranzas",
+        descripcion: "Qué tiene vencido cada inversor actualizado por CAC, qué vence este mes, el aviso por WhatsApp y el seguimiento.",
+        href: "/inversores/cobranzas",
+        beta: true,
+      },
     ],
   },
   {

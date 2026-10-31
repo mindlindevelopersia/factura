@@ -1,7 +1,10 @@
 import "server-only";
 import { googleClient } from "../google/auth";
 import { leerCac, type SerieCac } from "../indicadores/cac";
+import { COLUMNAS_AVISOS, RegistroAvisos } from "../inversores/avisos";
+import { armarCobranzas, hoyBuenosAires, totalesCobranzas } from "../inversores/cobranzas";
 import { leerBloques, unirConFlujo, type CuentasCorrientes } from "../inversores/cuentas";
+import { PestaniaSimple } from "../google/pestania";
 import { leerCaja, unir, type CajaEgresos } from "./egresos";
 import { colorDe, leerFlujo, mesDeHoy, type Celda, type FlujoIngresos } from "./ingresos";
 
@@ -133,4 +136,25 @@ const cac = conCache(async () => {
 export async function serieCac(opciones?: { fresco?: boolean }): Promise<{ serie: SerieCac; leido: string }> {
   const { valor, leido } = await cac(opciones);
   return { serie: valor, leido };
+}
+
+/** El registro de avisos de cobranza, en la planilla de la cola. Null si falta configurarla. */
+export function registroAvisos(): RegistroAvisos | null {
+  const client = googleClient();
+  if (!client || !process.env.COLA_SHEET_ID) return null;
+  return new RegistroAvisos(new PestaniaSimple(client, process.env.COLA_SHEET_ID, process.env.COBRANZAS_TAB || "Cobranzas", COLUMNAS_AVISOS));
+}
+
+/** Las cobranzas: cuentas corrientes y CAC (si no se puede leer, sin actualizar los montos). */
+export async function cobranzas(opciones?: { fresco?: boolean }) {
+  const [{ cuentas, leido }, cac] = await Promise.all([
+    cuentasCorrientes(opciones),
+    serieCac(opciones).then(
+      (r) => ({ serie: r.serie, error: null as string | null }),
+      (e: unknown) => ({ serie: null, error: e instanceof Error ? e.message : String(e) }),
+    ),
+  ]);
+  const hoy = hoyBuenosAires();
+  const lista = armarCobranzas(cuentas, cac.serie, hoy);
+  return { cobranzas: lista, totales: totalesCobranzas(lista, hoy), hoy, cacUltimo: cac.serie?.ultimo ?? null, errorCac: cac.error, leido };
 }
