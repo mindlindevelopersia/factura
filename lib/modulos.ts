@@ -92,6 +92,7 @@ export const PROYECTOS: Proyecto[] = [
         motivo: "Se vendió al costo, pero con un tope: si el costo final sube, paga como máximo un 7% más que el precio de venta. Verificar el porcentaje en el contrato.",
         desde: "31/10/2026",
       },
+      { codigo: "7A", modalidad: "cerrado", titulo: "precio cerrado", motivo: "Se vendió a precio cerrado: no se ajusta al costo al final de la obra.", desde: "31/10/2026" },
       { codigo: "2C", estado: "libre", motivo: "La venta no se firmó: está libre.", desde: "31/10/2026" },
       {
         codigo: "5D",

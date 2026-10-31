@@ -102,18 +102,21 @@ describe("comercial", () => {
     expect(com.supuestos.map((s) => s.titulo)).not.toContain("2A: el precio de venta no coincide");
   });
 
-  it("toma la modalidad del machete (Costo, Contado = cerrado, Canjeado) o de una corrección", () => {
+  it("todas al costo; precio cerrado y tope solo por corrección; canje por machete o contrato", () => {
     const ventas = VENTAS.map((f) => (f[1]?.valor === "Beto" ? fila(null, "Beto", "Contado", "2AyB", 80, 84, 180000) : f));
-    const m = armarComercial(LISTA, ventas, SUP, CUENTAS, [{ codigo: "PB", modalidad: "costo", tope: 0.07, aConfirmar: true, motivo: "Tope.", desde: "31/10/2026" }]);
+    const m = armarComercial(LISTA, ventas, SUP, CUENTAS, [
+      { codigo: "PB", modalidad: "costo", tope: 0.07, aConfirmar: true, motivo: "Tope.", desde: "31/10/2026" },
+      { codigo: "3A", modalidad: "cerrado", motivo: "Cerrado.", desde: "31/10/2026" },
+    ]);
     const u = (cod: string) => m.unidades.find((x) => x.codigo === cod)!;
     expect(u("PB")).toMatchObject({ modalidad: "costo", tope: 0.07 });
-    expect(u("2A").modalidad).toBe("cerrado");
-    expect(u("3A").modalidad).toBe(null);
+    // "Contado" en Ventas es cómo pagó, no precio cerrado.
+    expect(u("2A").modalidad).toBe("costo");
+    expect(u("3A").modalidad).toBe("cerrado");
     expect(u("1A").modalidad).toBe(null);
-    expect(resumen(m.unidades).modalidades).toEqual({ costo: 1, cerrado: 1, canje: 0 });
-    const titulos = m.supuestos.map((s) => s.titulo);
-    expect(titulos).toContain('"Contado" se toma como precio cerrado: 2A');
-    expect(titulos).toContain("El coeficiente supone que se venden todas las unidades");
+    expect(u("C1").modalidad).toBe(null);
+    expect(resumen(m.unidades).modalidades).toEqual({ costo: 2, cerrado: 1, canje: 0 });
+    expect(m.supuestos.map((s) => s.titulo)).toContain("El coeficiente supone que se venden todas las unidades");
     expect(m.supuestos.find((s) => s.titulo.startsWith("PB:"))?.tipo).toBe("por-confirmar");
   });
 

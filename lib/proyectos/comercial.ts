@@ -24,7 +24,7 @@ export type EstadoUnidad = "vendida" | "libre" | "otro";
  * final de la obra, el costo real × el coeficiente de cada unidad dice si el comprador debe plata
  * o hay que devolverle (la liquidación, un módulo que viene después).
  * - "costo": al costo (puede tener un tope de aumento, ver Unidad.tope).
- * - "cerrado": precio cerrado (por ejemplo, las que pagaron todo de contado): no se ajusta.
+ * - "cerrado": precio cerrado: no se ajusta. Solo las que dice una corrección (en Lerma, 4C y 7A).
  * - "canje": se pagó con obra (contratistas).
  */
 export type Modalidad = "costo" | "cerrado" | "canje";
@@ -397,20 +397,16 @@ export function armarComercial(
     u.precioVenta ??= u.precioCuenta;
   }
 
-  // Cómo se vendió cada una: lo que diga una corrección y, si no, el "Tipo" del machete de Ventas.
-  const contado: string[] = [];
+  // Cómo se vendió cada una: casi todas al costo. Precio cerrado y tope, solo si lo dice una
+  // corrección; canje, si es de un contratista o el machete dice "Canjeado". "Contado" en Ventas
+  // dice cómo pagó, no que sea precio cerrado (confirmado el 31/10/2026).
   for (const u of unidades) {
-    if (u.estado !== "vendida") {
+    if (u.estado !== "vendida" || u.esCochera) {
       u.modalidad = null;
       continue;
     }
     if (u.modalidad) continue;
-    const t = normalizar(u.venta?.tipo);
-    if (/contado/.test(t)) {
-      u.modalidad = "cerrado";
-      contado.push(u.codigo);
-    } else if (/canje/.test(t) || u.contrato) u.modalidad = "canje";
-    else if (/costo/.test(t)) u.modalidad = "costo";
+    u.modalidad = u.contrato || /canje/.test(normalizar(u.venta?.tipo)) ? "canje" : "costo";
   }
 
   // Supuestos confirmados.
@@ -435,22 +431,13 @@ export function armarComercial(
   if (vendidas.length) {
     const cuantas = (m: Modalidad) => vendidas.filter((u) => u.modalidad === m);
     const lista = (m: Modalidad) => cuantas(m).map((u) => u.codigo + (u.tope != null ? ` (tope ${(u.tope * 100).toLocaleString("es-AR")}%)` : "")).join(", ");
-    const sinDato = vendidas.filter((u) => !u.modalidad).map((u) => u.codigo);
     supuestos.push({
       tipo: "confirmado",
       titulo: "Desarrollo al costo: al final se liquida",
-      detalle: `Casi todas se vendieron a un costo estimado. Al terminar la obra, el costo real × el coeficiente de cada unidad dice si el comprador tiene que poner la diferencia o hay que devolverle. Las de precio cerrado no se ajustan. Al costo: ${cuantas("costo").length}; precio cerrado: ${lista("cerrado") || "ninguna"}; canje: ${lista("canje") || "ninguna"}.${sinDato.length ? ` Sin dato: ${sinDato.join(", ")}.` : ""}`,
+      detalle: `Casi todas se vendieron a un costo estimado. Al terminar la obra, el costo real × el coeficiente de cada unidad dice si el comprador tiene que poner la diferencia o hay que devolverle. Las de precio cerrado no se ajustan. Al costo: ${cuantas("costo").length}${cuantas("costo").some((u) => u.tope != null) ? ` (con tope: ${cuantas("costo").filter((u) => u.tope != null).map((u) => `${u.codigo} ${(u.tope! * 100).toLocaleString("es-AR")}%`).join(", ")})` : ""}; precio cerrado: ${lista("cerrado") || "ninguna"}; canje: ${lista("canje") || "ninguna"}.`,
       mientras: "La liquidación final es un módulo que viene después: necesita cada gasto de la obra, en pesos y en dólares.",
-      origen: 'Confirmado el 31/10/2026. La modalidad sale del "Tipo" del machete de Ventas (Costo, Contado, Canjeado) y de las correcciones.',
+      origen: 'Confirmado el 31/10/2026. Todas al costo salvo las correcciones (precio cerrado, tope) y los canjes ("Canjeado" en el "Tipo" de Ventas, o contratistas).',
     });
-    if (contado.length) {
-      supuestos.push({
-        tipo: "por-confirmar",
-        titulo: `"Contado" se toma como precio cerrado: ${contado.join(", ")}`,
-        detalle: `En "Ventas" figuran como "Contado". Las que pagaron todo de contado se vendieron a precio cerrado, así que ${contado.length === 1 ? "esa unidad no se ajusta" : "esas unidades no se ajustan"} en la liquidación. Confirmar que sea así en todas.`,
-        origen: 'Excel madre → "Ventas" → columna "Tipo".',
-      });
-    }
     supuestos.push({
       tipo: "por-confirmar",
       titulo: "El coeficiente supone que se venden todas las unidades",
