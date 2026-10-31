@@ -14,6 +14,8 @@ import type { Supuesto, Unidad } from "./comercial";
 
 export interface Desarrolladores {
   parte: number;
+  /** Los egresos marcados como HQ, separados, si se pudo leer la caja. */
+  hq: GastoHq | null;
   m2Venta: number;
   /** Los amenities del proyecto: no se cuentan, se muestran para que se vea qué quedó afuera. */
   m2Amenities: number;
@@ -42,31 +44,71 @@ export interface EgresoHq {
   fila: number;
 }
 
+/** Por qué un egreso marcado como HQ está en duda. */
+export type DudaHq = "banco" | "obra" | "prestamo" | "grande";
+
+export const DUDAS_HQ: Record<DudaHq, { titulo: string; queHacer: string }> = {
+  obra: {
+    titulo: "Parecen de la obra",
+    queHacer: 'Materiales, hormigón, constructora: son de Lerma. Cambiar "Corresponde" a Lerma 439.',
+  },
+  prestamo: {
+    titulo: "Préstamos",
+    queHacer: "Plata prestada que después se devolvió: no es gasto de HQ ni de Lerma. Marcarlo como préstamo y anotar al lado la fila de la devolución.",
+  },
+  grande: {
+    titulo: "Grandes en dólares",
+    queHacer: "Más de US$ 5.000 marcado como HQ: confirmar de quién es.",
+  },
+  banco: {
+    titulo: "Impuestos y gastos del banco",
+    queHacer: "Débitos y créditos, IIBB, comisiones: los cobra el banco por mover la plata. Si la plata que se movía era de Lerma, son de Lerma.",
+  },
+};
+
+export interface EgresoHqEnDuda extends EgresoHq {
+  duda: DudaHq;
+}
+
 export interface GastoHq extends MontoHq {
-  /** Impuestos al débito y crédito, IIBB, comisiones: los cobra el banco por mover la plata. */
-  bancarios: MontoHq;
-  /** Lo que parece de obra (materiales, hormigón, constructora) o es grande en dólares. */
-  sospechosos: EgresoHq[];
+  /** Lo que está en duda, para que lo revise Tadeo en el Excel, en el orden de DUDAS_HQ. */
+  revisar: EgresoHqEnDuda[];
+  /** Lo que no está en duda: gastos de oficina (honorarios, sueldos, servicios…). */
+  oficina: MontoHq;
 }
 
 /** Rubros que son de la obra, no de la oficina: si están marcados como HQ, probablemente sea un error. */
 const RUBROS_DE_OBRA = new Set(["terreno", "constructora", "hormigon", "hierro", "derechos", "electricidad", "materiales"]);
 
-/** Separa los egresos marcados como HQ: cuánto es del banco, qué parece de obra y el total. */
-export function analizarHq(egresos: (EgresoHq & { proyecto: string })[]): GastoHq {
-  const deHq = egresos.filter((e) => /^hq$/i.test(e.proyecto.trim()));
-  const sumar = (xs: EgresoHq[]): MontoHq => ({
+function dudaDe(e: EgresoHq): DudaHq | null {
+  if (e.rubro === "prestamos") return "prestamo";
+  if (RUBROS_DE_OBRA.has(e.rubro)) return "obra";
+  if (e.moneda === "USD" && e.monto >= 5000) return "grande";
+  if (e.rubro === "impuestos" || e.rubro === "bancarios") return "banco";
+  return null;
+}
+
+export function sumarHq(xs: EgresoHq[]): MontoHq {
+  return {
     movimientos: xs.length,
     ARS: xs.filter((e) => e.moneda === "ARS").reduce((s, e) => s + e.monto, 0),
     USD: xs.filter((e) => e.moneda === "USD").reduce((s, e) => s + e.monto, 0),
-  });
-  return {
-    ...sumar(deHq),
-    bancarios: sumar(deHq.filter((e) => e.rubro === "impuestos" || e.rubro === "bancarios")),
-    sospechosos: deHq
-      .filter((e) => RUBROS_DE_OBRA.has(e.rubro) || (e.moneda === "USD" && e.monto >= 5000))
-      .map(({ fecha, descripcion, rubro, moneda, monto, pestania, fila }) => ({ fecha, descripcion, rubro, moneda, monto, pestania, fila })),
   };
+}
+
+/** Separa los egresos marcados como HQ: lo que está en duda (por qué) y lo de oficina. */
+export function analizarHq(egresos: (EgresoHq & { proyecto: string })[]): GastoHq {
+  const deHq = egresos
+    .filter((e) => /^hq$/i.test(e.proyecto.trim()))
+    .map(({ fecha, descripcion, rubro, moneda, monto, pestania, fila }) => ({ fecha, descripcion, rubro, moneda, monto, pestania, fila }));
+  const orden = Object.keys(DUDAS_HQ) as DudaHq[];
+  const revisar = deHq
+    .flatMap((e) => {
+      const duda = dudaDe(e);
+      return duda ? [{ ...e, duda }] : [];
+    })
+    .sort((a, b) => orden.indexOf(a.duda) - orden.indexOf(b.duda) || a.pestania.localeCompare(b.pestania) || a.fila - b.fila);
+  return { ...sumarHq(deHq), revisar, oficina: sumarHq(deHq.filter((e) => !dudaDe(e))) };
 }
 
 /** "M2 canjeados a Developers" en la pestaña EE.RR del Excel madre. */
@@ -115,22 +157,21 @@ export function desarrolladores(unidades: Unidad[], parte: number, socios: Socio
   });
   if (hq && hq.movimientos > 0) {
     const plata = (x: MontoHq) => [x.ARS ? `$ ${Math.round(x.ARS).toLocaleString("es-AR")}` : null, x.USD ? `US$ ${Math.round(x.USD).toLocaleString("es-AR")}` : null].filter(Boolean).join(" y ");
-    const resto = hq.movimientos - hq.bancarios.movimientos - hq.sospechosos.length;
-    const sospechosos = hq.sospechosos
-      .map((e) => `"${e.descripcion || e.rubro}" ${e.moneda === "USD" ? "US$" : "$"} ${Math.round(e.monto).toLocaleString("es-AR")} (${e.pestania}, fila ${e.fila})`)
-      .join("; ");
+    const grupos = (Object.keys(DUDAS_HQ) as DudaHq[])
+      .map((d) => [d, hq.revisar.filter((e) => e.duda === d)] as const)
+      .filter(([, xs]) => xs.length)
+      .map(([d, xs]) => `${xs.length} ${DUDAS_HQ[d].titulo.toLowerCase()} (${plata(sumarHq(xs))})`);
     supuestos.push({
       tipo: "conflicto",
-      titulo: `Para chequear: ${hq.movimientos} egresos marcados como HQ`,
-      detalle: `En la caja del proyecto hay ${hq.movimientos} egresos marcados como HQ (${plata(hq)}). Parecen demasiados. ${hq.bancarios.movimientos} son impuestos y gastos del banco (débitos y créditos, IIBB, comisiones: ${plata(hq.bancarios)}), que el banco cobra por mover la plata del proyecto: ¿no son de Lerma?${
-        sospechosos ? ` ${hq.sospechosos.length} parecen de la obra y no de HQ: ${sospechosos}.` : ""
-      } Quedan ${resto} de oficina (honorarios, sueldos, servicios…).`,
-      mientras: "Por ahora quedan dentro del proyecto, como en la planilla. Cuando se separen, se devuelven a Lerma.",
-      origen: 'Pestañas de caja → columna "Corresponde" = HQ (ver Finanzas → Egresos, filtro Proyecto).',
+      titulo: `Para que revise Tadeo: ${hq.revisar.length} de ${hq.movimientos} egresos marcados como HQ`,
+      detalle: `En la caja del proyecto hay ${hq.movimientos} egresos marcados como HQ (${plata(hq)}). Parecen demasiados. En duda: ${grupos.join("; ")}. Quedan ${hq.oficina.movimientos} de oficina (${plata(hq.oficina)}). La lista fila por fila está abajo, para descargar.`,
+      mientras: "Por ahora quedan dentro del proyecto, como en la planilla. Cuando se corrijan en el Excel, el hub los toma solos.",
+      origen: 'Pestañas de caja → columna "Corresponde" = HQ.',
     });
   }
   return {
     parte,
+    hq,
     m2Venta,
     m2Amenities,
     m2: total,

@@ -6,6 +6,7 @@ import { Icono } from "../Icono";
 import { BarraLectura } from "../finanzas/comun";
 import { m2, pct, useComercial, usd } from "./datos";
 import { Origen } from "./Origen";
+import { RevisionHq } from "./RevisionHq";
 import { Supuestos } from "./Supuestos";
 
 /** Management del proyecto: los m² de los desarrolladores, a qué valor y el reparto entre socios. */
@@ -111,6 +112,8 @@ export function Desarrolladores() {
           </section>
 
           <Supuestos supuestos={dev.supuestos} titulo="Supuestos del management" />
+
+          {dev.hq && <RevisionHq hq={dev.hq} />}
         </>
       )}
     </div>

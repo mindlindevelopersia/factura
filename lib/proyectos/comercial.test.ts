@@ -159,16 +159,31 @@ describe("management", () => {
     expect(d.supuestos.map((s) => s.tipo)).toEqual(["confirmado", "conflicto", "por-confirmar"]);
   });
 
-  it("separa los egresos de HQ: del banco, de obra y de oficina", () => {
-    const e = (proyecto: string, rubro: string, moneda: "ARS" | "USD", monto: number, descripcion = "") => ({ proyecto, rubro, moneda, monto, descripcion, fecha: null, pestania: "Caja", fila: 1 });
-    const hq = analizarHq([e("HQ", "impuestos", "ARS", 100, "Deb"), e("HQ", "bancarios", "ARS", 50), e("HQ", "hormigon", "ARS", 1000, "Pago Hormigonera"), e("HQ", "sin-clasificar", "USD", 50000, "Transf"), e("HQ", "honorarios", "ARS", 300), e("Lerma 439", "materiales", "ARS", 9)]);
-    expect(hq).toMatchObject({ movimientos: 5, ARS: 1450, USD: 50000, bancarios: { movimientos: 2, ARS: 150, USD: 0 } });
-    expect(hq.sospechosos.map((x) => x.descripcion)).toEqual(["Pago Hormigonera", "Transf"]);
+  it("separa los egresos de HQ en duda (obra, préstamo, grandes, banco) y los de oficina", () => {
+    const e = (proyecto: string, rubro: string, moneda: "ARS" | "USD", monto: number, descripcion = "", fila = 1) => ({ proyecto, rubro, moneda, monto, descripcion, fecha: null, pestania: "Caja", fila });
+    const hq = analizarHq([
+      e("HQ", "impuestos", "ARS", 100, "Deb", 5),
+      e("HQ", "bancarios", "ARS", 50, "", 6),
+      e("HQ", "hormigon", "ARS", 1000, "Pago Hormigonera", 7),
+      e("HQ", "prestamos", "USD", 50000, "Tranf a Borok 1", 2),
+      e("HQ", "sin-clasificar", "USD", 8000, "Otra", 3),
+      e("HQ", "honorarios", "ARS", 300, "Contador", 4),
+      e("Lerma 439", "materiales", "ARS", 9),
+    ]);
+    expect(hq).toMatchObject({ movimientos: 6, ARS: 1450, USD: 58000, oficina: { movimientos: 1, ARS: 300, USD: 0 } });
+    expect(hq.revisar.map((x) => [x.duda, x.descripcion])).toEqual([
+      ["obra", "Pago Hormigonera"],
+      ["prestamo", "Tranf a Borok 1"],
+      ["grande", "Otra"],
+      ["banco", "Deb"],
+      ["banco", ""],
+    ]);
     const d = desarrolladores(com.unidades, 0.15, SOCIOS, null, hq);
     const s = d.supuestos.at(-1)!;
-    expect(s.titulo).toMatch(/Para chequear: 5 egresos/);
-    expect(s.detalle).toMatch(/2 son impuestos y gastos del banco/);
+    expect(s.titulo).toBe("Para que revise Tadeo: 5 de 6 egresos marcados como HQ");
+    expect(s.detalle).toMatch(/1 parecen de la obra .*1 préstamos .*2 impuestos y gastos del banco/);
     expect(s.detalle).toMatch(/Quedan 1 de oficina/);
+    expect(d.hq).toBe(hq);
   });
 
   it("lee los m² de developers de EE.RR", () => {

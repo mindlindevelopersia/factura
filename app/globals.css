@@ -4223,3 +4223,36 @@ h1 .etiqueta-beta {
   color: #5d6413;
   font-weight: 700;
 }
+
+/* HQ para revisar (Management). */
+.hq__grupo {
+  border-top: 1px solid var(--borde, #e4e4dc);
+  padding: 12px 0 4px;
+}
+.hq__grupo summary,
+.hq__que-hacer,
+.hq > .origen {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+.hq__grupo summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 15px;
+}
+.hq__grupo summary span {
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.hq .ficha__nota {
+  margin: 4px 0 0;
+  padding: 0;
+}
+.hq__que-hacer {
+  margin: 8px 0 10px;
+  font-size: 13px;
+  color: var(--texto-suave);
+}
