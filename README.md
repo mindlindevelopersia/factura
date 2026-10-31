@@ -93,9 +93,15 @@ Auth.js (`next-auth` v5) con Google. Solo entran los mails de `ALLOWED_EMAILS`, 
 2. Cargar `AUTH_SECRET` (generado con `npx auth secret`), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` y `ALLOWED_EMAILS`. `ANTHROPIC_API_KEY` todavía no hace falta en Vercel.
 3. Desplegar y agregar el dominio que asigne Vercel en el paso 3 del cliente OAuth.
 
-## Panel de inicio
+## Hub de áreas
 
-Es lo primero que se ve al entrar (`components/Panel.tsx`, `GET /api/panel`, cálculo en `lib/panel.ts`). Un link de Telegram (`/?revisar=<id>`) abre directo "Para revisar".
+La app es el hub de Mindlin: al entrar se ve el inicio con las áreas de la empresa y, a la izquierda, un menú con cada área y sus módulos. Hoy hay dos áreas: **Administración**, con el módulo **Facturas y comprobantes** (`/administracion/facturas`), y **Finanzas**, todavía sin módulos ("Próximamente").
+
+Las áreas y los módulos se definen en `lib/modulos.ts`; de ahí salen el menú (`components/Navegacion.tsx`), el inicio y la página de cada área. Para sumar un módulo: agregarlo en esa lista y crear su página en `app/(hub)/<área>/<módulo>/page.tsx`. Todo lo que está dentro de `app/(hub)/` lleva el encabezado y el menú, y pide login.
+
+## Panel de inicio de facturas
+
+Es lo primero que se ve al entrar a Facturas y comprobantes (`components/Panel.tsx`, `GET /api/panel`, cálculo en `lib/panel.ts`). Un link de Telegram (`/administracion/facturas?revisar=<id>`) abre directo "Para revisar". Los links viejos (`/?revisar=<id>`) siguen andando: el inicio los redirige.
 
 - **Para revisar:** cuántos comprobantes esperan, cuántos con error y cuántos se están leyendo. Tocándolo se va a revisarlos.
 - **El mes en pesos:** compras, honorarios (las facturas de los socios) y ventas, con la cantidad de facturas. Sale de la planilla, así que incluye lo cargado a mano.
