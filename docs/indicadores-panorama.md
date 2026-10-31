@@ -44,3 +44,9 @@ Los umbrales y los años de historia están en `lib/indicadores/materiales.ts` (
 - `lib/indicadores/materiales.ts`: la alarma. Sin red.
 - `lib/finanzas/fuente.ts` (`datosPanorama`): lee las pestañas y las fuentes en línea y guarda la lectura 5 minutos.
 - `GET /api/indicadores/panorama` y las pantallas `components/indicadores/Panorama.tsx` y `Materiales.tsx`; el gráfico de líneas común está en `GraficoLineas.tsx`.
+
+## El dólar hoy (inicio)
+
+En el inicio del hub, oficial, blue y MEP con compra, venta, brecha contra el oficial y cuándo se actualizó. Se lee en línea desde DolarApi (`https://dolarapi.com/v1/dolares`, el MEP es la casa "bolsa") y, para lo que falte, desde ArgentinaDatos (última cotización de cada casa). Se vuelve a leer cada 5 minutos o con "Actualizar". Lógica en `lib/indicadores/dolar.ts`, lectura en `dolarHoy()` de `lib/finanzas/fuente.ts`, ruta `/api/indicadores/dolar`.
+
+En Inversores → Cuentas corrientes, "A cobrar según el Flujo" (pesos) muestra su equivalente en dólares al MEP de hoy (precio de venta). El saldo en dólares no cambia: cada pago se pasa a dólares con el tipo de cambio de ese pago.

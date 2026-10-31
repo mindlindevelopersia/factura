@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { EtiquetaBeta } from "@/components/Beta";
 import { Icono } from "@/components/Icono";
+import { DolarHoy } from "@/components/indicadores/Dolar";
 import { TarjetasModulos } from "@/components/TarjetasModulos";
 import { AREAS_EMPRESA, PROYECTOS, RUTA_FACTURAS, rutaProyecto } from "@/lib/modulos";
 
@@ -23,9 +24,10 @@ export default async function Inicio({
         <div>
           <span className="eyebrow">Mindlin Developers</span>
           <h1>Hub de la empresa</h1>
-          <p>Cada proyecto con su administración, sus finanzas, su comercial y sus inversores. Arriba, lo que es de toda la empresa.</p>
+          <p>Cada proyecto con su administración, sus finanzas, su comercial y sus inversores. Arriba, el dólar del día; abajo, lo que es de toda la empresa.</p>
         </div>
       </div>
+      <DolarHoy />
       <h2 className="cac__titulo-seccion">Proyectos</h2>
       <ul className="tarjetas-modulos">
         {PROYECTOS.map((p) => (

@@ -4350,3 +4350,66 @@ h1 .etiqueta-beta {
     display: none;
   }
 }
+
+/* El dólar hoy (inicio). */
+.dolar {
+  margin-bottom: 28px;
+}
+.dolar__titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dolar__tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.dolar__tarjeta {
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 1px solid var(--borde);
+  border-top: 3px solid var(--grafito);
+  border-radius: var(--radio-tarjeta, 14px);
+  background: var(--blanco);
+}
+.dolar__tarjeta--blue {
+  border-top-color: #3d6fb0;
+}
+.dolar__tarjeta--mep {
+  border-top-color: #a3ab2c;
+}
+.dolar__nombre {
+  font-weight: 700;
+  font-size: 14px;
+}
+.dolar__precios {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dolar__precios div {
+  display: grid;
+  gap: 2px;
+}
+.dolar__precios div:last-child {
+  text-align: right;
+}
+.dolar__precios span {
+  font-size: 11px;
+  color: var(--texto-suave);
+}
+.dolar__precios strong {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.dolar__precios .dolar__venta {
+  font-size: 24px;
+}
+.dolar__nota,
+.dolar__cargando {
+  font-size: 11px;
+  color: var(--texto-suave);
+}
