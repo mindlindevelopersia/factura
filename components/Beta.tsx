@@ -13,7 +13,7 @@ export function EtiquetaBeta() {
 /** Franja finita arriba de un módulo en prueba. */
 export function AvisoBeta() {
   return (
-    <p className="aviso-beta" role="note">
+    <p className="aviso-beta solo-pantalla" role="note">
       <Icono nombre="ensayo" size={16} />
       <strong>Beta</strong>
       <span>Este módulo está en prueba: revisá los números contra la planilla y avisá si ves algo raro.</span>

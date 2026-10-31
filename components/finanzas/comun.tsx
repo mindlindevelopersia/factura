@@ -298,17 +298,17 @@ export function GraficoMeses<T extends FilaMes>({
             <tbody>
               {meses.map((m) => (
                 <tr key={m.mes}>
-                  <td>{nombreMes(m.mes)}</td>
-                  <td className="tabla__numero">{monto(m.blanco, moneda)}</td>
-                  <td className="tabla__numero">{monto(m.negro, moneda)}</td>
-                  {haySinDato && <td className="tabla__numero">{monto(m.sinDato ?? 0, moneda)}</td>}
-                  <td className="tabla__numero">{monto(m.total, moneda)}</td>
+                  <td data-etiqueta="Mes">{nombreMes(m.mes)}</td>
+                  <td data-etiqueta="Blanco" className="tabla__numero">{monto(m.blanco, moneda)}</td>
+                  <td data-etiqueta="Negro" className="tabla__numero">{monto(m.negro, moneda)}</td>
+                  {haySinDato && <td data-etiqueta="Sin dato" className="tabla__numero">{monto(m.sinDato ?? 0, moneda)}</td>}
+                  <td data-etiqueta="Total" className="tabla__numero">{monto(m.total, moneda)}</td>
                   {extra?.map((e) => (
-                    <td key={e.titulo} className="tabla__numero">
+                    <td key={e.titulo} data-etiqueta={e.titulo} className="tabla__numero">
                       {monto(e.valor(m), moneda)}
                     </td>
                   ))}
-                  <td className="tabla__numero">{monto(m.acumulado, moneda)}</td>
+                  <td data-etiqueta="Acumulado" className="tabla__numero">{monto(m.acumulado, moneda)}</td>
                 </tr>
               ))}
             </tbody>

@@ -191,15 +191,15 @@ function TablaInversores({ pagos, mesActual, elegir }: { pagos: Pago[]; mesActua
           <tbody>
             {filas.map((f) => (
               <tr key={f.inversor}>
-                <td>
+                <td data-etiqueta="Inversor">
                   <button type="button" className="ingresos__enlace" onClick={() => elegir(f.inversor)} title="Ver solo este inversor">
                     {f.inversor}
                   </button>
                   {f.unidades.length > 0 && <span className="tabla__sub">UF {f.unidades.join(", ")}</span>}
                 </td>
-                <td className="tabla__numero">{porMoneda(f.totales, "cobrado")}</td>
-                <td className="tabla__numero">{porMoneda(f.totales, "aCobrar")}</td>
-                <td>
+                <td data-etiqueta="Cobrado" className="tabla__numero">{porMoneda(f.totales, "cobrado")}</td>
+                <td data-etiqueta="A cobrar" className="tabla__numero">{porMoneda(f.totales, "aCobrar")}</td>
+                <td data-etiqueta="Próximo pago">
                   {f.proximo ? (
                     <>
                       {monto(f.proximo.monto, f.proximo.moneda)}
@@ -209,7 +209,7 @@ function TablaInversores({ pagos, mesActual, elegir }: { pagos: Pago[]; mesActua
                     "—"
                   )}
                 </td>
-                <td className="tabla__numero">{f.atrasados > 0 ? <span className="ingresos__vencido">{f.atrasados}</span> : "—"}</td>
+                <td data-etiqueta="Vencidos" className="tabla__numero">{f.atrasados > 0 ? <span className="ingresos__vencido">{f.atrasados}</span> : "—"}</td>
               </tr>
             ))}
           </tbody>
@@ -269,17 +269,17 @@ function Detalle({ pagos }: { pagos: Pago[] }) {
           <tbody>
             {visibles.map((p) => (
               <tr key={p.celda}>
-                <td>{p.mes ? nombreMes(p.mes) : "Sin mes"}</td>
-                <td>
+                <td data-etiqueta="Mes">{p.mes ? nombreMes(p.mes) : "Sin mes"}</td>
+                <td data-etiqueta="Inversor">
                   {p.inversor}
                   {p.unidad && <span className="tabla__sub">UF {p.unidad}</span>}
                 </td>
-                <td>
+                <td data-etiqueta="Tipo">
                   {p.detalle}
                   <span className="tabla__sub">{p.bn === "blanco" ? "Blanco" : "Negro"}</span>
                 </td>
-                <td className="tabla__numero">{monto(p.monto, p.moneda)}</td>
-                <td>
+                <td data-etiqueta="Monto" className="tabla__numero">{monto(p.monto, p.moneda)}</td>
+                <td data-etiqueta="Estado">
                   <span className={`estado-pago estado-pago--${p.atrasado ? "vencido" : p.estado}`}>
                     {p.estado === "cobrado" ? "Cobrado" : p.atrasado ? "Vencido" : "A cobrar"}
                   </span>

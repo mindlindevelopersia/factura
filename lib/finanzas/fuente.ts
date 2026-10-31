@@ -1,5 +1,6 @@
 import "server-only";
 import { googleClient } from "../google/auth";
+import { leerBloques, unirConFlujo, type CuentasCorrientes } from "../inversores/cuentas";
 import { leerCaja, unir, type CajaEgresos } from "./egresos";
 import { colorDe, leerFlujo, mesDeHoy, type Celda, type FlujoIngresos } from "./ingresos";
 
@@ -12,6 +13,7 @@ export function configFinanzas() {
     flujo: process.env.FINANZAS_TAB_FLUJO || "Flujo de fondos LERMA",
     cajaPesos: process.env.FINANZAS_TAB_CAJA_ARS || "Caja Flujos en Pesos",
     cajaDolares: process.env.FINANZAS_TAB_CAJA_USD || "Caja Flujos en Dólares Global",
+    pagosInversor: process.env.INVERSORES_TAB_PAGOS || "Pagos por Inversor",
   };
 }
 
@@ -93,4 +95,12 @@ const egresos = conCache(async () => {
 export async function cajaEgresos(opciones?: { fresco?: boolean }): Promise<{ caja: CajaEgresos; leido: string }> {
   const { valor, leido } = await egresos(opciones);
   return { caja: valor, leido };
+}
+
+const pagosInversor = conCache(async () => leerGrilla(configFinanzas().pagosInversor, "A1:LZ300", false));
+
+/** Las cuentas corrientes: los bloques de "Pagos por Inversor" unidos con lo pendiente del Flujo de fondos. */
+export async function cuentasCorrientes(opciones?: { fresco?: boolean }): Promise<{ cuentas: CuentasCorrientes; leido: string }> {
+  const [bloques, { flujo }] = await Promise.all([pagosInversor(opciones), flujoIngresos(opciones)]);
+  return { cuentas: unirConFlujo(leerBloques(bloques.valor, flujo.mesActual), flujo), leido: bloques.leido };
 }

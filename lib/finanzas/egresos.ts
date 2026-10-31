@@ -160,7 +160,12 @@ export function diaDeFecha(valor: number | string | null): string | null {
   }
   if (typeof valor === "string") {
     const m = valor.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (m && Number(m[2]) >= 1 && Number(m[2]) <= 12) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+    if (m) {
+      // Solo fechas que existen: "31/06/2026" no.
+      const d = new Date(Date.UTC(Number(m[3]), Number(m[2]) - 1, Number(m[1])));
+      if (d.getUTCDate() === Number(m[1]) && d.getUTCMonth() === Number(m[2]) - 1) return d.toISOString().slice(0, 10);
+      return null;
+    }
     if (/^\d{4}-\d{2}-\d{2}/.test(valor.trim())) return valor.trim().slice(0, 10);
   }
   return null;
