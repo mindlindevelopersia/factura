@@ -8,12 +8,16 @@ import { Icono } from "../Icono";
 import { useBaseProyecto } from "../proyecto";
 import { BarraLectura, monto, redondo, Revisar } from "../finanzas/comun";
 import { fechaCorta, pct, usd, useCuentas } from "./datos";
+import { aDolares } from "@/lib/indicadores/dolar";
+import { useDolarHoy } from "../indicadores/Dolar";
+import { Origen } from "../proyectos/Origen";
 
 type Orden = "unidad" | "avance" | "saldo" | "ultimo";
 
 /** El listado de cuentas corrientes: totales, lo que hay que revisar y una fila por inversor. */
 export function Cuentas() {
   const { datos, error, cargando, actualizar } = useCuentas();
+  const mep = useDolarHoy().de("mep");
   const [buscar, setBuscar] = useState("");
   const [orden, setOrden] = useState<Orden>("unidad");
   const [soloVencidos, setSoloVencidos] = useState(false);
@@ -79,11 +83,18 @@ export function Cuentas() {
             <div className="cifra">
               <span className="cifra__titulo">Saldo</span>
               <span className="cifra__valor">{usd(totales.saldo)}</span>
+              <Origen texto='Vendido menos pagado, en dólares. Cada pago en pesos se pasa a dólares con el tipo de cambio de ese pago ("Pagos por Inversor"), no con el de hoy.' />
             </div>
             <div className="cifra">
               <span className="cifra__titulo">A cobrar según el Flujo</span>
               <span className="cifra__valor">{redondo(totales.pendiente.ARS, "ARS")}</span>
+              {mep?.venta && (
+                <span className="cifra__nota">
+                  ≈ <strong>{usd(aDolares(totales.pendiente.ARS, mep))}</strong> al MEP de hoy ({`$\u00a0${mep.venta.toLocaleString("es-AR")}`})
+                </span>
+              )}
               <span className="cifra__nota">{totales.conVencidos} cuentas con pagos vencidos</span>
+              <Origen texto="Las cuotas en pesos que faltan cobrar según el Flujo de fondos, sin actualizar por CAC. No se suma al saldo: es lo mismo que falta, medido en pesos. Los dólares, al MEP de hoy (precio de venta)." />
             </div>
           </div>
 

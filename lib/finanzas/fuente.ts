@@ -1,6 +1,7 @@
 import "server-only";
 import { googleClient } from "../google/auth";
 import { leerCac, type SerieCac } from "../indicadores/cac";
+import { CASAS, deArgentinaDatos, deDolarApi, FUENTES_DOLAR, type Cotizacion } from "../indicadores/dolar";
 import { analizarTodos, type AnalisisMaterial } from "../indicadores/materiales";
 import {
   combinar,
@@ -180,6 +181,43 @@ export const FUENTES_EN_LINEA = {
   blue: { url: "https://api.argentinadatos.com/v1/cotizaciones/dolares/blue", nombre: "ArgentinaDatos" },
   oficial: { url: "https://api.argentinadatos.com/v1/cotizaciones/dolares/oficial", nombre: "ArgentinaDatos" },
 };
+
+export interface DolarHoy {
+  cotizaciones: Cotizacion[];
+  /** Qué no se pudo leer, para mostrarlo. */
+  errores: string[];
+}
+
+async function leerEnLinea(url: string): Promise<unknown> {
+  const r = await fetch(url, { signal: AbortSignal.timeout(10_000), headers: { accept: "application/json" }, cache: "no-store" });
+  if (!r.ok) throw new Error(`respondió ${r.status}`);
+  return r.json();
+}
+
+/** Oficial, blue y MEP de hoy: DolarApi y, para lo que falte, ArgentinaDatos. Se vuelve a leer cada 5 minutos. */
+export const dolarHoy = conCache(async (): Promise<DolarHoy> => {
+  const errores: string[] = [];
+  let cotizaciones: Cotizacion[] = [];
+  try {
+    cotizaciones = deDolarApi(await leerEnLinea(FUENTES_DOLAR.dolarApi.url));
+  } catch (e) {
+    errores.push(`${FUENTES_DOLAR.dolarApi.nombre}: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  const faltan = CASAS.filter((c) => !cotizaciones.some((x) => x.casa === c.casa));
+  const otras = await Promise.all(
+    faltan.map(async (c) => {
+      try {
+        return deArgentinaDatos(c.casa, await leerEnLinea(FUENTES_DOLAR.argentinaDatos.url(c.argentinaDatos)));
+      } catch (e) {
+        errores.push(`${c.nombre} (${FUENTES_DOLAR.argentinaDatos.nombre}): ${e instanceof Error ? e.message : String(e)}`);
+        return null;
+      }
+    }),
+  );
+  cotizaciones = [...cotizaciones, ...otras.filter((x): x is Cotizacion => !!x)].sort((a, b) => CASAS.findIndex((c) => c.casa === a.casa) - CASAS.findIndex((c) => c.casa === b.casa));
+  if (!cotizaciones.length) throw new Error(`No se pudo leer el dólar. ${errores.join(" · ")}`);
+  return { cotizaciones, errores };
+});
 
 async function enLinea(url: string, leer: (datos: unknown) => Punto[]): Promise<{ puntos: Punto[]; error: string | null }> {
   try {
