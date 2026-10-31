@@ -65,6 +65,7 @@ export default async function LoginPage({
         <p className="login__acceso">
           Acceso exclusivo para cuentas habilitadas de Mindlin.
         </p>
+        <p className="login__acceso">Prueba con Claude · 31/10/2026</p>
       </div>
     </main>
   );

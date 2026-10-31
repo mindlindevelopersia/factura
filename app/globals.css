@@ -2510,3 +2510,204 @@ html {
     font-size: 1.25rem;
   }
 }
+
+/* Hub: menú de áreas a la izquierda y la página a la derecha. */
+.app-header__inicio {
+  display: block;
+}
+.hub {
+  max-width: 1600px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+}
+.hub__contenido {
+  min-width: 0;
+}
+.hub__contenido .app-main {
+  max-width: none;
+  margin: 0;
+}
+.navegacion {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  display: grid;
+  gap: 6px;
+  padding: 30px 0 30px 32px;
+}
+.navegacion__grupo {
+  display: grid;
+  gap: 2px;
+}
+.navegacion__area,
+.navegacion__modulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: var(--radio-boton);
+  color: var(--texto);
+  text-decoration: none;
+}
+.navegacion__area {
+  padding: 10px 12px;
+  font-weight: 700;
+  font-size: 14px;
+}
+.navegacion__area svg {
+  color: var(--texto-suave);
+  flex: none;
+}
+.navegacion__area:hover,
+.navegacion__modulo:hover {
+  background: var(--gris-claro);
+}
+.navegacion__area--activa svg {
+  color: var(--negro);
+}
+.navegacion__area[aria-current="page"],
+.navegacion__modulo--activo {
+  background: var(--lima);
+  color: var(--negro);
+}
+.navegacion__modulos {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0 0 0 21px;
+}
+.navegacion__modulos li {
+  border-left: 1px solid var(--borde);
+  padding-left: 8px;
+}
+.navegacion__modulo {
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.navegacion__pronto {
+  margin-left: auto;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--texto-suave);
+  background: var(--blanco);
+  white-space: nowrap;
+}
+.tarjetas-modulos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.tarjeta-modulo {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  height: 100%;
+  padding: 22px;
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra);
+  color: var(--texto);
+  text-decoration: none;
+}
+.tarjeta-modulo:hover {
+  border-color: var(--lima-oscuro);
+}
+.tarjeta-modulo__icono {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--lima);
+  color: var(--negro);
+}
+.tarjeta-modulo__texto {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+}
+.tarjeta-modulo__texto strong {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  color: var(--negro);
+}
+.tarjeta-modulo__texto strong .navegacion__pronto {
+  margin-left: 0;
+}
+.tarjeta-modulo__texto > span {
+  color: var(--texto-suave);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.tarjeta-modulo__texto > .tarjeta-modulo__lista {
+  color: var(--texto);
+  font-weight: 700;
+  font-size: 12px;
+}
+.tarjeta-modulo__flecha {
+  flex: none;
+  color: var(--texto-suave);
+  margin-top: 2px;
+}
+.area-vacia {
+  padding: 40px 24px;
+  text-align: center;
+  background: var(--blanco);
+  border: 1px dashed var(--borde);
+  border-radius: var(--radio-tarjeta);
+}
+.area-vacia p {
+  margin: 8px 0 0;
+  color: var(--texto-suave);
+}
+/* En pantallas angostas el menú pasa a ser una franja arriba, con scroll horizontal. */
+@media (max-width: 1100px) {
+  .hub {
+    grid-template-columns: 1fr;
+  }
+  .navegacion {
+    position: static;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--borde);
+    background: var(--blanco);
+  }
+  .navegacion__grupo {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .navegacion__area,
+  .navegacion__modulo {
+    white-space: nowrap;
+  }
+  .navegacion__modulos {
+    display: flex;
+    margin: 0;
+    padding: 0;
+  }
+  .navegacion__modulos li {
+    padding-left: 2px;
+  }
+}
+@media (max-width: 650px) {
+  .navegacion {
+    padding: 8px 16px;
+  }
+  .navegacion__area {
+    padding: 8px 10px;
+  }
+}

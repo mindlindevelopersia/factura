@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { signOut } from "@/auth";
 
 export function AppHeader({ email }: { email: string }) {
@@ -9,15 +10,17 @@ export function AppHeader({ email }: { email: string }) {
       </a>
       <div className="app-header__inner">
         <div className="app-header__marca">
-          <Image
-            className="app-header__logo"
-            src="/brand/mindlin-logo.png"
-            alt="Mindlin Developers"
-            width={631}
-            height={219}
-            priority
-          />
-          <span className="app-header__producto">Gestión de facturas</span>
+          <Link href="/" className="app-header__inicio">
+            <Image
+              className="app-header__logo"
+              src="/brand/mindlin-logo.png"
+              alt="Mindlin Developers"
+              width={631}
+              height={219}
+              priority
+            />
+          </Link>
+          <span className="app-header__producto">Hub de Mindlin</span>
         </div>
         <div className="app-header__user">
           <span>{email}</span>

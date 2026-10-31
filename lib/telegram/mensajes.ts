@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { comprobante, contraparte, type ItemCola } from "../cola/item";
 import { descripcionEstado, type ExtraAviso } from "../cola/servicio";
+import { RUTA_FACTURAS } from "../modulos";
 import type { MensajeTelegram, Reaccion } from "./api";
 
 /** Telegram deja bajar hasta 20 MB a los bots. */
@@ -104,7 +105,7 @@ const pesos = (n: number, moneda: string) =>
 export const TEXTOS = {
   ayuda: "Mandame las facturas en PDF o como foto, una por mensaje. Las leo y quedan para revisar en la web.",
   noVinculado: (appUrl: string) =>
-    `Hola, soy el bot de facturas de Mindlin. Para mandarme facturas, primero conectá este Telegram a tu mail: entrá a ${appUrl} , pestaña "Subir", y tocá "Conectar mi Telegram". Se abre este chat de nuevo; tocá "Iniciar" y listo.`,
+    `Hola, soy el bot de facturas de Mindlin. Para mandarme facturas, primero conectá este Telegram a tu mail: entrá a ${appUrl}${RUTA_FACTURAS} , pestaña "Subir", y tocá "Conectar mi Telegram". Se abre este chat de nuevo; tocá "Iniciar" y listo.`,
   codigoInvalido: "Ese link de conexión venció (duran una hora) o no sirve. Generá uno nuevo desde la web de facturas: pestaña \"Subir\", \"Conectar mi Telegram\".",
   vinculado: (email: string) => `Listo, este Telegram quedó conectado a ${email}. Ya podés mandarme facturas.`,
   recibida: "Recibida. La estoy leyendo…",
@@ -147,7 +148,7 @@ export function textoAviso(
   appUrl: string,
   extra: ExtraAviso = { duplicado: false, repetida: null },
 ): string {
-  const link = `${appUrl}/?revisar=${item.id}`;
+  const link = `${appUrl}${RUTA_FACTURAS}?revisar=${item.id}`;
   switch (aviso) {
     case "leida":
       return [

@@ -9,9 +9,8 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "Facturas y comprobantes · Mindlin",
-  description:
-    "Carga, revisión y registro de compras, honorarios y ventas de Mindlin Developers.",
+  title: { default: "Mindlin Developers", template: "%s · Mindlin" },
+  description: "Hub de las áreas de Mindlin Developers.",
   robots: { index: false, follow: false },
 };
 

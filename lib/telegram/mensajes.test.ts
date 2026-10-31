@@ -73,7 +73,7 @@ describe("vinculación", () => {
   });
 
   it("a quien no está conectado le explica cómo hacerlo, con el link a la web", () => {
-    expect(TEXTOS.noVinculado("https://mindlin-developers.vercel.app")).toContain('https://mindlin-developers.vercel.app , pestaña "Subir"');
+    expect(TEXTOS.noVinculado("https://mindlin-developers.vercel.app")).toContain('https://mindlin-developers.vercel.app/administracion/facturas , pestaña "Subir"');
   });
 
   it("nombre de quien manda", () => {
@@ -102,7 +102,7 @@ describe("textoAviso", () => {
 
   it("resume la factura y deja el link para revisarla", () => {
     expect(textoAviso(item, "leida", "https://app", { duplicado: true, repetida: null })).toBe(
-      "Leída: Corralón Ejemplo S.A. · Factura A 00005-00025853 · $45.140,27.\nOjo: parece que ya está cargada en la planilla.\nQuedó para revisar: https://app/?revisar=abc",
+      "Leída: Corralón Ejemplo S.A. · Factura A 00005-00025853 · $45.140,27.\nOjo: parece que ya está cargada en la planilla.\nQuedó para revisar: https://app/administracion/facturas?revisar=abc",
     );
   });
 
