@@ -93,18 +93,4 @@ export const AREAS: Area[] = [
       },
     ],
   },
-  {
-    nombre: "Indicadores",
-    descripcion: "Los índices que usa la empresa: CAC, y más adelante dólar, UVA, jornales y precios de materiales.",
-    href: "/indicadores",
-    icono: "indicadores",
-    modulos: [
-      {
-        nombre: "Índice CAC",
-        descripcion: "El costo de la construcción de la Cámara Argentina de la Construcción, mes a mes: general, materiales y mano de obra, con calculadora.",
-        href: "/indicadores/cac",
-        beta: true,
-      },
-    ],
-  },
 ];
