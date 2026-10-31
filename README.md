@@ -57,6 +57,7 @@ Nada de esto va al repo. En local, en `.env.local`. En Vercel, en Settings > Env
 | `COLA_SHEET_ID` | Planilla aparte para la cola y las cuentas de Telegram conectadas. **No** la de Administración Contable. La app crea sus pestañas ("Cola", "Telegram" y "Candados") | Siempre |
 | `FINANZAS_SHEET_ID`, `FINANZAS_TAB_FLUJO` | Planilla y pestaña del flujo de fondos para Finanzas · Ingresos. Por defecto, `SHEET_ID` y "Flujo de fondos LERMA" | Opcional |
 | `INDICADORES_SHEET_ID`, `INDICADORES_TAB_CAC` | Planilla "Indicadores - REAL ESTATE" y su pestaña del índice CAC. Hay que compartirla como Lector con la cuenta de servicio | Opcional |
+| `MADRE_SHEET_ID_LERMA_439` | Excel madre de Lerma (lista de precios, superficies, ventas). Por defecto, el de `lib/modulos.ts` | Opcional |
 | `COBRANZAS_TAB` | Pestaña del registro de avisos de cobranza, en la planilla de la cola. Por defecto, "Cobranzas" | Opcional |
 | `INVERSORES_TAB_PAGOS` | Pestaña de los estados de cuenta por inversor. Por defecto, "Pagos por Inversor" | Opcional |
 | `FINANZAS_TAB_CAJA_ARS`, `FINANZAS_TAB_CAJA_USD` | Pestañas de caja para Finanzas · Egresos. Por defecto, "Caja Flujos en Pesos" y "Caja Flujos en Dólares Global" | Opcional |
@@ -98,11 +99,21 @@ Auth.js (`next-auth` v5) con Google. Solo entran los mails de `ALLOWED_EMAILS`, 
 2. Cargar `AUTH_SECRET` (generado con `npx auth secret`), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` y `ALLOWED_EMAILS`. `ANTHROPIC_API_KEY` todavía no hace falta en Vercel.
 3. Desplegar y agregar el dominio que asigne Vercel en el paso 3 del cliente OAuth.
 
-## Hub de áreas
+## Hub de la empresa: proyectos y áreas
 
-La app es el hub de Mindlin: al entrar se ve el inicio con las áreas de la empresa y, a la izquierda, un menú con cada área y sus módulos. Hoy hay cuatro áreas: **Administración**, con el módulo **Facturas y comprobantes** (`/administracion/facturas`); **Finanzas**, con dos módulos en beta: **Ingresos** (`/finanzas/ingresos`), lo cobrado y lo que falta cobrar de los inversores de Lerma, leído de la pestaña "Flujo de fondos LERMA" ([docs/finanzas-ingresos.md](docs/finanzas-ingresos.md)), y **Egresos** (`/finanzas/egresos`), lo pagado en pesos y en dólares por rubro, leído de las pestañas de caja ([docs/finanzas-egresos.md](docs/finanzas-egresos.md)); **Inversores**, con **Cuentas corrientes** (`/inversores/cuentas-corrientes`): avance, saldo y plan de pagos de cada inversor, con estado de cuenta para imprimir ([docs/inversores-cuentas.md](docs/inversores-cuentas.md)), y **Cobranzas** (`/inversores/cobranzas`): vencidos actualizados por CAC, aviso por WhatsApp y seguimiento ([docs/inversores-cobranzas.md](docs/inversores-cobranzas.md)), los dos en beta; e **Indicadores**, en beta: un Panorama (`/indicadores`) con el CAC contra la inflación y el dólar y qué subió más, el **Índice CAC** (`/indicadores/cac`) con gráfico, tabla y calculadora ([docs/indicadores-cac.md](docs/indicadores-cac.md)) y **Materiales** (`/indicadores/materiales`), con la alarma de si es momento de comprar cada material ([docs/indicadores-panorama.md](docs/indicadores-panorama.md)).
+El hub se organiza en **Empresa → Proyectos → áreas**. Cada proyecto es su propio vehículo, con su administración, finanzas, comercial, inversores y management; **Indicadores** es de toda la empresa. Hoy hay dos proyectos: **Lerma 439** (todo lo armado hasta ahora) y **Güemes 4676** (beta, todavía sin acceso). Las rutas de Lerma son `/proyectos/lerma-439/...`; las viejas (`/administracion`, `/finanzas`, `/inversores`) y los links del bot de Telegram llevan ahí.
 
-Las áreas y los módulos se definen en `lib/modulos.ts`; de ahí salen el menú (`components/Navegacion.tsx`), el inicio y la página de cada área. Para sumar un módulo: agregarlo en esa lista y crear su página en `app/(hub)/<área>/<módulo>/page.tsx`. Todo lo que está dentro de `app/(hub)/` lleva el encabezado y el menú, y pide login.
+Módulos de cada proyecto (en Lerma, todos en beta salvo Facturas):
+
+- **Tablero** (portada del proyecto) y **Comercial**: unidades, lista de precios y simulador, leídos del Excel madre ([docs/proyectos-comercial.md](docs/proyectos-comercial.md)).
+- **Administración**: Facturas y comprobantes (`/proyectos/lerma-439/administracion/facturas`).
+- **Finanzas**: Ingresos ([docs/finanzas-ingresos.md](docs/finanzas-ingresos.md)) y Egresos ([docs/finanzas-egresos.md](docs/finanzas-egresos.md)).
+- **Inversores**: Cuentas corrientes ([docs/inversores-cuentas.md](docs/inversores-cuentas.md)) y Cobranzas ([docs/inversores-cobranzas.md](docs/inversores-cobranzas.md)).
+- **Management**: los m² de los desarrolladores y su reparto.
+
+De toda la empresa: **Indicadores** con el Panorama, el Índice CAC ([docs/indicadores-cac.md](docs/indicadores-cac.md)) y Materiales ([docs/indicadores-panorama.md](docs/indicadores-panorama.md)).
+
+Los proyectos, sus áreas y los socios están en `lib/modulos.ts`. Para sumar un proyecto, responder primero las preguntas de [docs/alta-de-proyecto.md](docs/alta-de-proyecto.md).
 
 ## Panel de inicio de facturas
 

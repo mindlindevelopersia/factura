@@ -42,6 +42,8 @@ export interface Proyecto {
   estado: "activo" | "bloqueado";
   /** Lo que se quedan los desarrolladores: parte de los m² vendibles. */
   management?: { parteM2: number; socios: Socio[] };
+  /** El "Excel madre" del proyecto (lista de precios, superficies, ventas, EE.RR). */
+  planillaMadre?: string;
 }
 
 /** El reparto entre los desarrolladores es el mismo en todos los proyectos. */
@@ -59,6 +61,7 @@ export const PROYECTOS: Proyecto[] = [
     descripcion: "Villa Crespo · 28 unidades y 2 cocheras",
     estado: "activo",
     management: { parteM2: 0.15, socios: SOCIOS },
+    planillaMadre: "1B1cSVA9AtleBLajFwjkXdQOHnv2n0Ijv4sl3NtZP8c0",
   },
   {
     id: "guemes-4676",

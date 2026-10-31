@@ -3889,3 +3889,307 @@ h1 .etiqueta-beta {
     padding: 8px 10px;
   }
 }
+
+/* Proyectos: origen de los datos y supuestos */
+.origen {
+  font-size: 11px;
+  color: var(--texto-suave);
+  margin-top: 4px;
+}
+.origen summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+}
+.origen summary::-webkit-details-marker {
+  display: none;
+}
+.origen[open] summary {
+  margin-bottom: 4px;
+}
+.origen span {
+  display: block;
+  line-height: 1.45;
+}
+.origen--por-confirmar summary {
+  color: #8a6a12;
+}
+.origen--conflicto summary {
+  color: var(--rojo);
+}
+.supuestos {
+  padding: 0;
+}
+.supuestos summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px;
+  cursor: pointer;
+}
+.supuestos__cuenta {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+.supuestos__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0 18px 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+}
+.supuesto {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 14px;
+  border: 1px solid var(--borde);
+  border-left-width: 4px;
+  border-radius: var(--radio-tarjeta);
+  font-size: 13px;
+}
+.supuesto p {
+  margin: 0;
+  color: var(--texto);
+}
+.supuesto__tipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.supuesto--confirmado {
+  border-left-color: var(--verde);
+}
+.supuesto--confirmado .supuesto__tipo {
+  color: var(--verde);
+}
+.supuesto--por-confirmar {
+  border-left-color: var(--dudoso-borde);
+  background: #fffdf3;
+}
+.supuesto--por-confirmar .supuesto__tipo {
+  color: #8a6a12;
+}
+.supuesto--conflicto {
+  border-left-color: var(--rojo);
+  background: #fff9f8;
+}
+.supuesto--conflicto .supuesto__tipo {
+  color: var(--rojo);
+}
+.supuesto__mientras,
+.supuesto__origen {
+  font-size: 12px;
+  color: var(--texto-suave) !important;
+}
+
+/* Tablero del proyecto */
+.tablero__avance {
+  margin-top: 4px;
+}
+.tablero__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+}
+.tablero__superficies {
+  display: grid;
+  gap: 12px;
+  margin: 8px 0 0;
+}
+.tablero__superficies dt {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+.tablero__superficies dd {
+  margin: 2px 0 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.tablero__superficies dd span {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--texto-suave);
+}
+.tablero__dev {
+  margin: 8px 0;
+  font-size: 15px;
+}
+.tablero__socios {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.tablero__socios li {
+  display: flex;
+  gap: 8px;
+}
+.tablero__socios span {
+  color: var(--texto-suave);
+}
+.tablero__socios strong {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.tablero__ir {
+  margin-top: 10px;
+}
+
+/* Unidades: el edificio */
+.unidades__arriba {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.edificio__pisos {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0 8px;
+}
+.edificio__piso {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 8px;
+}
+.edificio__piso--cocheras {
+  margin-top: 8px;
+}
+.edificio__nivel {
+  align-self: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--texto-suave);
+  text-align: right;
+}
+.edificio__unidades {
+  display: flex;
+  gap: 4px;
+}
+.edificio__unidad {
+  flex-basis: 0;
+  min-width: 52px;
+  display: grid;
+  gap: 1px;
+  justify-items: start;
+  padding: 7px 8px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+.edificio__unidad strong {
+  font-size: 13px;
+}
+.edificio__unidad--vendida,
+.edificio__marca--vendida {
+  background: var(--grafito);
+  color: white;
+}
+.edificio__unidad--libre,
+.edificio__marca--libre {
+  background: var(--lima);
+  color: var(--negro);
+}
+.edificio__unidad--otro {
+  background: var(--gris-claro);
+}
+.edificio__unidad--revisar,
+.edificio__marca--revisar {
+  border-color: var(--dudoso-borde);
+  box-shadow: inset 0 0 0 1px var(--dudoso-borde);
+}
+.edificio__marca--revisar {
+  background: white;
+  border: 2px solid var(--dudoso-borde);
+}
+.edificio__unidad--elegida {
+  outline: 3px solid var(--azul, #2a78d6);
+  outline-offset: 1px;
+}
+.unidad__detalle {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.unidad__detalle--vacio {
+  justify-items: center;
+  text-align: center;
+  color: var(--texto-suave);
+}
+.unidad__detalle h2 {
+  font-size: 1.5rem;
+}
+.unidad__tipo {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--texto-suave);
+}
+.unidad__estado {
+  margin: 0;
+  font-weight: 700;
+}
+.unidad__estado--libre {
+  color: #5d6413;
+}
+.unidad__datos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+.unidad__datos dt {
+  font-size: 11px;
+  color: var(--texto-suave);
+}
+.unidad__datos dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.unidad__machete {
+  padding: 10px 12px;
+  border-radius: var(--radio-campo);
+  background: var(--gris-claro);
+  font-size: 13px;
+}
+.unidad__machete p {
+  margin: 4px 0 0;
+}
+.lista__titulo {
+  font-size: 1.0625rem;
+  margin: 0;
+}
+.lista__atajos {
+  align-self: end;
+  grid-column: span 3;
+}
+@media (max-width: 1100px) {
+  .tablero__fila,
+  .unidades__arriba {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .unidad__detalle {
+    position: static;
+  }
+}
