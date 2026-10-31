@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TarjetasModulos } from "@/components/TarjetasModulos";
 import { AREAS } from "@/lib/modulos";
 
 export const metadata: Metadata = { title: "Finanzas" };
@@ -15,10 +16,7 @@ export default function Finanzas() {
           <p>{area.descripcion}</p>
         </div>
       </div>
-      <div className="area-vacia">
-        <strong>Todavía no hay módulos en Finanzas</strong>
-        <p>Cuando se sume el primero, va a aparecer acá y en el menú de la izquierda.</p>
-      </div>
+      <TarjetasModulos items={area.modulos} />
     </main>
   );
 }

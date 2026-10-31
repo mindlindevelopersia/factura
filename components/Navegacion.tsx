@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { AREAS } from "@/lib/modulos";
+import { EtiquetaBeta } from "./Beta";
 import { Icono } from "./Icono";
 
 /** El menú lateral del hub: el inicio, cada área y sus módulos. */
@@ -50,6 +51,7 @@ export function Navegacion() {
                     aria-current={actual(m.href)}
                   >
                     {m.nombre}
+                    {m.beta && <EtiquetaBeta />}
                   </Link>
                 </li>
               ))}

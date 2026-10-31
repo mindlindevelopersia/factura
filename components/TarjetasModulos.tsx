@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Area, Modulo } from "@/lib/modulos";
+import { EtiquetaBeta } from "./Beta";
 import { Icono } from "./Icono";
 
 /** Tarjetas para entrar a un área o a un módulo, en el inicio y en la página de cada área. */
@@ -20,6 +21,7 @@ export function TarjetasModulos({ items }: { items: (Area | Modulo)[] }) {
                 <strong>
                   {item.nombre}
                   {pronto && <span className="navegacion__pronto">Próximamente</span>}
+                  {"beta" in item && item.beta && <EtiquetaBeta />}
                 </strong>
                 <span>{item.descripcion}</span>
                 {"modulos" in item && item.modulos.length > 0 && (
