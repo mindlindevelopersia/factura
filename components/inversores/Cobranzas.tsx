@@ -7,6 +7,7 @@ import { CANALES_AVISO, ESTADOS_AVISO, ultimoPorCuenta, type AvisoCobranza } fro
 import type { Cobranza, ItemCobranza, totalesCobranzas } from "@/lib/inversores/cobranzas";
 import { fechaHora, leerJson } from "../formato";
 import { Icono } from "../Icono";
+import { useBaseProyecto } from "../proyecto";
 import { BarraLectura, monto, redondo } from "../finanzas/comun";
 import { fechaCorta } from "./datos";
 
@@ -177,6 +178,7 @@ function TarjetaCobranza({
   registrar: ((a: Partial<AvisoCobranza>) => Promise<void>) | null;
 }) {
   const [verificado, setVerificado] = useState(false);
+  const base = useBaseProyecto();
   const [formulario, setFormulario] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -205,7 +207,7 @@ function TarjetaCobranza({
       <header className="cobranza__cabecera">
         <div>
           <h2>
-            <Link href={`/inversores/cuentas-corrientes/${c.id}`} className="ingresos__enlace">
+            <Link href={`${base}/inversores/cuentas-corrientes/${c.id}`} className="ingresos__enlace">
               {c.inversor}
             </Link>
           </h2>

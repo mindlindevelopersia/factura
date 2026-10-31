@@ -6,6 +6,7 @@ import { useState } from "react";
 import { nombreMes } from "@/lib/finanzas/ingresos";
 import { conAcumulado, resumenCuenta, type Cuenta } from "@/lib/inversores/cuentas";
 import { Icono } from "../Icono";
+import { useBaseProyecto } from "../proyecto";
 import { BarraLectura, monto, redondo } from "../finanzas/comun";
 import { fechaCorta, pct, usd, useCuentas } from "./datos";
 
@@ -18,11 +19,12 @@ export function Ficha({ id }: { id: string }) {
   const { datos, error, cargando, actualizar } = useCuentas();
   const [informal, setInformal] = useState(true);
   const cuenta = datos?.cuentas.cuentas.find((c) => c.id === id);
+  const base = useBaseProyecto();
 
   return (
     <div className="ingresos ficha">
       <div className="ficha__barra solo-pantalla">
-        <Link href="/inversores/cuentas-corrientes" className="btn btn--texto btn--chico">
+        <Link href={`${base}/inversores/cuentas-corrientes`} className="btn btn--texto btn--chico">
           <Icono nombre="volver" size={16} />
           Todas las cuentas
         </Link>

@@ -17,6 +17,9 @@ import { COLUMNAS_AVISOS, RegistroAvisos } from "../inversores/avisos";
 import { armarCobranzas, hoyBuenosAires, totalesCobranzas } from "../inversores/cobranzas";
 import { leerBloques, unirConFlujo, type CuentasCorrientes } from "../inversores/cuentas";
 import { PestaniaSimple } from "../google/pestania";
+import { proyecto as buscarProyecto } from "../modulos";
+import { armarComercial, type Comercial } from "../proyectos/comercial";
+import { analizarHq, desarrolladores, m2DesarrolladoresEnPlanilla, type Desarrolladores, type GastoHq } from "../proyectos/management";
 import { leerCaja, unir, type CajaEgresos } from "./egresos";
 import { colorDe, leerFlujo, mesDeHoy, type Celda, type FlujoIngresos } from "./ingresos";
 
@@ -244,5 +247,64 @@ export async function datosPanorama(opciones?: { fresco?: boolean }): Promise<Pa
   // "Actualizar" también vuelve a leer el CAC (el Panorama usa la lectura guardada del Índice CAC).
   if (opciones?.fresco) await serieCac({ fresco: true }).catch(() => undefined);
   const { valor, leido } = await panorama(opciones);
+  return { ...valor, leido };
+}
+
+export interface DatosComercial {
+  comercial: Comercial;
+  desarrolladores: Desarrolladores | null;
+}
+
+/** El Excel madre de un proyecto (con una variable para cambiarlo sin tocar el código). */
+function planillaMadre(id: string): string | null {
+  const p = buscarProyecto(id);
+  const env = process.env[`MADRE_SHEET_ID_${id.toUpperCase().replace(/[^A-Z0-9]/g, "_")}`];
+  return env || p?.planillaMadre || null;
+}
+
+const comercialPorProyecto = new Map<string, ReturnType<typeof conCache<DatosComercial>>>();
+
+/** Unidades, lista de precios, superficies y ventas del proyecto, con los cruces y el management. */
+export async function datosComercial(id: string, opciones?: { fresco?: boolean }): Promise<DatosComercial & { leido: string }> {
+  const p = buscarProyecto(id);
+  const sheet = planillaMadre(id);
+  if (!p || !sheet) throw new FlujoSinConfigurar(`El proyecto no tiene configurado su Excel madre.`);
+  let lector = comercialPorProyecto.get(id);
+  if (!lector) {
+    lector = conCache(async () => {
+      const pestania = (nombre: string, a1: string) =>
+        leerGrilla(nombre, a1, false, sheet).catch((e) => {
+          const status = (e as { response?: { status?: number } }).response?.status;
+          if (status === 403 || status === 404) {
+            throw new Error(`La app no tiene acceso al Excel madre. Compartilo como Lector con ${process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ?? "la cuenta de servicio"}.`);
+          }
+          throw e;
+        });
+      const [lista, ventas, superficies, eerr, cuentas, caja] = await Promise.all([
+        pestania("Lista de precios", "A1:Z120"),
+        pestania("Ventas", "A1:P120").catch(() => [] as Celda[][]),
+        pestania("Superficies", "A1:T120").catch(() => [] as Celda[][]),
+        pestania("EE.RR", "A1:P140").catch(() => [] as Celda[][]),
+        // Los cruces son de Lerma (sus cuentas y su caja); si no se pueden leer, se sigue sin ellos.
+        cuentasCorrientes().then((r) => r.cuentas.cuentas, () => null),
+        cajaEgresos().then((r) => r.caja, () => null),
+      ]);
+      const comercial = armarComercial(
+        lista,
+        ventas,
+        superficies,
+        cuentas?.map((c) => ({ unidad: c.unidad, inversor: c.inversor, precioUsd: c.precioUsd })) ?? null,
+        p.ajustes,
+      );
+      let hq: GastoHq | null = null;
+      if (caja) {
+        hq = analizarHq(caja.egresos);
+      }
+      const dev = p.management ? desarrolladores(comercial.unidades, p.management.parteM2, p.management.socios, m2DesarrolladoresEnPlanilla(eerr), hq) : null;
+      return { comercial, desarrolladores: dev };
+    });
+    comercialPorProyecto.set(id, lector);
+  }
+  const { valor, leido } = await lector(opciones);
   return { ...valor, leido };
 }

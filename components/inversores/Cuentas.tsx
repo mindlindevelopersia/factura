@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { nombreMes } from "@/lib/finanzas/ingresos";
 import { resumenCuenta, totalesCuentas, type Cuenta, type ResumenCuenta } from "@/lib/inversores/cuentas";
 import { Icono } from "../Icono";
+import { useBaseProyecto } from "../proyecto";
 import { BarraLectura, monto, redondo, Revisar } from "../finanzas/comun";
 import { fechaCorta, pct, usd, useCuentas } from "./datos";
 
@@ -143,11 +144,12 @@ export function Cuentas() {
 }
 
 function FilaCuenta({ c, r }: { c: Cuenta; r: ResumenCuenta }) {
+  const base = useBaseProyecto();
   const ancho = (n: number) => (c.precioUsd ? `${Math.min(100, (n / c.precioUsd) * 100)}%` : "0%");
   return (
     <tr>
       <td data-etiqueta="Inversor">
-        <Link href={`/inversores/cuentas-corrientes/${c.id}`} className="ingresos__enlace">
+        <Link href={`${base}/inversores/cuentas-corrientes/${c.id}`} className="ingresos__enlace">
           {c.inversor}
         </Link>
         <span className="tabla__sub">

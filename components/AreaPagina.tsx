@@ -1,9 +1,8 @@
 import { TarjetasModulos } from "@/components/TarjetasModulos";
-import { AREAS } from "@/lib/modulos";
+import type { Area } from "@/lib/modulos";
 
 /** La página de un área: su nombre, qué abarca y una tarjeta por módulo. */
-export function AreaPagina({ href }: { href: string }) {
-  const area = AREAS.find((a) => a.href === href)!;
+export function AreaPagina({ area }: { area: Area }) {
   return (
     <main className="app-main" id="contenido">
       <div className="pagina-encabezado">
