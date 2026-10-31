@@ -13,6 +13,8 @@ export interface Modulo {
   nombre: string;
   descripcion: string;
   href: string;
+  /** En prueba: el menú, la tarjeta y la página lo marcan como "Beta". */
+  beta?: boolean;
 }
 
 export interface Area {
@@ -47,6 +49,7 @@ export const AREAS: Area[] = [
         nombre: "Ingresos",
         descripcion: "Lo cobrado y lo que falta cobrar de los inversores de Lerma, por mes, moneda, inversor y blanco o negro.",
         href: "/finanzas/ingresos",
+        beta: true,
       },
     ],
   },

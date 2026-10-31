@@ -2956,3 +2956,54 @@ html {
     gap: 6px;
   }
 }
+
+/* Módulos en beta: todo en verde claro, con un tubo de ensayo. */
+.etiqueta-beta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 1px 7px 1px 5px;
+  border: 1px solid #c9e3bd;
+  border-radius: 999px;
+  background: #e9f5e3;
+  color: #2f5f2b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+h1 .etiqueta-beta {
+  font-size: 12px;
+  padding: 2px 9px 2px 7px;
+  margin-left: 8px;
+  transform: translateY(-3px);
+}
+.navegacion__modulo .etiqueta-beta {
+  margin-left: auto;
+}
+.navegacion__modulo--activo .etiqueta-beta {
+  background: #f3faef;
+}
+.aviso-beta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -12px 0 20px;
+  padding: 7px 14px;
+  border: 1px solid #c9e3bd;
+  border-radius: var(--radio-boton);
+  background: #e9f5e3;
+  color: #2f5f2b;
+  font-size: 12px;
+}
+.aviso-beta strong {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+}
+.aviso-beta span {
+  color: #3e6b39;
+}
