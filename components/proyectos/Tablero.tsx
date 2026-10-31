@@ -59,7 +59,7 @@ export function Tablero() {
                   Lista vigente: {usd(c.precioBaseM2)}/m² en el piso 1 (+{pct(c.aumentoPorPiso)} por piso)
                 </span>
                 <Origen
-                  texto={`Precio de cada venta ("Costo estimado" del machete de "Ventas") ÷ su "Sup Total". ${
+                  texto={`Precio de cada venta ("Costo estimado" del machete de "Ventas"), sin las cocheras que vienen incluidas${r.vendido.cocheras ? ` (${usd(r.vendido.cocheras)})` : ""}, ÷ su "Sup Total". ${
                     c.promedioVentaPlanilla.length ? `En la planilla, "¿A cuánto vendimos?" dice ${c.promedioVentaPlanilla.map((v) => usd(v)).join(" y ")}.` : ""
                   }`}
                 />

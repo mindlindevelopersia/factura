@@ -93,6 +93,8 @@ export const PROYECTOS: Proyecto[] = [
         desde: "31/10/2026",
       },
       { codigo: "7A", modalidad: "cerrado", titulo: "precio cerrado", motivo: "Se vendió a precio cerrado: no se ajusta al costo al final de la obra.", desde: "31/10/2026" },
+      { codigo: "C1", precio: 20000, incluidaEn: "6A", titulo: "incluida en la 6A", motivo: "Se vendió con la 6A: está incluida en su precio, tomada a US$ 20.000.", desde: "31/10/2026" },
+      { codigo: "C2", precio: 30000, incluidaEn: "8A", titulo: "incluida en la 8A", motivo: "Se vendió con la 8A: está incluida en su precio, tomada a US$ 30.000.", desde: "31/10/2026" },
       { codigo: "2C", estado: "libre", motivo: "La venta no se firmó: está libre.", desde: "31/10/2026" },
       {
         codigo: "5D",
