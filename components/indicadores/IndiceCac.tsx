@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { nombreMes, sumarMeses } from "@/lib/finanzas/ingresos";
 import { actualizar, cacACsv, rango, SERIES, type MesCac, type Serie, type SerieCac } from "@/lib/indicadores/cac";
 import { leerJson } from "../formato";
 import { Icono } from "../Icono";
 import { BarraLectura, descargar, Revisar } from "../finanzas/comun";
+import { GraficoLineas } from "./GraficoLineas";
 
 interface Respuesta {
   serie: SerieCac;
@@ -109,53 +110,9 @@ function Grafico({ serie }: { serie: SerieCac }) {
   const [medida, setMedida] = useState<Medida>("mensual");
   const [periodo, setPeriodo] = useState<number | null>(24);
   const [visibles, setVisibles] = useState<Serie[]>(["general", "materiales", "manoDeObra"]);
-  const [activo, setActivo] = useState<number | null>(null);
-  const svg = useRef<SVGSVGElement>(null);
-  const caja = useRef<HTMLDivElement>(null);
-  // El gráfico se dibuja al ancho real, así el texto de los ejes no se agranda ni se achica.
-  const [W, setW] = useState(800);
-  useEffect(() => {
-    const el = caja.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([e]) => setW(Math.max(280, Math.round(e.contentRect.width))));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
   const meses = periodo ? serie.meses.slice(-periodo) : serie.meses;
   const valor = (m: MesCac, s: Serie) => (medida === "indice" ? m[s].indice : m[s][medida]);
-  const valores = meses.flatMap((m) => visibles.map((s) => valor(m, s))).filter((v): v is number => v != null);
-  const minimo = Math.min(0, ...valores);
-  const maximo = Math.max(...valores, medida === "indice" ? 1 : 0.01);
-  const paso = (() => {
-    const bruto = (maximo - minimo) / 4;
-    const p = 10 ** Math.floor(Math.log10(bruto));
-    return [1, 2, 2.5, 5, 10].map((k) => k * p).find((k) => k >= bruto)!;
-  })();
-  const tope = Math.ceil(maximo / paso) * paso;
-  const piso = Math.floor(minimo / paso) * paso;
-  const marcas: number[] = [];
-  for (let v = piso; v <= tope + paso / 2; v += paso) marcas.push(Number(v.toFixed(10)));
-
-  const H = W < 500 ? 220 : 280;
-  const izq = 52;
-  const der = 12;
-  const arriba = 12;
-  const abajo = 28;
-  const x = (i: number) => izq + (meses.length <= 1 ? 0 : (i / (meses.length - 1)) * (W - izq - der));
-  const y = (v: number) => arriba + (1 - (v - piso) / (tope - piso || 1)) * (H - arriba - abajo);
-  const formato = (v: number) => (medida === "indice" ? v.toLocaleString("es-AR", { maximumFractionDigits: 0 }) : pct(v, Math.abs(paso) < 0.01 ? 1 : 0));
-  const cada = Math.ceil(meses.length / Math.max(3, Math.floor((W - izq) / 80)));
-
-  const mover = (e: React.PointerEvent<SVGSVGElement>) => {
-    const r = svg.current?.getBoundingClientRect();
-    if (!r || meses.length < 2) return;
-    const px = ((e.clientX - r.left) / r.width) * W;
-    const i = Math.round(((px - izq) / (W - izq - der)) * (meses.length - 1));
-    setActivo(Math.max(0, Math.min(meses.length - 1, i)));
-  };
   const alternar = (s: Serie) => setVisibles((v) => (v.includes(s) ? (v.length > 1 ? v.filter((x) => x !== s) : v) : SERIES.map((x) => x.id).filter((x) => x === s || v.includes(x))));
-  const m = activo != null ? meses[activo] : null;
 
   return (
     <figure className="card grafico">
@@ -196,71 +153,15 @@ function Grafico({ serie }: { serie: SerieCac }) {
           </li>
         ))}
       </ul>
-      <div className="cac__grafico" ref={caja}>
-        <svg
-          ref={svg}
-          viewBox={`0 0 ${W} ${H}`}
-          width={W}
-          height={H}
-          role="img"
-          aria-label="Evolución del índice CAC. El detalle está en la tabla de abajo."
-          onPointerMove={mover}
-          onPointerLeave={() => setActivo(null)}
-        >
-          {marcas.map((v) => (
-            <g key={v}>
-              <line x1={izq} x2={W - der} y1={y(v)} y2={y(v)} className={v === 0 ? "cac__cero" : "cac__grilla"} />
-              <text x={izq - 8} y={y(v)} className="cac__eje" textAnchor="end" dominantBaseline="middle">
-                {formato(v)}
-              </text>
-            </g>
-          ))}
-          {meses.map((mm, i) =>
-            (i % cada === 0 && meses.length - 1 - i >= Math.max(1, cada * 0.7)) || i === meses.length - 1 ? (
-              <text key={mm.mes} x={x(i)} y={H - 8} className="cac__eje" textAnchor={i === meses.length - 1 ? "end" : "middle"}>
-                {mesCorto(mm.mes)}
-              </text>
-            ) : null,
-          )}
-          {visibles.map((s) => {
-            const puntos = meses.map((mm, i) => [x(i), valor(mm, s)] as const).filter((p): p is readonly [number, number] => p[1] != null);
-            return (
-              <polyline
-                key={s}
-                points={puntos.map(([px, v]) => `${px},${y(v)}`).join(" ")}
-                fill="none"
-                stroke={COLORES[s]}
-                strokeWidth={2}
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                vectorEffect="non-scaling-stroke"
-              />
-            );
-          })}
-          {activo != null && m && (
-            <g>
-              <line x1={x(activo)} x2={x(activo)} y1={arriba} y2={H - abajo} className="cac__cursor" />
-              {visibles.map((s) => {
-                const v = valor(m, s);
-                return v == null ? null : <circle key={s} cx={x(activo)} cy={y(v)} r={4.5} fill={COLORES[s]} stroke="white" strokeWidth={2} vectorEffect="non-scaling-stroke" />;
-              })}
-            </g>
-          )}
-        </svg>
-        {activo != null && m && (
-          <div className="tooltip cac__tooltip" style={{ left: `${(x(activo) / W) * 100}%`, transform: activo > meses.length / 2 ? "translateX(calc(-100% - 12px))" : "translateX(12px)" }} role="tooltip">
-            <strong>
-              {nombreMes(m.mes)}
-              {m.provisorio ? " (*)" : ""}
-            </strong>
-            {visibles.map((s) => (
-              <span key={s}>
-                <i className="leyenda__marca" style={{ background: COLORES[s] }} /> {SERIES.find((x) => x.id === s)!.nombre}: {medida === "indice" ? indice(m[s].indice) : pct(m[s][medida])}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      <GraficoLineas
+        meses={meses.map((m) => m.mes)}
+        series={visibles.map((s) => ({ id: s, nombre: SERIES.find((x) => x.id === s)!.nombre, color: COLORES[s], valores: meses.map((m) => valor(m, s)) }))}
+        formatoEje={(v, paso) => (medida === "indice" ? v.toLocaleString("es-AR", { maximumFractionDigits: 0 }) : pct(v, Math.abs(paso) < 0.01 ? 1 : 0))}
+        formatoValor={(v) => (medida === "indice" ? indice(v) : pct(v))}
+        descripcion="Evolución del índice CAC. El detalle está en la tabla de abajo."
+        incluirReferencia={medida !== "indice"}
+        etiquetaMes={(mes) => `${nombreMes(mes)}${meses.find((m) => m.mes === mes)?.provisorio ? " (*)" : ""}`}
+      />
     </figure>
   );
 }

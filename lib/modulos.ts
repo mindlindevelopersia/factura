@@ -71,11 +71,17 @@ export const AREAS: Area[] = [
         href: "/inversores/cuentas-corrientes",
         beta: true,
       },
+      {
+        nombre: "Cobranzas",
+        descripcion: "Qué tiene vencido cada inversor actualizado por CAC, qué vence este mes, el aviso por WhatsApp y el seguimiento.",
+        href: "/inversores/cobranzas",
+        beta: true,
+      },
     ],
   },
   {
     nombre: "Indicadores",
-    descripcion: "Los índices que usa la empresa: CAC, y más adelante dólar, UVA, jornales y precios de materiales.",
+    descripcion: "El CAC contra la inflación y el dólar, qué subió más y si es momento de comprar materiales.",
     href: "/indicadores",
     icono: "indicadores",
     modulos: [
@@ -83,6 +89,12 @@ export const AREAS: Area[] = [
         nombre: "Índice CAC",
         descripcion: "El costo de la construcción de la Cámara Argentina de la Construcción, mes a mes: general, materiales y mano de obra, con calculadora.",
         href: "/indicadores/cac",
+        beta: true,
+      },
+      {
+        nombre: "Materiales",
+        descripcion: "Los 50 materiales de la Cámara contra su historia: si están baratos o caros, con pesos ajustados por CAC y en dólares.",
+        href: "/indicadores/materiales",
         beta: true,
       },
     ],

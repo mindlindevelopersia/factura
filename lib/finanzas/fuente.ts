@@ -1,7 +1,22 @@
 import "server-only";
 import { googleClient } from "../google/auth";
 import { leerCac, type SerieCac } from "../indicadores/cac";
+import { analizarTodos, type AnalisisMaterial } from "../indicadores/materiales";
+import {
+  combinar,
+  dolarDeArgentinaDatos,
+  leerDolarMensual,
+  leerIpc,
+  leerPreciosMedios,
+  serieDeDatosGob,
+  seriesDeCac,
+  type Punto,
+  type SerieMensual,
+} from "../indicadores/series";
+import { COLUMNAS_AVISOS, RegistroAvisos } from "../inversores/avisos";
+import { armarCobranzas, hoyBuenosAires, totalesCobranzas } from "../inversores/cobranzas";
 import { leerBloques, unirConFlujo, type CuentasCorrientes } from "../inversores/cuentas";
+import { PestaniaSimple } from "../google/pestania";
 import { leerCaja, unir, type CajaEgresos } from "./egresos";
 import { colorDe, leerFlujo, mesDeHoy, type Celda, type FlujoIngresos } from "./ingresos";
 
@@ -133,4 +148,99 @@ const cac = conCache(async () => {
 export async function serieCac(opciones?: { fresco?: boolean }): Promise<{ serie: SerieCac; leido: string }> {
   const { valor, leido } = await cac(opciones);
   return { serie: valor, leido };
+}
+
+/** El registro de avisos de cobranza, en la planilla de la cola. Null si falta configurarla. */
+export function registroAvisos(): RegistroAvisos | null {
+  const client = googleClient();
+  if (!client || !process.env.COLA_SHEET_ID) return null;
+  return new RegistroAvisos(new PestaniaSimple(client, process.env.COLA_SHEET_ID, process.env.COBRANZAS_TAB || "Cobranzas", COLUMNAS_AVISOS));
+}
+
+/** Las cobranzas: cuentas corrientes y CAC (si no se puede leer, sin actualizar los montos). */
+export async function cobranzas(opciones?: { fresco?: boolean }) {
+  const [{ cuentas, leido }, cac] = await Promise.all([
+    cuentasCorrientes(opciones),
+    serieCac(opciones).then(
+      (r) => ({ serie: r.serie, error: null as string | null }),
+      (e: unknown) => ({ serie: null, error: e instanceof Error ? e.message : String(e) }),
+    ),
+  ]);
+  const hoy = hoyBuenosAires();
+  const lista = armarCobranzas(cuentas, cac.serie, hoy);
+  return { cobranzas: lista, totales: totalesCobranzas(lista, hoy), hoy, cacUltimo: cac.serie?.ultimo ?? null, errorCac: cac.error, leido };
+}
+
+/** Fuentes públicas en línea, que se consultan desde el servidor (Vercel). */
+export const FUENTES_EN_LINEA = {
+  ipc: { url: "https://apis.datos.gob.ar/series/api/series/?ids=148.3_INIVELNAL_DICI_M_26&limit=1000&format=json", nombre: "INDEC (datos.gob.ar)" },
+  blue: { url: "https://api.argentinadatos.com/v1/cotizaciones/dolares/blue", nombre: "ArgentinaDatos" },
+  oficial: { url: "https://api.argentinadatos.com/v1/cotizaciones/dolares/oficial", nombre: "ArgentinaDatos" },
+};
+
+async function enLinea(url: string, leer: (datos: unknown) => Punto[]): Promise<{ puntos: Punto[]; error: string | null }> {
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(10_000), headers: { accept: "application/json" }, cache: "no-store" });
+    if (!r.ok) return { puntos: [], error: `respondió ${r.status}` };
+    const puntos = leer(await r.json());
+    return { puntos, error: puntos.length ? null : "respuesta sin datos" };
+  } catch (e) {
+    return { puntos: [], error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export interface EstadoFuente {
+  serie: string;
+  fuente: string;
+  /** Último mes con dato. */
+  ultimo: string | null;
+  enLinea: boolean;
+  error: string | null;
+}
+
+export interface Panorama {
+  series: SerieMensual[];
+  materiales: AnalisisMaterial[];
+  fuentes: EstadoFuente[];
+  cacUltimo: string | null;
+}
+
+const panorama = conCache(async (): Promise<Panorama> => {
+  const { sheetId } = configIndicadores();
+  const pestania = (nombre: string, a1: string) => leerGrilla(nombre, a1, false, sheetId).catch(() => [] as Celda[][]);
+  const [{ serie: cac }, ipcHoja, blueHoja, oficialHoja, precios, ipcWeb, blueWeb, oficialWeb] = await Promise.all([
+    serieCac(),
+    pestania("IPC", "A1:EZ12"),
+    pestania("Tipo de Cambio Blue", "A1:H4000"),
+    pestania("Tipo de Cambio Oficial", "A1:H4000"),
+    pestania("Precios Medios", "A1:LZ80"),
+    enLinea(FUENTES_EN_LINEA.ipc.url, serieDeDatosGob),
+    enLinea(FUENTES_EN_LINEA.blue.url, dolarDeArgentinaDatos),
+    enLinea(FUENTES_EN_LINEA.oficial.url, dolarDeArgentinaDatos),
+  ]);
+  const fuentes: EstadoFuente[] = [];
+  const armar = (id: string, nombre: string, grupo: string, unidad: string, web: { puntos: Punto[]; error: string | null }, nombreWeb: string, hoja: Punto[]): SerieMensual => {
+    const puntos = combinar(web.puntos, hoja);
+    const usaWeb = web.puntos.length > 0;
+    fuentes.push({ serie: nombre, fuente: usaWeb ? nombreWeb : "Planilla de indicadores", ultimo: puntos.at(-1)?.mes ?? null, enLinea: usaWeb, error: web.error });
+    return { id, nombre, grupo, unidad, fuente: usaWeb ? nombreWeb : "Planilla de indicadores", puntos };
+  };
+  const ipc = armar("ipc", "Inflación (IPC)", "Precios", "índice", ipcWeb, FUENTES_EN_LINEA.ipc.nombre, leerIpc(ipcHoja));
+  const blue = armar("blue", "Dólar blue", "Dólar", "$ por US$", blueWeb, FUENTES_EN_LINEA.blue.nombre, leerDolarMensual(blueHoja));
+  const oficial = armar("oficial", "Dólar oficial", "Dólar", "$ por US$", oficialWeb, FUENTES_EN_LINEA.oficial.nombre, leerDolarMensual(oficialHoja));
+  const deCac = seriesDeCac(cac);
+  for (const s of deCac) fuentes.unshift({ serie: s.nombre, fuente: "Planilla de indicadores (Índice CAC)", ultimo: s.puntos.at(-1)?.mes ?? null, enLinea: false, error: null });
+  const insumos = leerPreciosMedios(precios);
+  const materiales = analizarTodos(insumos, deCac[0], blue.puntos.length ? blue : null);
+  const destacados = insumos
+    .filter((i) => i.id === "142001" || i.id === "4001")
+    .map((i): SerieMensual => ({ id: `insumo-${i.id}`, nombre: i.id === "4001" ? "Hierro 12 mm" : "Hormigón H30", grupo: "Materiales", unidad: `$ por ${i.unidad}`, fuente: "Precios Medios (planilla)", puntos: i.puntos }));
+  for (const d of destacados) fuentes.push({ serie: d.nombre, fuente: d.fuente, ultimo: d.puntos.at(-1)?.mes ?? null, enLinea: false, error: null });
+  return { series: [...deCac, ipc, blue, oficial, ...destacados], materiales, fuentes, cacUltimo: cac.ultimo };
+});
+
+/** Todo lo del Panorama de indicadores y la alarma de materiales. */
+export async function datosPanorama(opciones?: { fresco?: boolean }): Promise<Panorama & { leido: string }> {
+  const { valor, leido } = await panorama(opciones);
+  return { ...valor, leido };
 }
