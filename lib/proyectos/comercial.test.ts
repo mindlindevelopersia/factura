@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Celda } from "../finanzas/ingresos";
 import { SOCIOS } from "../modulos";
-import { armarComercial, codigoDeVentas, leerSuperficies, precioSimulado, resumen } from "./comercial";
+import { armarComercial, codigoDeVentas, leerSuperficies, precioDepto, precioSimulado, resumen } from "./comercial";
 import { analizarHq, desarrolladores, m2DesarrolladoresEnPlanilla } from "./management";
 
 const c = (valor: Celda["valor"]): Celda => ({ valor, color: null });
@@ -118,6 +118,17 @@ describe("comercial", () => {
     expect(resumen(m.unidades).modalidades).toEqual({ costo: 2, cerrado: 1, canje: 0 });
     expect(m.supuestos.map((s) => s.titulo)).toContain("El coeficiente supone que se venden todas las unidades");
     expect(m.supuestos.find((s) => s.titulo.startsWith("PB:"))?.tipo).toBe("por-confirmar");
+  });
+
+  it("cocheras incluidas en el precio de un depto: se descuentan para el US$/m²", () => {
+    const m = armarComercial(LISTA, VENTAS, SUP, CUENTAS, [{ codigo: "C1", precio: 20000, incluidaEn: "2A", motivo: "Con la 2A.", desde: "31/10/2026" }]);
+    const u = (cod: string) => m.unidades.find((x) => x.codigo === cod)!;
+    expect(u("C1")).toMatchObject({ precioVenta: 20000, incluidaEn: "2A" });
+    expect(u("2A")).toMatchObject({ precioVenta: 180000, precioCochera: 20000 });
+    expect(precioDepto(u("2A"))).toBe(160000);
+    const r = resumen(m.unidades);
+    expect(r.vendido).toMatchObject({ total: 380000, deptos: 360000, cocheras: 20000 });
+    expect(r.vendido.promedioM2).toBeCloseTo(360000 / (95 + 84));
   });
 
   it("aplica las correcciones: reventa, venta caída y contrato", () => {

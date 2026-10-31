@@ -80,7 +80,16 @@ export interface Unidad {
   modalidad: Modalidad | null;
   /** Al costo con tope: lo máximo que puede subir sobre el precio de venta (0,07 = 7%). */
   tope: number | null;
+  /** Depto: lo que vale la cochera que viene incluida en su precio de venta (se descuenta para el US$/m²). */
+  precioCochera: number | null;
+  /** Cochera: el depto en cuyo precio viene incluida. */
+  incluidaEn: string | null;
   fila: number;
+}
+
+/** El precio de venta del depto solo, sin la cochera que venga incluida: el que sirve para el US$/m². */
+export function precioDepto(u: Unidad): number | null {
+  return u.precioVenta == null ? null : u.precioVenta - (u.precioCochera ?? 0);
 }
 
 /**
@@ -95,6 +104,9 @@ export interface AjusteUnidad {
   reventa?: number;
   modalidad?: Modalidad;
   tope?: number;
+  /** Cochera vendida con un depto: a cuánto se tomó y en qué depto viene incluida. */
+  precio?: number;
+  incluidaEn?: string;
   /** Si es algo que todavía hay que verificar: va a "Supuestos" como "a confirmar". */
   aConfirmar?: boolean;
   /** Título corto para "Supuestos" cuando no cambia estado, contrato ni reventa. */
@@ -258,6 +270,8 @@ export function leerListaCompleta(filas: Celda[][]): { unidades: Unidad[]; afuer
       ajuste: null,
       modalidad: null,
       tope: null,
+      precioCochera: null,
+      incluidaEn: null,
       fila: r + 1,
     });
   }
@@ -396,6 +410,15 @@ export function armarComercial(
     u.precioCuenta = c?.length ? c.reduce((s, x) => s + (x.precioUsd ?? 0), 0) || null : null;
     u.precioVenta ??= u.precioCuenta;
   }
+  // Cocheras vendidas junto con un depto: su precio viene dentro del de ese depto.
+  for (const a of ajustes) {
+    const cochera = unidades.find((x) => x.codigo === a.codigo);
+    const depto = a.incluidaEn ? unidades.find((x) => x.codigo === a.incluidaEn) : undefined;
+    if (!cochera || !depto || a.precio == null) continue;
+    cochera.incluidaEn = depto.codigo;
+    cochera.precioVenta = a.precio;
+    depto.precioCochera = (depto.precioCochera ?? 0) + a.precio;
+  }
 
   // Cómo se vendió cada una: casi todas al costo. Precio cerrado y tope, solo si lo dice una
   // corrección; canje, si es de un contratista o el machete dice "Canjeado". "Contado" en Ventas
@@ -526,7 +549,8 @@ export interface ResumenComercial {
   modalidades: Record<Modalidad, number>;
   /** Vendidas que el dueño revende: cuentan como vendidas (la reventa no es del proyecto). */
   enReventa: { cantidad: number; total: number };
-  vendido: { total: number; m2ConPrecio: number; promedioM2: number | null };
+  /** total: lo vendido (con las cocheras que vienen incluidas); deptos: sin ellas; el promedio por m², sin ellas. */
+  vendido: { total: number; deptos: number; cocheras: number; m2ConPrecio: number; promedioM2: number | null };
   /** Lo que falta vender, a precio de lista vigente. */
   porVender: number;
 }
@@ -537,7 +561,9 @@ export function resumen(u: Unidad[]): ResumenComercial {
   const libres = deptos.filter((x) => x.estado === "libre");
   const conPrecio = vendidas.filter((x) => x.precioVenta != null);
   const suma = (xs: Unidad[], f: (x: Unidad) => number) => xs.reduce((s, x) => s + f(x), 0);
+  // Lo que se vendió en total (las cocheras incluidas vienen dentro del precio de su depto) y solo deptos.
   const total = suma(conPrecio, (x) => x.precioVenta!);
+  const soloDeptos = suma(conPrecio, (x) => precioDepto(x)!);
   const m2ConPrecio = suma(conPrecio, (x) => x.supTotal);
   const cocheras = u.filter((x) => x.esCochera);
   return {
@@ -548,7 +574,7 @@ export function resumen(u: Unidad[]): ResumenComercial {
     m2: { total: suma(deptos, (x) => x.supTotal), vendidos: suma(vendidas, (x) => x.supTotal), libres: suma(libres, (x) => x.supTotal) },
     modalidades: { costo: vendidas.filter((x) => x.modalidad === "costo").length, cerrado: vendidas.filter((x) => x.modalidad === "cerrado").length, canje: vendidas.filter((x) => x.modalidad === "canje").length },
     enReventa: { cantidad: vendidas.filter((x) => x.reventa).length, total: suma(vendidas, (x) => x.reventa ?? 0) },
-    vendido: { total, m2ConPrecio, promedioM2: m2ConPrecio ? total / m2ConPrecio : null },
+    vendido: { total, deptos: soloDeptos, cocheras: total - soloDeptos, m2ConPrecio, promedioM2: m2ConPrecio ? soloDeptos / m2ConPrecio : null },
     porVender: suma(libres, (x) => x.precioLista) + suma(cocheras.filter((x) => x.estado === "libre"), (x) => x.precioLista),
   };
 }

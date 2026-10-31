@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { MODALIDADES, type Unidad } from "@/lib/proyectos/comercial";
+import { MODALIDADES, precioDepto, type Unidad } from "@/lib/proyectos/comercial";
 import { Icono } from "../Icono";
 import { BarraLectura } from "../finanzas/comun";
 import { m2, useComercial, useProyectoId, usd } from "./datos";
@@ -249,7 +249,10 @@ function Detalle({ u, base }: { u: Unidad | null; base: string }) {
               <dt>Precio de venta</dt>
               <dd>
                 <strong>{usd(u.precioVenta)}</strong>
-                {u.precioVenta != null && u.supTotal > 0 && <span> · {usd(u.precioVenta / u.supTotal)}/m²</span>}
+                {u.esCochera
+                  ? u.incluidaEn && <span> · incluida en la {u.incluidaEn}</span>
+                  : u.precioVenta != null && u.supTotal > 0 && <span> · {usd(precioDepto(u)! / u.supTotal)}/m²</span>}
+                {u.precioCochera != null && <span className="tabla__sub">Incluye cochera por {usd(u.precioCochera)}: el US$/m² es sin ella.</span>}
               </dd>
             </div>
             <div>
@@ -316,11 +319,16 @@ function modalidad(u: Unidad): string {
 /** El precio que corresponde: el de venta si está vendida, el de lista vigente si está libre. */
 function Precio({ u }: { u: Unidad }) {
   if (u.estado === "vendida") {
+    const depto = precioDepto(u);
     return (
       <>
         {u.precioVenta != null ? usd(u.precioVenta) : "—"}
         <span className="tabla__sub">
-          {u.precioVenta == null ? "Venta sin precio cargado" : `Venta${u.supTotal > 0 ? ` · ${usd(u.precioVenta / u.supTotal)}/m²` : ""}`}
+          {u.precioVenta == null
+            ? "Venta sin precio cargado"
+            : u.esCochera
+              ? `Venta${u.incluidaEn ? ` · incluida en la ${u.incluidaEn}` : ""}`
+              : `Venta${u.supTotal > 0 ? ` · ${usd(depto! / u.supTotal)}/m²` : ""}${u.precioCochera != null ? ` · con cochera (${usd(u.precioCochera)})` : ""}`}
         </span>
         {u.reventa && <span className="tabla__sub unidad__reventa">Reventa: {usd(u.reventa)}</span>}
       </>
