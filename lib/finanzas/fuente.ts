@@ -435,3 +435,24 @@ export async function leerPlanillaCompleta(sheetId: string): Promise<{ pestania:
     throw e;
   }
 }
+
+const cashFlowPorProyecto = new Map<string, ReturnType<typeof conCache<Celda[][]>>>();
+
+/** La pestaña "Cash Flow" del Excel madre del proyecto (el proyectado), tal cual. */
+export async function grillaCashFlow(id: string, opciones?: { fresco?: boolean }): Promise<{ filas: Celda[][]; leido: string }> {
+  const sheet = planillaMadre(id);
+  if (!sheet) throw new FlujoSinConfigurar("El proyecto no tiene configurado su Excel madre.");
+  let lector = cashFlowPorProyecto.get(id);
+  if (!lector) cashFlowPorProyecto.set(id, (lector = conCache(() => leerGrilla("Cash Flow", "A1:BA260", false, sheet))));
+  const { valor, leido } = await lector(opciones);
+  return { filas: valor, leido };
+}
+
+/** El dólar MEP día por día (ArgentinaDatos), para pasar lo real a dólares o pesos del día del pago. */
+export const historicoMep = conCache(async (): Promise<{ fecha: string; venta: number }[]> => {
+  const datos = await leerEnLinea(FUENTES_DOLAR.argentinaDatos.url("bolsa"));
+  if (!Array.isArray(datos)) throw new Error("ArgentinaDatos respondió sin la serie del MEP");
+  return datos
+    .map((x: { fecha?: unknown; venta?: unknown }) => ({ fecha: String(x.fecha ?? "").slice(0, 10), venta: Number(x.venta) }))
+    .filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x.fecha) && x.venta > 0);
+});
