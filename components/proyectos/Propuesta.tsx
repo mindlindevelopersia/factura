@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { nombreMes, sumarMeses } from "@/lib/finanzas/ingresos";
 import { IMAGENES, planoDe } from "@/lib/proyectos/planos";
-import { calcularPropuesta, parametrosIniciales, propuestaAUrl, propuestaDeUrl, resumenPropuesta, type ParametrosPropuesta } from "@/lib/proyectos/propuesta";
+import { calcularPropuesta, parametrosIniciales, propuestaAUrl, propuestaDeUrl, resumenPropuesta, type ParametrosPropuesta, type Propuesta as CalculoPropuesta } from "@/lib/proyectos/propuesta";
 import { proyecto as buscarProyecto } from "@/lib/modulos";
 import { Icono } from "../Icono";
 import { useDolarHoy } from "../indicadores/Dolar";
@@ -23,6 +23,95 @@ const fechaLarga = (f: string) => {
   return `${Number(d)} de ${nombreMes(`${a}-${m}`).toLowerCase().replace(/ \d{4}$/, "")} de ${a}`;
 };
 const mesCorto = (m: string) => nombreMes(m, true);
+const pct = (x: number) => `${(Math.round(x * 1000) / 10).toLocaleString("es-AR")}%`;
+
+interface LineaPlan {
+  concepto: string;
+  detalle?: string;
+  monto: string;
+  aparte?: string;
+  clase?: string;
+}
+
+/**
+ * Cómo se paga cada parte, como en la planilla de Virginia: A (boleto certificado) con su anticipo,
+ * saldo, cuotas y cada refuerzo con su mes y su %; B (compromiso de deuda) con su anticipo, saldo y
+ * refuerzos. Si no se muestra B, un solo plan con todo junto.
+ */
+function planesDePago(p: ParametrosPropuesta, r: CalculoPropuesta) {
+  const cuotas = p.cuotas.cantidad;
+  const hasta = sumarMeses(p.cuotas.desde, Math.max(0, cuotas - 1));
+  const lineaCuotas = (): LineaPlan[] =>
+    cuotas && r.A.cuotaArs
+      ? [{ concepto: `Cuotas mensuales`, detalle: `${cuotas === 1 ? nombreMes(p.cuotas.desde) : `${nombreMes(p.cuotas.desde)} a ${nombreMes(hasta)}`} · total ${ars(r.A.cuotaArs * cuotas)}`, monto: `${cuotas} × ${ars(r.A.cuotaArs)}` }]
+      : [];
+  const refuerzos = (lista: { mes: string; ars: number }[]): LineaPlan[] =>
+    lista.map((x, i) => ({
+      concepto: `Refuerzo${lista.length > 1 ? ` ${i + 1}` : ""} · ${nombreMes(x.mes)}`,
+      detalle: `${pct(x.ars / r.totalArs)} del valor`,
+      monto: ars(x.ars),
+    }));
+  const anticipo = (u: number, a: number): LineaPlan[] => (u ? [{ concepto: "Anticipo (a la firma)", monto: usd(u), aparte: ars(a) }] : []);
+  const saldo = (n: number, cuotas: number, refuerzos: number): LineaPlan => ({
+    concepto: "Saldo en pesos",
+    detalle: `${[cuotas ? `${cuotas} ${cuotas === 1 ? "cuota" : "cuotas"}` : "", refuerzos ? `${refuerzos} ${refuerzos === 1 ? "refuerzo" : "refuerzos"}` : ""].filter(Boolean).join(" + ")} · se ajusta por CAC`,
+    monto: ars(n),
+    clase: "propuesta-doc__saldo",
+  });
+
+  if (!p.mostrarB) {
+    const meses = new Map<string, number>();
+    for (const x of [...r.A.refuerzos, ...r.B.refuerzos]) meses.set(x.mes, (meses.get(x.mes) ?? 0) + x.ars);
+    return [
+      {
+        titulo: "Plan de pagos",
+        subtitulo: `${usd(p.precioUsd)} · ${ars(r.totalArs)}`,
+        lineas: [
+          ...anticipo(r.A.anticipoUsd + r.B.anticipoUsd, r.A.anticipoArs + r.B.anticipoArs),
+          saldo(r.A.saldoArs + r.B.saldoArs, cuotas, meses.size),
+          ...lineaCuotas(),
+          ...refuerzos([...meses].sort(([x], [y]) => x.localeCompare(y)).map(([mes, ars]) => ({ mes, ars }))),
+        ],
+      },
+    ];
+  }
+  return [
+    {
+      titulo: `A · Boleto certificado (${pct(p.formal)})`,
+      subtitulo: `${usd(r.A.usd)} · ${ars(r.A.ars)}`,
+      lineas: [...anticipo(r.A.anticipoUsd, r.A.anticipoArs), saldo(r.A.saldoArs, cuotas, r.A.refuerzos.length), ...lineaCuotas(), ...refuerzos(r.A.refuerzos)],
+    },
+    {
+      titulo: `B · Compromiso de deuda (${pct(1 - p.formal)})`,
+      subtitulo: `${usd(r.B.usd)} · ${ars(r.B.ars)}`,
+      lineas: [...anticipo(r.B.anticipoUsd, r.B.anticipoArs), saldo(r.B.saldoArs, 0, r.B.refuerzos.length), ...refuerzos(r.B.refuerzos)],
+    },
+  ];
+}
+
+/** Cada pago en su renglón (la cuota y el refuerzo por separado, con su parte) y el total de cada mes. */
+function detalleMesAMes(p: ParametrosPropuesta, r: CalculoPropuesta) {
+  let lineas = r.cronograma.map((x) => ({
+    ...x,
+    concepto: x.concepto.replace(/^Anticipo [AB] \(a la firma\)$/, "Anticipo").replace(/^Refuerzo [AB]( \d+)?$/, (_, n) => `Refuerzo${n ?? ""}`),
+  }));
+  if (!p.mostrarB) {
+    // Sin B, el anticipo y los refuerzos del mismo mes van juntos.
+    const juntas: typeof lineas = [];
+    for (const l of lineas) {
+      const tipo = l.concepto.startsWith("Cuota") ? null : l.concepto.split(" ")[0];
+      const igual = tipo && juntas.find((x) => x.mes === l.mes && x.concepto.startsWith(tipo));
+      if (igual) igual.monto += l.monto;
+      else juntas.push({ ...l, concepto: tipo ?? l.concepto });
+    }
+    lineas = juntas;
+  }
+  const meses = [...new Set(lineas.map((x) => x.mes ?? ""))];
+  return meses.map((mes) => {
+    const del = lineas.filter((x) => (x.mes ?? "") === mes);
+    return { mes, lineas: del, total: del.reduce((s, x) => s + x.monto, 0) };
+  });
+}
 
 /** Arma la propuesta comercial de una unidad (como la de Virginia) y la deja lista para guardar en PDF. */
 export function Propuesta() {
@@ -91,10 +180,8 @@ export function Propuesta() {
   if (error) return <p className="alerta alerta--error">{error}</p>;
   if (!p || !r || !datos) return <p className="ficha__nota">Preparando la propuesta (lista de precios y dólar del día)…</p>;
 
-  // Por mes: lo de A y B juntos (o por separado, si se muestra B).
-  const meses = [...new Set(r.cronograma.map((x) => x.mes ?? ""))];
-  const cuotasDesde = p.cuotas.desde;
-  const cuotasHasta = sumarMeses(p.cuotas.desde, Math.max(0, p.cuotas.cantidad - 1));
+  const planes = planesDePago(p, r);
+  const porMes = detalleMesAMes(p, r);
 
   return (
     <div className="propuesta">
@@ -279,83 +366,100 @@ export function Propuesta() {
                 {ars(r.totalArs)} al dólar MEP de ${p.tipoCambio.toLocaleString("es-AR")}
               </span>
             </div>
-            {p.mostrarB && (
-              <div className="propuesta-doc__partes">
-                <div>
-                  <span>A · Boleto ({Math.round(p.formal * 100)}%)</span>
-                  <strong>{usd(r.A.usd)}</strong>
-                  <small>{ars(r.A.ars)}</small>
-                </div>
-                <div>
-                  <span>B · Compromiso ({Math.round((1 - p.formal) * 100)}%)</span>
-                  <strong>{usd(r.B.usd)}</strong>
-                  <small>{ars(r.B.ars)}</small>
-                </div>
-              </div>
-            )}
           </div>
         </section>
 
         <section className="propuesta-doc__pagos">
           <h2>Cómo se paga</h2>
-          <div className="propuesta-doc__resumen">
-            <div>
-              <span className="propuesta-doc__etiqueta">A la firma</span>
-              <strong>{usd(p.anticipoAUsd + p.anticipoBUsd)}</strong>
-              <small>{p.mostrarB ? `Anticipo A ${usd(p.anticipoAUsd)} + anticipo B ${usd(p.anticipoBUsd)}` : "Anticipo en dólares"}</small>
-            </div>
-            <div>
-              <span className="propuesta-doc__etiqueta">Cuotas mensuales</span>
-              <strong>
-                {p.cuotas.cantidad} × {ars(r.A.cuotaArs)}
-              </strong>
-              <small>
-                De {mesCorto(cuotasDesde)} a {mesCorto(cuotasHasta)}
-              </small>
-            </div>
-            <div>
-              <span className="propuesta-doc__etiqueta">Refuerzos</span>
-              <strong>{r.A.refuerzos.length + r.B.refuerzos.length}</strong>
-              <small>{[...new Set([...r.A.refuerzos.map((x) => x.mes), ...r.B.refuerzos.map((x) => x.mes)])].sort().map(mesCorto).join(" · ")}</small>
-            </div>
+          {p.mostrarB && (
+            <table className="propuesta-doc__tabla propuesta-doc__aportes">
+              <thead>
+                <tr>
+                  <th>Concepto</th>
+                  <th className="tabla__numero">US$</th>
+                  <th className="tabla__numero">$</th>
+                  <th className="tabla__numero">%</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="propuesta-doc__fuerte">
+                  <td>Valor estimado</td>
+                  <td className="tabla__numero">{usd(p.precioUsd)}</td>
+                  <td className="tabla__numero">{ars(r.totalArs)}</td>
+                  <td className="tabla__numero">100%</td>
+                </tr>
+                <tr>
+                  <td>Aporte A · Boleto certificado</td>
+                  <td className="tabla__numero">{usd(r.A.usd)}</td>
+                  <td className="tabla__numero">{ars(r.A.ars)}</td>
+                  <td className="tabla__numero">{pct(p.formal)}</td>
+                </tr>
+                <tr>
+                  <td>Aporte B · Compromiso de deuda</td>
+                  <td className="tabla__numero">{usd(r.B.usd)}</td>
+                  <td className="tabla__numero">{ars(r.B.ars)}</td>
+                  <td className="tabla__numero">{pct(1 - p.formal)}</td>
+                </tr>
+              </tbody>
+            </table>
+          )}
+
+          <div className={`propuesta-doc__planes${p.mostrarB ? "" : " propuesta-doc__planes--uno"}`}>
+            {planes.map((plan) => (
+              <div key={plan.titulo} className="propuesta-doc__plan">
+                <header>
+                  <span>{plan.titulo}</span>
+                  {plan.subtitulo && <small>{plan.subtitulo}</small>}
+                </header>
+                <dl>
+                  {plan.lineas.map((l) => (
+                    <div key={l.concepto} className={l.clase}>
+                      <dt>
+                        {l.concepto}
+                        {l.detalle && <small>{l.detalle}</small>}
+                      </dt>
+                      <dd>
+                        {l.monto}
+                        {l.aparte && <small>{l.aparte}</small>}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ))}
           </div>
+
+          <h3 className="propuesta-doc__subtitulo">Detalle mes a mes</h3>
           <table className="propuesta-doc__tabla">
             <thead>
               <tr>
                 <th>Mes</th>
                 <th>Concepto</th>
-                {p.mostrarB ? (
-                  <>
-                    <th className="tabla__numero">A</th>
-                    <th className="tabla__numero">B</th>
-                  </>
-                ) : (
-                  <th className="tabla__numero">Monto</th>
-                )}
+                {p.mostrarB && <th>Parte</th>}
+                <th className="tabla__numero">Monto</th>
+                <th className="tabla__numero">Total del mes</th>
               </tr>
             </thead>
             <tbody>
-              {meses.map((m) => {
-                const del = r.cronograma.filter((x) => (x.mes ?? "") === m);
-                const suma = (parte?: "A" | "B") => del.filter((x) => !parte || x.parte === parte).reduce((s, x) => s + x.monto, 0);
-                const moneda = del[0]?.moneda ?? "ARS";
-                const fmt = (n: number) => (n ? (moneda === "USD" ? usd(n) : ars(n)) : "—");
-                const concepto = [...new Set(del.map((x) => x.concepto.replace(/ A( \d+)?$| B( \d+)?$/, "").replace(/^Anticipo [AB] \(a la firma\)$/, "Anticipo")))].join(" + ");
-                return (
-                  <tr key={m || "firma"}>
-                    <td>{m ? mesCorto(m) : "Firma"}</td>
-                    <td>{concepto}</td>
-                    {p.mostrarB ? (
-                      <>
-                        <td className="tabla__numero">{fmt(suma("A"))}</td>
-                        <td className="tabla__numero">{fmt(suma("B"))}</td>
-                      </>
-                    ) : (
-                      <td className="tabla__numero">{fmt(suma())}</td>
+              {porMes.map(({ mes, lineas, total }) =>
+                lineas.map((l, i) => (
+                  <tr key={`${mes}-${l.concepto}-${l.parte}`} className={i === lineas.length - 1 ? "propuesta-doc__fin-mes" : undefined}>
+                    {i === 0 && <td rowSpan={lineas.length}>{mes ? mesCorto(mes) : "Firma"}</td>}
+                    <td>{l.concepto}</td>
+                    {p.mostrarB && (
+                      <td>
+                        <span className={`propuesta-doc__parte propuesta-doc__parte--${l.parte}`}>{l.parte}</span>
+                      </td>
+                    )}
+                    <td className="tabla__numero">{l.moneda === "USD" ? usd(l.monto) : ars(l.monto)}</td>
+                    {i === 0 && (
+                      <td className="tabla__numero propuesta-doc__total-mes" rowSpan={lineas.length}>
+                        {lineas.every((x) => x.moneda === "USD") ? usd(total) : lineas.every((x) => x.moneda === "ARS") ? ars(total) : "—"}
+                      </td>
                     )}
                   </tr>
-                );
-              })}
+                )),
+              )}
             </tbody>
           </table>
         </section>

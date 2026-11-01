@@ -13,7 +13,7 @@ Comercial → Propuesta comercial (también "Armar propuesta" desde la ficha del
 
 ## El documento
 
-Franja negra con el logo de Mindlin y "LERMA 439" escrito, render de portada, para quién es, fecha y vigencia (7 días), la unidad con sus superficies y su **plano**, el aporte estimado en dólares y pesos (y A/B, si se muestra), cómo se paga mes a mes y las notas (al costo, CAC, pesos, plazos, vigencia).
+Franja negra con el logo de Mindlin y "LERMA 439" escrito, render de portada, para quién es, fecha y vigencia (7 días), la unidad con sus superficies y su **plano**, el aporte estimado en dólares y pesos, y "Cómo se paga" como en la planilla de Virginia: la tabla Valor estimado / Aporte A / Aporte B (US$, $ y %), un recuadro por parte (A · Boleto certificado: anticipo, saldo, cuotas con cantidad, monto y meses, y cada refuerzo con su mes, % y monto; B · Compromiso de deuda: anticipo, saldo y refuerzos) y, como detalle, la tabla mes a mes con cada pago en su renglón (cuota y refuerzo por separado, con su parte) y el total del mes. Si no se muestra B, un solo recuadro con todo junto. Después, las notas (al costo, CAC, pesos, plazos, vigencia).
 
 "Copiar link" guarda los parámetros en el link. "Registrar en el CRM" la deja en el historial del contacto, lo pasa a Propuesta enviada y agenda el seguimiento a 2 días.
 
