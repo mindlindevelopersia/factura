@@ -27,7 +27,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ proyect
   const ahora = new Date().toISOString();
   const c: Contacto = {
     id: nuevoId(),
-    proyecto: ctx.proyecto.id,
+    proyectos: datos.proyectos?.length ? datos.proyectos : [ctx.proyecto.id],
     nombre: datos.nombre!.trim(),
     telefono: datos.telefono ?? "",
     mail: datos.mail ?? "",

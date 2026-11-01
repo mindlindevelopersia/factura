@@ -301,6 +301,12 @@ function Detalle({ u, base }: { u: Unidad | null; base: string }) {
             : `Excel madre → "Lista de precios", fila ${u.fila}. Precio de lista = valor con amenities + aumento por altura.`
         }
       />
+      {(u.estado === "libre" || u.reventa) && !u.esCochera && (
+        <Link href={`${base}/comercial/propuesta?unidad=${u.codigo}`} className="btn btn--primario btn--chico">
+          Armar propuesta
+          <Icono nombre="flecha" size={16} />
+        </Link>
+      )}
       {u.estado === "vendida" && !u.contrato && (
         <Link href={`${base}/inversores/cuentas-corrientes`} className="btn btn--borde btn--chico">
           Ver cuentas corrientes

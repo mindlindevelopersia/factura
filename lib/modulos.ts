@@ -48,6 +48,8 @@ export interface Proyecto {
   planillaMadre?: string;
   /** Cómo se miden los m² para el US$/m² (ver OpcionesComercial). */
   comercial?: OpcionesComercial;
+  /** Para los proyectos en preparación: qué ítems del checklist de alta ya están (ids de lib/proyectos/alta.ts). */
+  altaLista?: string[];
   /** Lo que se sabe de algunas unidades y la planilla todavía no dice (reventas, contratos, ventas caídas). */
   ajustes?: AjusteUnidad[];
 }
@@ -120,6 +122,7 @@ export const PROYECTOS: Proyecto[] = [
     vehiculo: "Fideicomiso",
     descripcion: "En preparación",
     estado: "bloqueado",
+    altaLista: ["nombre", "vehiculo"],
   },
 ];
 
@@ -154,6 +157,12 @@ const AREAS_DE_PROYECTO: { sub: string; nombre: string; descripcion: string; ico
         sub: "comercial/lista-de-precios",
         nombre: "Lista de precios",
         descripcion: "La lista vigente: precio por m², ajuste por altura y simulador de lo que vale lo que falta vender.",
+        beta: true,
+      },
+      {
+        sub: "comercial/propuesta",
+        nombre: "Propuesta comercial",
+        descripcion: "Armá la propuesta de una unidad (anticipos, cuotas y refuerzos al MEP de hoy) con el plano, lista para mandar en PDF.",
         beta: true,
       },
       {

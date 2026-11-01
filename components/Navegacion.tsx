@@ -95,11 +95,17 @@ export function Navegacion({ cerrar }: { cerrar?: ReactNode }) {
       {PROYECTOS.map((p) => {
         if (p.estado === "bloqueado") {
           return (
-            <span key={p.id} className="navegacion__area navegacion__area--bloqueada" title="Todavía no se puede entrar: está en preparación">
+            <Link
+              key={p.id}
+              href={rutaProyecto(p.id)}
+              className={`navegacion__area navegacion__area--bloqueada${dentro(rutaProyecto(p.id)) ? " navegacion__area--activa" : ""}`}
+              aria-current={actual(rutaProyecto(p.id))}
+              title="En preparación: ver qué falta para abrirlo"
+            >
               <Icono nombre="proyecto" size={18} />
               {p.nombre}
               <EtiquetaBeta />
-            </span>
+            </Link>
           );
         }
         const base = rutaProyecto(p.id);

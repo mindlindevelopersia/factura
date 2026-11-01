@@ -16,6 +16,7 @@ import { PROYECTOS, proyecto as buscarProyecto } from "../modulos";
 import { resumen } from "../proyectos/comercial";
 import { hoyBA, tablero, temperatura, todasLasAlarmas, unidadesPara } from "../crm/alarmas";
 import { leerCrm } from "../crm/fuente";
+import { esDelProyecto } from "../crm/modelo";
 import { estadosDeUnidades, unidadesDisponibles } from "../finanzas/fuente";
 
 /**
@@ -310,7 +311,7 @@ async function contextoInicio(): Promise<Contexto> {
 
 async function contextoCrm(id: string): Promise<Contexto> {
   const [{ contactos: todos, actividad }, unidades, estados] = await Promise.all([leerCrm(), unidadesDisponibles(id), estadosDeUnidades(id)]);
-  const contactos = todos.filter((c) => !c.proyecto || c.proyecto === id);
+  const contactos = todos.filter((c) => esDelProyecto(c, id));
   const ahora = new Date().toISOString();
   const hoy = hoyBA();
   const minimo = unidades.length ? Math.min(...unidades.map((u) => u.precioUsd)) : null;
@@ -326,6 +327,7 @@ async function contextoCrm(id: string): Promise<Contexto> {
       alarmas: todasLasAlarmas(contactos, ahora, minimo, estados).map((a) => `[${a.nivel}] ${a.texto}`),
       contactos: contactos.map((c) => ({
         nombre: c.nombre,
+        proyectos: c.proyectos,
         etapa: c.etapa,
         temperatura: temperatura(c, hoy, minimo),
         telefono: c.telefono || null,

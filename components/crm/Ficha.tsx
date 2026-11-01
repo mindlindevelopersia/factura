@@ -21,8 +21,10 @@ import {
   type Temperatura,
 } from "@/lib/crm/modelo";
 import { telefonoWhatsapp } from "@/lib/inversores/cobranzas";
-import { proyecto as buscarProyecto } from "@/lib/modulos";
+import { PROYECTOS, proyecto as buscarProyecto } from "@/lib/modulos";
+import Link from "next/link";
 import { Icono } from "../Icono";
+import { useBaseProyecto } from "../proyecto";
 import { fechaCorta, sumarDias, usd, type Crm } from "./datos";
 
 export function ChipTemperatura({ t, manual }: { t: Temperatura | null; manual?: boolean }) {
@@ -46,11 +48,12 @@ export function Ficha({ crm, id, cerrar }: { crm: Crm; id: string; cerrar: () =>
 function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => void }) {
   const datos = crm.datos!;
   const hoy = hoyBA(new Date(datos.ahora));
-  const proyecto = buscarProyecto(c.proyecto || crm.proyecto)?.nombre ?? "el proyecto";
+  const proyecto = buscarProyecto(crm.proyecto)?.nombre ?? "el proyecto";
   const temp = temperatura(c, hoy, crm.precioMinimo);
   const sirven = useMemo(() => unidadesPara(c, datos.unidades), [c, datos.unidades]);
   const alarmas = alarmasDe(c, datos.ahora, crm.precioMinimo, crm.estados);
   const historial = datos.actividad.filter((a) => a.contactoId === c.id);
+  const baseProyecto = useBaseProyecto();
 
   // Mensaje
   const plantilla = useMemo(() => mensajeSugerido(c, sirven, proyecto, datos.usuario), [c, sirven, proyecto, datos.usuario]);
@@ -236,6 +239,9 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
                   Llamar
                 </a>
               )}
+              <Link className="btn btn--chico btn--borde" href={`${baseProyecto}/comercial/propuesta?contacto=${c.id}${c.unidades[0] ? `&unidad=${c.unidades[0]}` : ""}`}>
+                Armar propuesta
+              </Link>
             </div>
             {canal === "whatsapp" ? (
               <textarea className="crm-ficha__mensaje" rows={5} value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
@@ -449,6 +455,23 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
               <Campo etiqueta="Unidades de interés" valor={(valor("unidades") as string[]).join(", ")} poner={(v) => cambiar("unidades", v.split(/[,;\s]+/).map((x) => x.trim().toUpperCase()).filter(Boolean))} />
               <Elegir etiqueta="Responsable" valor={valor("responsable") as string} opciones={["Mati", "Tade"]} poner={(v) => cambiar("responsable", v)} />
             </div>
+            <fieldset className="crm-ficha__proyectos">
+              <legend>Proyectos que le interesan</legend>
+              {PROYECTOS.map((p) => {
+                const actuales = (valor("proyectos") as string[]) ?? [];
+                return (
+                  <label key={p.id}>
+                    <input
+                      type="checkbox"
+                      checked={actuales.includes(p.id)}
+                      onChange={(e) => cambiar("proyectos", e.target.checked ? [...actuales, p.id] : actuales.filter((x) => x !== p.id))}
+                    />{" "}
+                    {p.nombre}
+                    {p.estado === "bloqueado" && " (en preparación)"}
+                  </label>
+                );
+              })}
+            </fieldset>
             <label className="campo">
               Notas
               <textarea rows={3} value={valor("notas") as string} onChange={(e) => cambiar("notas", e.target.value)} />
