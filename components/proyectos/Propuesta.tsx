@@ -7,7 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { nombreMes, sumarMeses } from "@/lib/finanzas/ingresos";
 import { IMAGENES, planoDe } from "@/lib/proyectos/planos";
-import { calcularPropuesta, nombreDelPdf, parametrosIniciales, propuestaAUrl, propuestaDeUrl, resumenPropuesta, type ParametrosPropuesta, type Propuesta as CalculoPropuesta } from "@/lib/proyectos/propuesta";
+import { calcularPropuesta, ENTREGA, nombreDelPdf, parametrosIniciales, propuestaAUrl, propuestaDeUrl, resumenPropuesta, type ParametrosPropuesta, type Propuesta as CalculoPropuesta } from "@/lib/proyectos/propuesta";
 import { mensajePropuesta, whatsappPropuesta, type PropuestaGuardada } from "@/lib/proyectos/propuestasGuardadas";
 import { proyecto as buscarProyecto } from "@/lib/modulos";
 import { leerJson } from "../formato";
@@ -17,7 +17,6 @@ import { useCrm } from "../crm/datos";
 import { m2, useComercial, useProyectoId } from "./datos";
 
 /** Mes de entrega de la obra (hasta cuándo van las cuotas por defecto). */
-const ENTREGA: Record<string, string> = { "lerma-439": "2028-04" };
 
 const usd = (n: number) => `US$ ${Math.round(n).toLocaleString("es-AR")}`;
 const ars = (n: number) => `$ ${Math.round(n).toLocaleString("es-AR")}`;

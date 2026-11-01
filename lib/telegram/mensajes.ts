@@ -103,7 +103,11 @@ const pesos = (n: number, moneda: string) =>
   `${moneda === "ARS" ? "$" : `${moneda} `}${n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export const TEXTOS = {
-  ayuda: "Mandame las facturas en PDF o como foto, una por mensaje. Las leo y quedan para revisar en la web.",
+  ayuda:
+    "Hola, soy Oliver, el asistente del hub. Escribime lo que va pasando y lo cargo:\n\n• Tareas: \"mañana llamar a la constructora por el hormigón, que lo haga Eliana\"\n• Pendientes: \"¿qué tengo para esta semana?\"\n• Leads: \"nuevo lead Juan Pérez, lo refirió Lola, le interesa la 2C\"\n• Seguimientos: \"hablé con Juan, quiere la propuesta el lunes\"\n• Propuestas: \"armá una propuesta de la 2C para Juan Pérez\"\n• Facturas: mandámelas en PDF o foto, una por mensaje.\n\nSi me falta algo, te pregunto. /nuevo para empezar una charla de cero.",
+  sinAsistente: "Para entender mensajes escritos me falta la clave de la IA (ANTHROPIC_API_KEY en Vercel). Mientras tanto, mandame facturas en PDF o foto.",
+  reiniciado: "Listo, arrancamos de cero. ¿Qué pasó?",
+  noPude: (motivo: string) => `Uy, no pude: ${motivo}`,
   noVinculado: (appUrl: string) =>
     `Hola, soy el bot de facturas de Mindlin. Para mandarme facturas, primero conectá este Telegram a tu mail: entrá a ${appUrl}${RUTA_FACTURAS} , pestaña "Subir", y tocá "Conectar mi Telegram". Se abre este chat de nuevo; tocá "Iniciar" y listo.`,
   codigoInvalido: "Ese link de conexión venció (duran una hora) o no sirve. Generá uno nuevo desde la web de facturas: pestaña \"Subir\", \"Conectar mi Telegram\".",
@@ -117,7 +121,7 @@ export const TEXTOS = {
     "No tengo una factura tuya de la última media hora para anotarle esto. Mandá primero la factura y después el comentario, o escribilo como texto de la foto o del archivo.",
 };
 
-function resumen(item: ItemCola): string {
+export function resumen(item: ItemCola): string {
   const f = item.lectura?.factura;
   if (!f) return item.archivo.nombre;
   return [contraparte(f), comprobante(f), pesos(f.total, f.moneda)].filter(Boolean).join(" · ");

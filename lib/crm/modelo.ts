@@ -252,3 +252,37 @@ export function nuevoId(): string {
 export const esDelProyecto = (c: Pick<Contacto, "proyectos">, id: string) => !c.proyectos.length || c.proyectos.includes(id);
 
 export const abierto = (c: Pick<Contacto, "etapa">) => ETAPAS_ABIERTAS.includes(c.etapa);
+
+/** Un contacto nuevo con lo que se cargó (lo demás, vacío): lo usan la pantalla y el bot de Telegram. */
+export function contactoNuevo(datos: CambiosContacto, o: { id: string; proyecto: string; usuario: string; ahora: string }): Contacto {
+  return {
+    id: o.id,
+    proyectos: datos.proyectos?.length ? datos.proyectos : [o.proyecto],
+    nombre: datos.nombre!.trim(),
+    telefono: datos.telefono ?? "",
+    mail: datos.mail ?? "",
+    tipo: datos.tipo ?? "Beneficiario al costo",
+    origen: datos.origen ?? "",
+    referido: datos.referido ?? "",
+    etapa: datos.etapa ?? "Nuevo",
+    temperaturaManual: datos.temperaturaManual ?? null,
+    presupuestoUsd: datos.presupuestoUsd ?? null,
+    formaPago: datos.formaPago ?? "",
+    plazo: datos.plazo ?? "",
+    uso: datos.uso ?? "",
+    ambientes: datos.ambientes ?? "",
+    unidades: datos.unidades ?? [],
+    proximoPaso: datos.proximoPaso ?? "",
+    proximaFecha: datos.proximaFecha ?? null,
+    motivoPerdida: datos.motivoPerdida ?? "",
+    volverAContactar: datos.volverAContactar ?? null,
+    notas: datos.notas ?? "",
+    responsable: datos.responsable || o.usuario,
+    creado: o.ahora,
+    actualizado: o.ahora,
+    entroEtapa: o.ahora,
+    ultimoContacto: null,
+    unidadVendida: datos.unidadVendida ?? "",
+    precioVentaUsd: datos.precioVentaUsd ?? null,
+  };
+}

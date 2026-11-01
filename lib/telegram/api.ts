@@ -44,6 +44,17 @@ const ESPERAS_MS = [1000, 3000];
 /** El usuario del bot no cambia: se pide una vez por token. */
 const bots = new Map<string, Promise<{ username: string; first_name: string }>>();
 
+/** Los botones de respuesta: de a dos por fila (de a uno si son largos). */
+export function tecladoDe(opciones: string[]): { text: string }[][] {
+  const filas: { text: string }[][] = [];
+  for (const o of opciones) {
+    const ultima = filas.at(-1);
+    if (ultima && ultima.length < 2 && o.length <= 18 && ultima[0].text.length <= 18) ultima.push({ text: o });
+    else filas.push([{ text: o }]);
+  }
+  return filas;
+}
+
 /** Lo justo de la API de bots de Telegram. */
 export class TelegramApi {
   constructor(
@@ -91,12 +102,14 @@ export class TelegramApi {
   /** Se puede reemplazar en los tests. */
   esperar = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-  async enviar(chat: number, texto: string, responderA?: number): Promise<void> {
+  /** Manda un mensaje. Con `opciones`, abajo aparecen botones que, al tocarlos, mandan ese texto. */
+  async enviar(chat: number, texto: string, responderA?: number, opciones?: string[]): Promise<void> {
     await this.llamar("sendMessage", {
       chat_id: chat,
       text: texto,
       link_preview_options: { is_disabled: true },
       ...(responderA ? { reply_parameters: { message_id: responderA, allow_sending_without_reply: true } } : {}),
+      ...(opciones?.length ? { reply_markup: { keyboard: tecladoDe(opciones), one_time_keyboard: true, resize_keyboard: true } } : {}),
     });
   }
 
