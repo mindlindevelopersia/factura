@@ -7684,3 +7684,151 @@ h1 .etiqueta-beta {
 .nota__panel small * {
   font-size: 12px;
 }
+
+/* Marketing: la tarjeta con la idea de cada submódulo */
+.idea-mk__principios {
+  margin-bottom: 20px;
+  padding: 18px 22px;
+  background: var(--gris-claro);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+}
+.idea-mk__principios h2 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--negro);
+}
+.idea-mk__principios ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.idea-mk {
+  display: grid;
+  gap: 18px;
+  max-width: 980px;
+  padding: 24px;
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra);
+}
+.idea-mk__cabeza {
+  display: grid;
+  gap: 10px;
+}
+.idea-mk__sello {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--lima);
+  color: var(--negro);
+  font-size: 12px;
+  font-weight: 700;
+}
+.idea-mk__objetivo {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--negro);
+}
+.idea-mk__bloque h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 15px;
+  color: var(--negro);
+}
+.idea-mk__bloque h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--negro);
+}
+.idea-mk__bloque ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.idea-mk__etapas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+.idea-mk__etapa {
+  padding: 14px 16px;
+  border: 1px solid var(--borde);
+  border-top: 3px solid var(--lima);
+  border-radius: 10px;
+}
+.idea-mk__agente {
+  padding: 16px;
+  border-radius: 10px;
+  background: #eef4fb;
+}
+.idea-mk__dos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.idea-mk__bloque .idea-mk__integraciones {
+  list-style: none;
+  padding: 0;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+.idea-mk__integraciones li {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--gris-claro);
+  border-radius: 8px;
+}
+.idea-mk__integraciones strong {
+  color: var(--negro);
+}
+.idea-mk__integraciones small {
+  color: var(--texto-suave);
+  font-size: 12px;
+}
+.idea-mk__decisiones li::marker {
+  content: "? ";
+  font-weight: 700;
+  color: var(--azul);
+}
+.idea-mk__primer-paso {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--negro);
+  color: var(--blanco);
+}
+.idea-mk__primer-paso svg {
+  flex: none;
+  color: var(--lima);
+  margin-top: 2px;
+}
+.idea-mk__primer-paso div {
+  display: grid;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.idea-mk__primer-paso strong {
+  color: var(--lima);
+}

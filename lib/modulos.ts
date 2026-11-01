@@ -9,7 +9,7 @@
 
 import type { AjusteUnidad, OpcionesComercial } from "./proyectos/comercial";
 
-export type IconoArea = "prefactibilidad" | "producto" | "calendario" | "tareas" | "administracion" | "finanzas" | "inversores" | "indicadores" | "comercial" | "management" | "proyecto";
+export type IconoArea = "marketing" | "prefactibilidad" | "producto" | "calendario" | "tareas" | "administracion" | "finanzas" | "inversores" | "indicadores" | "comercial" | "management" | "proyecto";
 
 export interface Modulo {
   nombre: string;
@@ -320,6 +320,20 @@ AREAS_EMPRESA.push({
   href: "/prefactibilidad",
   icono: "prefactibilidad",
   modulos: [],
+});
+
+AREAS_EMPRESA.push({
+  nombre: "Marketing",
+  descripcion: "SEO y keywords, blog (tablero y redactor), pauta (monitor y optimizador), contenido para redes y analítica. En construcción: cada parte tiene su tarjeta con la idea.",
+  href: "/marketing",
+  icono: "marketing",
+  modulos: [
+    { nombre: "SEO y keywords", descripcion: "Qué busca la gente, por qué palabras nos encuentran y qué mejorar del sitio.", href: "/marketing/seo", beta: true },
+    { nombre: "Blog", descripcion: "El tablero de los artículos (cuántos, de qué, cuáles funcionan) y el redactor que escribe los nuevos.", href: "/marketing/blog", beta: true },
+    { nombre: "Pauta", descripcion: "El monitor de las campañas de Meta Ads: gasto, resultados, leads, y un optimizador que recomienda.", href: "/marketing/pauta", beta: true },
+    { nombre: "Contenido para redes", descripcion: "Propuestas constantes de qué publicar y el calendario de lo que se hace.", href: "/marketing/contenido", beta: true },
+    { nombre: "Analítica", descripcion: "Que Google Analytics y Search Console midan bien: la base de todo lo demás.", href: "/marketing/analitica", beta: true },
+  ],
 });
 
 AREAS_EMPRESA.push({
