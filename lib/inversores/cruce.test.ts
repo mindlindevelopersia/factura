@@ -64,6 +64,19 @@ describe("cruce de las cuentas con Ventas y el Flujo", () => {
     expect(avisos(r, "3C")).toEqual(["cruce: El costo estimado no coincide con Ventas", "cruce: El anticipo no coincide con Ventas"]);
   });
 
+  it("con la ficha de la operación completa pesos, formal, informal y mes base, y avisa la unidad mal puesta", () => {
+    const ficha = (unidad: string | null, nombre: string, costoUsd: number, costoArs: number | null, fila = 600) => ({ nombre, unidad, mesBase: "2025-05", costoUsd, costoArs, formalUsd: 51701, informalUsd: 23000, fila });
+    const r = cruzarCuentas(
+      cc([cuenta("2D", "Valentín Italiano", null), cuenta("PB", "Marcelo Martin", 180909, { mesBaseCac: "2025-05" })]),
+      null,
+      new Set(),
+      [ficha("2D", "Valentin Italiano & Belen", 74701, 89641200), ficha("1A", "VIEJO", 180909, null, 755)],
+    );
+    expect(r.cuentas[0]).toMatchObject({ precioUsd: 74701, precioArs: 89641200, formalUsd: 51701, informalUsd: 23000, mesBaseCac: "2025-05" });
+    expect(avisos(r, "2D")).toEqual(["completado: Datos tomados de la ficha de Ventas"]);
+    expect(avisos(r, "PB")).toContain("cruce: La ficha de Ventas tiene otra unidad");
+  });
+
   it("no avisa lo que ya explica una corrección del proyecto, ni las unidades sin vender", () => {
     const r = cruzarCuentas(cc([cuenta("4C", "Karina Arcuschin", 90000)]), [venta("4C", "Karina Arcuschin", 80000), venta("1B", "Falta vender", 0)], new Set(["4C"]));
     expect(avisos(r, "4C")).toEqual([]);

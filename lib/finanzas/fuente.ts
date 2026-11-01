@@ -22,6 +22,7 @@ import { cruzarCuentas } from "../inversores/cruce";
 import { PestaniaSimple } from "../google/pestania";
 import { proyecto as buscarProyecto, PROYECTO_PRINCIPAL } from "../modulos";
 import { armarComercial, leerVentas, type Comercial } from "../proyectos/comercial";
+import { leerFichasVentas } from "../proyectos/fichas";
 import { analizarHq, desarrolladores, m2DesarrolladoresEnPlanilla, type Desarrolladores, type GastoHq } from "../proyectos/management";
 import { leerCaja, unir, type CajaEgresos } from "./egresos";
 import { colorDe, leerFlujo, mesDeHoy, type Celda, type FlujoIngresos } from "./ingresos";
@@ -122,11 +123,12 @@ export async function cajaEgresos(opciones?: { fresco?: boolean }): Promise<{ ca
 const pagosInversor = conCache(async () => leerGrilla(configFinanzas().pagosInversor, "A1:LZ300", false));
 
 /** Las cuentas corrientes: los bloques de "Pagos por Inversor" unidos con lo pendiente del Flujo de fondos. */
-/** El machete de "Ventas" del proyecto principal, para cruzar las cuentas corrientes. */
+/** El machete de "Ventas" del proyecto principal (la tabla y las fichas de cada operación), para cruzar las cuentas corrientes. */
 const ventasPrincipal = conCache(async () => {
   const sheet = planillaMadre(PROYECTO_PRINCIPAL.id);
   if (!sheet) return null;
-  return leerVentas(await leerGrilla("Ventas", "A1:P120", false, sheet)).ventas;
+  const filas = await leerGrilla("Ventas", "A1:P1600", false, sheet);
+  return { ventas: leerVentas(filas).ventas, fichas: leerFichasVentas(filas) };
 });
 
 export async function cuentasCorrientes(
@@ -142,12 +144,12 @@ export async function cuentasCorrientes(
     ),
     // El machete de Ventas, para completar y validar: si no se puede leer, las cuentas salen igual.
     ventasPrincipal(opciones).then(
-      (r) => ({ ventas: r.valor, error: null as string | null }),
-      (e: unknown) => ({ ventas: null, error: e instanceof Error ? e.message : String(e) }),
+      (r) => ({ ventas: r.valor?.ventas ?? null, fichas: r.valor?.fichas ?? null, error: null as string | null }),
+      (e: unknown) => ({ ventas: null, fichas: null, error: e instanceof Error ? e.message : String(e) }),
     ),
   ]);
   const explicadas = new Set((PROYECTO_PRINCIPAL.ajustes ?? []).map((a) => a.codigo));
-  const cuentas = cruzarCuentas(unirConFlujo(leerBloques(bloques.valor, flujo.mesActual), flujo), ventas.ventas, explicadas);
+  const cuentas = cruzarCuentas(unirConFlujo(leerBloques(bloques.valor, flujo.mesActual), flujo), ventas.ventas, explicadas, ventas.fichas);
   return { cuentas, leido: bloques.leido, cac: cacLeido.indices, errorCac: cacLeido.error, errorCruce: ventas.error };
 }
 
