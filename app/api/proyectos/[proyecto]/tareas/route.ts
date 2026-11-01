@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { errorCrm, preparar } from "@/lib/crm/api";
 import { leerCrm } from "@/lib/crm/fuente";
 import { EQUIPO_APODOS } from "@/lib/equipo";
+import { rutaProyecto } from "@/lib/modulos";
+import { avisarAsignacion, avisarMenciones } from "@/lib/notificaciones/fuente";
 import { crearTarea, leerTareas, TareaInvalida } from "@/lib/tareas/fuente";
 import { validarCambios } from "@/lib/tareas/modelo";
 
@@ -25,7 +27,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ proyect
   const v = validarCambios(await req.json().catch(() => null), true);
   if ("error" in v) return NextResponse.json({ error: v.error }, { status: 400 });
   try {
-    return NextResponse.json({ tarea: await crearTarea(v.cambios, ctx.usuario, ctx.proyecto.id) });
+    const tarea = await crearTarea(v.cambios, ctx.usuario, ctx.proyecto.id);
+    const link = `${rutaProyecto(tarea.proyecto || ctx.proyecto.id, "tareas")}?tarea=${tarea.id}`;
+    const de = { de: ctx.usuario, deEmail: ctx.email };
+    await Promise.all([
+      avisarMenciones({ texto: `${tarea.titulo}\n${tarea.descripcion}`, titulo: tarea.titulo, link, ...de }),
+      tarea.responsable ? avisarAsignacion({ apodo: tarea.responsable, titulo: tarea.titulo, texto: tarea.vence ? `Vence el ${tarea.vence.split("-").reverse().join("/")}` : "Tarea nueva", link, ...de }) : null,
+    ]);
+    return NextResponse.json({ tarea });
   } catch (e) {
     if (e instanceof TareaInvalida) return NextResponse.json({ error: e.message }, { status: 400 });
     return errorCrm(e, "tareas POST");

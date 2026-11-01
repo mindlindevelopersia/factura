@@ -58,16 +58,17 @@ export async function crearTarea(cambios: CambiosTarea, usuario: string, proyect
 }
 
 /** Cambia una tarea (busca su fila por ID). null si no está. */
-export async function actualizarTarea(id: string, cambios: CambiosTarea): Promise<Tarea | null> {
+export async function actualizarTarea(id: string, cambios: CambiosTarea): Promise<{ antes: Tarea; tarea: Tarea } | null> {
   const p = pestanias();
   const filas = await p.tareas.filas();
   const i = filas.findIndex((f) => f[0] === id);
   if (i < 0) return null;
   const todas = filas.filter((f) => f[0]).map(tareaDeFila);
-  const t = aplicarCambios(tareaDeFila(filas[i]), cambios, new Date().toISOString());
+  const antes = tareaDeFila(filas[i]);
+  const t = aplicarCambios(antes, cambios, new Date().toISOString());
   if (cambios.bloqueadaPor) revisarBloqueos(t, todas);
   await p.tareas.escribir(i + 2, filaDeTarea(t));
-  return t;
+  return { antes, tarea: t };
 }
 
 export async function comentar(tareaId: string, usuario: string, texto: string): Promise<Comentario> {

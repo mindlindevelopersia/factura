@@ -31,9 +31,13 @@ function pestania() {
   return new PestaniaSimple(client, sheet, "Calendario", COLUMNAS_AGENDA);
 }
 
-async function leerAgenda(proyecto: string): Promise<EventoAgenda[]> {
+/** Lo cargado a mano: de un proyecto, o de todos si no se dice. */
+export async function leerAgenda(proyecto?: string): Promise<EventoAgenda[]> {
   const filas = await pestania().filas();
-  return filas.filter((f) => f[0]).map(agendaDeFila).filter((e) => e.proyecto === proyecto);
+  return filas
+    .filter((f) => f[0])
+    .map(agendaDeFila)
+    .filter((e) => !proyecto || e.proyecto === proyecto);
 }
 
 export async function agregarAgenda(proyecto: string, datos: Pick<EventoAgenda, "fecha" | "categoria" | "titulo" | "detalle" | "responsable" | "hora">, autor: string): Promise<EventoAgenda> {

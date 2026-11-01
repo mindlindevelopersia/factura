@@ -6501,3 +6501,213 @@ h1 .etiqueta-beta {
     display: none;
   }
 }
+
+/* Campanita (notificaciones) */
+.campanita {
+  position: relative;
+}
+.campanita__boton {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ffffff30;
+  border-radius: 10px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+.campanita__boton:hover {
+  border-color: var(--lima);
+  color: var(--lima);
+}
+.campanita__contador {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--lima);
+  color: var(--negro);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 19px;
+  text-align: center;
+}
+.campanita__panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 90;
+  width: min(400px, calc(100vw - 24px));
+  max-height: 70vh;
+  overflow-y: auto;
+  border-radius: 14px;
+  background: var(--blanco);
+  color: var(--texto);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+.campanita__panel header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--borde);
+  background: var(--blanco);
+  color: var(--negro);
+}
+.campanita__panel ul {
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+}
+.campanita__vacio {
+  margin: 0;
+  padding: 16px 14px;
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+.campanita__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.campanita__item:hover {
+  background: var(--gris-claro);
+}
+.campanita__item--nueva {
+  background: #f7f9e3;
+}
+.campanita__textos {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.campanita__textos strong {
+  font-size: 13px;
+  color: var(--negro);
+}
+.campanita__textos small {
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+.campanita__cuando:empty {
+  display: none;
+}
+.campanita__tipo {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  background: var(--gris-claro);
+  color: var(--texto-suave);
+}
+.campanita__tipo--mencion {
+  background: #e1edf8;
+  color: #00508a;
+}
+.campanita__tipo--asignacion {
+  background: var(--negro);
+  color: var(--lima);
+}
+.campanita__tipo--comentario {
+  background: #e9e4f7;
+  color: #4b3a8c;
+}
+.campanita__tipo--vencimiento {
+  background: #f8e1e0;
+  color: var(--rojo);
+}
+.campanita__punto {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--azul);
+}
+
+/* Menciones con @ */
+.menciones {
+  position: relative;
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+.menciones > textarea,
+.menciones > input {
+  width: 100%;
+}
+.menciones__lista {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  z-index: 70;
+  min-width: 220px;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--blanco);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  list-style: none;
+}
+.menciones__opcion {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.menciones__opcion--elegida,
+.menciones__opcion:hover {
+  background: var(--gris-claro);
+}
+.menciones__opcion small {
+  color: var(--texto-suave);
+}
+.mencion {
+  padding: 0 3px;
+  border-radius: 4px;
+  background: #e1edf8;
+  color: #00508a;
+  font-weight: 700;
+}
+.crm-ficha__telefono {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.crm-ficha__telefono input {
+  flex: 1;
+  min-width: 160px;
+  padding: 7px 10px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo);
+  font: inherit;
+  font-size: 13px;
+}
