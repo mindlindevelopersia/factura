@@ -5,7 +5,7 @@ import { EQUIPO_APODOS } from "@/lib/equipo";
 import { rutaProyecto } from "@/lib/modulos";
 import { avisarAsignacion, avisarMenciones } from "@/lib/notificaciones/fuente";
 import { crearTarea, leerTareas, TareaInvalida } from "@/lib/tareas/fuente";
-import { validarCambios } from "@/lib/tareas/modelo";
+import { PROYECTO_PRODUCTO, validarCambios } from "@/lib/tareas/modelo";
 
 /** Todas las tareas con sus comentarios (la pantalla filtra por proyecto), el equipo y los leads para vincular. */
 export async function GET(_req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
@@ -14,7 +14,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ proyect
   try {
     const [t, crm] = await Promise.all([leerTareas(), leerCrm().catch(() => ({ contactos: [] }))]);
     const leads = crm.contactos.map((c) => ({ id: c.id, nombre: c.nombre }));
-    return NextResponse.json({ ...t, usuario: ctx.usuario, equipo: [...new Set([...EQUIPO_APODOS, ctx.usuario])], leads, ahora: new Date().toISOString() });
+    const tareas = t.tareas.filter((x) => x.proyecto !== PROYECTO_PRODUCTO);
+    const ids = new Set(tareas.map((x) => x.id));
+    return NextResponse.json({ tareas, comentarios: t.comentarios.filter((c) => ids.has(c.tareaId)), usuario: ctx.usuario, equipo: [...new Set([...EQUIPO_APODOS, ctx.usuario])], leads, ahora: new Date().toISOString() });
   } catch (e) {
     return errorCrm(e, "tareas GET");
   }

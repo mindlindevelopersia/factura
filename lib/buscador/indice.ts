@@ -32,7 +32,7 @@ export function normalizar(t: string): string {
 
 /** Las páginas del hub: las áreas y módulos de la empresa y de cada proyecto activo, y los desarrolladores. */
 export function paginas(): Resultado[] {
-  const r: Resultado[] = [{ tipo: "Página", etiqueta: "Inicio", titulo: "Inicio", detalle: "El dólar del día y los proyectos", href: "/", proyecto: "" }];
+  const r: Resultado[] = [{ tipo: "Página", etiqueta: "HQ", titulo: "HQ (inicio)", detalle: "El dólar del día, los proyectos, Indicadores y Producto", href: "/", proyecto: "" }];
   for (const a of AREAS_EMPRESA) {
     r.push({ tipo: "Página", etiqueta: a.nombre, titulo: a.nombre, detalle: a.descripcion, href: a.href, proyecto: "" });
     for (const m of a.modulos) r.push({ tipo: "Página", etiqueta: a.nombre, titulo: m.nombre, detalle: m.descripcion, href: m.href, proyecto: "" });

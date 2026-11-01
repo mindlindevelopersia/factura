@@ -29,7 +29,9 @@ export function Navegacion({ cerrar }: { cerrar?: ReactNode }) {
 
   // Lo que la persona abrió o cerró a mano (por href del grupo). Lo demás sigue a la página actual.
   const [elegidos, setElegidos] = useState<Record<string, boolean>>({});
-  const abierto = (href: string) => elegidos[href] ?? dentro(href);
+  // HQ (la portada) se abre en la portada y en sus áreas (Indicadores, Producto).
+  const enHq = ruta === "/" || AREAS_EMPRESA.some((a) => dentro(a.href));
+  const abierto = (href: string) => elegidos[href] ?? (href === "/" ? enHq : dentro(href));
   const alternar = (href: string) => setElegidos((e) => ({ ...e, [href]: !abierto(href) }));
 
   // Al entrar a una página, su camino se abre aunque antes se haya cerrado a mano.
@@ -82,26 +84,40 @@ export function Navegacion({ cerrar }: { cerrar?: ReactNode }) {
       <div className="navegacion__fila">
         <Link href="/" className={`navegacion__area${ruta === "/" ? " navegacion__area--activa" : ""}`} aria-current={actual("/")}>
           <Icono nombre="hub" size={18} />
-          Inicio
+          HQ
         </Link>
+        {AREAS_EMPRESA.some((a) => filtrar(a)) && (
+          <button
+            type="button"
+            className={`navegacion__desplegar${abierto("/") ? " navegacion__desplegar--abierto" : ""}`}
+            onClick={() => alternar("/")}
+            aria-expanded={abierto("/")}
+            aria-label={`${abierto("/") ? "Cerrar" : "Abrir"} HQ`}
+          >
+            <Icono nombre="desplegar" size={14} />
+          </button>
+        )}
         {cerrar}
       </div>
-      {AREAS_EMPRESA.map(filtrar)
-        .filter((a): a is Area => !!a)
-        .map((area) => (
-        <div key={area.href} className="navegacion__grupo">
-          {fila(
-            area.href,
-            area.nombre,
-            <Link href={area.href} className={`navegacion__area${dentro(area.href) ? " navegacion__area--activa" : ""}`} aria-current={actual(area.href)}>
-              <Icono nombre={area.icono} size={18} />
-              {area.nombre}
-            </Link>,
-            area.modulos.length > 0,
-          )}
-          {modulos(area)}
+      {abierto("/") && (
+        <div className="navegacion__grupo navegacion__proyecto">
+          {AREAS_EMPRESA.map(filtrar)
+            .filter((a): a is Area => !!a)
+            .map((area) => (
+              <div key={area.href} className="navegacion__subgrupo">
+                {fila(
+                  area.href,
+                  area.nombre,
+                  <Link href={area.href} className={`navegacion__subarea${dentro(area.href) ? " navegacion__subarea--activa" : ""}`} aria-current={actual(area.href)}>
+                    {area.nombre}
+                  </Link>,
+                  area.modulos.length > 0,
+                )}
+                {modulos(area)}
+              </div>
+            ))}
         </div>
-      ))}
+      )}
 
       <span className="navegacion__titulo">Proyectos</span>
       {PROYECTOS.filter((p) => !acceso || (veProyecto(acceso, p.id) && (p.estado === "bloqueado" || areasDeProyecto(p.id).some((a) => filtrar(a))))).map((p) => {

@@ -8,7 +8,7 @@ import { Icono } from "./Icono";
 /** El nombre de cada ruta conocida del hub (inicio, áreas, proyectos y módulos). */
 function nombres(): Map<string, string> {
   const m = new Map<string, string>([
-    ["/", "Inicio"],
+    ["/", "HQ"],
     ["/ajustes", "Ajustes"],
     ["/sin-permiso", "Sin permiso"],
     ["/perfil", "Mi perfil"],
@@ -29,10 +29,10 @@ function nombres(): Map<string, string> {
 }
 const NOMBRES = nombres();
 
-/** El camino hasta la página: Inicio › Lerma 439 › Comercial › Unidades (lo que no tiene nombre, "Detalle"). */
+/** El camino hasta la página: HQ › Lerma 439 › Comercial › Unidades (lo que no tiene nombre, "Detalle"). */
 export function camino(ruta: string): { href: string; nombre: string }[] {
   const partes = ruta.split("/").filter(Boolean);
-  const migas = [{ href: "/", nombre: "Inicio" }];
+  const migas = [{ href: "/", nombre: "HQ" }];
   partes.forEach((_, i) => {
     const href = `/${partes.slice(0, i + 1).join("/")}`;
     const nombre = NOMBRES.get(href);

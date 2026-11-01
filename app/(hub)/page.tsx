@@ -12,7 +12,7 @@ import { accesoDeEmail } from "@/lib/permisos/fuente";
 import { veProyecto } from "@/lib/permisos/modelo";
 import { AREAS_EMPRESA, PROYECTOS, RUTA_FACTURAS, rutaProyecto } from "@/lib/modulos";
 
-export const metadata: Metadata = { title: "Inicio" };
+export const metadata: Metadata = { title: "HQ" };
 
 export default async function Inicio({
   searchParams,
@@ -30,11 +30,11 @@ export default async function Inicio({
     <main className="app-main" id="contenido">
       <div className="pagina-encabezado">
         <div>
-          <span className="eyebrow">Mindlin Developers</span>
+          <span className="eyebrow">HQ · Mindlin Developers</span>
           <h1>
             {saludoDelMomento()}, {quien.apodo}
           </h1>
-          <p>El dólar del día, cada proyecto con su administración, sus finanzas, su comercial y sus inversores, y lo que es de toda la empresa.</p>
+          <p>El dólar del día, cada proyecto con su administración, sus finanzas, su comercial y sus inversores, y lo de HQ: Indicadores y Producto.</p>
         </div>
       </div>
       <CajaBuscar />
@@ -73,7 +73,7 @@ export default async function Inicio({
           </li>
         ))}
       </ul>
-      <h2 className="cac__titulo-seccion indicadores__modulos">De toda la empresa</h2>
+      <h2 className="cac__titulo-seccion indicadores__modulos">HQ</h2>
       <TarjetasModulos items={AREAS_EMPRESA} />
     </main>
   );

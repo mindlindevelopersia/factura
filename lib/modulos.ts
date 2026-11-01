@@ -9,7 +9,7 @@
 
 import type { AjusteUnidad, OpcionesComercial } from "./proyectos/comercial";
 
-export type IconoArea = "calendario" | "tareas" | "administracion" | "finanzas" | "inversores" | "indicadores" | "comercial" | "management" | "proyecto";
+export type IconoArea = "producto" | "calendario" | "tareas" | "administracion" | "finanzas" | "inversores" | "indicadores" | "comercial" | "management" | "proyecto";
 
 export interface Modulo {
   nombre: string;
@@ -306,6 +306,27 @@ export const AREAS_EMPRESA: Area[] = [
     ],
   },
 ];
+
+AREAS_EMPRESA.push({
+  nombre: "Producto",
+  descripcion: "Lo que queremos sumar al hub: el tablero de ideas (cada una con su título, descripción y comentarios) y el de features, como un kanban.",
+  href: "/producto",
+  icono: "producto",
+  modulos: [
+    {
+      nombre: "Ideas",
+      descripcion: "Un tablero de mensajes: cada idea con título, descripción y comentarios (con @ para avisarle a alguien). Las que van, pasan a Features.",
+      href: "/producto/ideas",
+      beta: true,
+    },
+    {
+      nombre: "Features",
+      descripcion: "El kanban de lo que hay que hacer en el hub: por hacer, en curso, bloqueado y hecho, con responsable, subtareas y comentarios.",
+      href: "/producto/features",
+      beta: true,
+    },
+  ],
+});
 
 /** Las áreas que se mudaron a los proyectos: sus rutas viejas llevan a Lerma (ver next.config.ts). */
 export const RUTAS_MUDADAS = ["administracion", "finanzas", "inversores"];
