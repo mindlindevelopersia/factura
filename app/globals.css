@@ -7572,3 +7572,115 @@ h1 .etiqueta-beta {
 .pf__paso-total {
   background: #f7f9e3;
 }
+
+/* Notas en los números (como las de Excel) */
+.nota {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+}
+.nota__boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  padding: 1px 4px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  font: 700 10px/14px inherit;
+  color: var(--texto-suave);
+  cursor: pointer;
+  visibility: hidden;
+}
+:is(td, th, dd, strong, small, div, span):hover > .nota > .nota__boton,
+.nota__boton:focus-visible,
+.nota__boton--con {
+  visibility: visible;
+}
+.nota__boton:hover {
+  border-color: var(--borde);
+  background: var(--blanco);
+}
+.nota__boton--con {
+  border-color: #e6c200;
+  background: #fff6c2;
+  color: #6b5600;
+}
+.nota__panel {
+  position: fixed;
+  z-index: 95;
+  display: grid;
+  gap: 8px;
+  width: min(360px, 86vw);
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--blanco);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--texto);
+  text-align: left;
+  white-space: normal;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.nota__titulo {
+  font-size: 12px;
+  color: var(--negro);
+}
+.nota__hilo {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #fffbe6;
+  justify-items: start;
+}
+.nota__mensaje {
+  display: grid;
+  gap: 1px;
+}
+.nota__mensaje small {
+  color: var(--texto-suave);
+}
+.nota__mensaje > span {
+  white-space: pre-wrap;
+}
+.nota__respuesta {
+  display: grid;
+  width: 100%;
+  margin-left: 12px;
+  padding-left: 8px;
+  border-left: 2px solid #e6c200;
+}
+.nota__nueva {
+  display: grid;
+  gap: 4px;
+}
+.nota__nueva textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo);
+  font: inherit;
+  font-size: 13px;
+}
+.nota__acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+/* Adentro de un número grande (un <strong> de 28px), el panel mantiene su letra. */
+.nota__panel,
+.nota__panel * {
+  font-size: 13px;
+  line-height: 1.4;
+}
+.nota__panel .nota__titulo,
+.nota__panel small,
+.nota__panel small * {
+  font-size: 12px;
+}

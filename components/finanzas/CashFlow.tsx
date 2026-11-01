@@ -6,6 +6,7 @@ import type { RespuestaCashFlow } from "@/lib/finanzas/cashflowFuente";
 import { nombreMes } from "@/lib/finanzas/ingresos";
 import { leerJson } from "../formato";
 import { Icono } from "../Icono";
+import { Nota, NotasProvider } from "../Notas";
 import { useProyectoId } from "../proyectos/datos";
 
 type Vista = "proyectado" | "real" | "actualizado" | "comparacion";
@@ -79,7 +80,8 @@ export function CashFlow() {
     setAbiertos(s);
   };
 
-  const celdas = (r: Record<string, number>, clase = "", partida?: Partida) =>
+  // Cada celda puede llevar una nota (concepto × mes, en esta vista), como en Excel.
+  const celdas = (r: Record<string, number>, clase = "", partida?: Partida, fila?: { clave: string; nombre: string }) =>
     meses.map((m) => {
       const v = r[m];
       const puedeVer = partida?.movimientos?.some((x) => x.fecha.startsWith(m));
@@ -92,6 +94,7 @@ export function CashFlow() {
           ) : (
             fmt(v)
           )}
+          {fila && <Nota clave={`cf:${id}:${vista}:${fila.clave}:${m}`} etiqueta={`Cash flow · ${VISTAS.find((x) => x.v === vista)!.nombre} · ${fila.nombre} · ${nombreMes(m)}`} />}
         </td>
       );
     });
@@ -100,9 +103,9 @@ export function CashFlow() {
     <tr className={clase}>
       <th scope="row">
         {extra}
-        {nombre}
+        {nombre} <Nota clave={`cf:${id}:fila:${nombre.toLowerCase().replace(/\s+/g, "-")}`} etiqueta={`Cash flow · ${nombre}`} />
       </th>
-      {celdas(r)}
+      {celdas(r, "", undefined, { clave: nombre.toLowerCase().replace(/\s+/g, "-"), nombre })}
       <td className="tabla__numero cf__total">{total === undefined ? "" : fmt(total)}</td>
     </tr>
   );
@@ -124,15 +127,18 @@ export function CashFlow() {
                     <button type="button" className="cf__abrir" onClick={() => alternar(g.clave)} aria-expanded={abierto}>
                       <span className={abierto ? "cf__flecha cf__flecha--abierta" : "cf__flecha"}>›</span> {g.nombre}
                     </button>
+                    <Nota clave={`cf:${id}:fila:${g.clave}`} etiqueta={`Cash flow · ${g.nombre}`} />
                   </th>
-                  {celdas(t.porGrupo[g.clave] ?? {})}
+                  {celdas(t.porGrupo[g.clave] ?? {}, "", undefined, { clave: g.clave, nombre: g.nombre })}
                   <td className="tabla__numero cf__total">{fmt(sumaFila(t.porGrupo[g.clave] ?? {}))}</td>
                 </tr>
                 {abierto &&
                   items.map((p) => (
                     <tr key={p.clave} className="cf__fila-item">
-                      <th scope="row">{p.nombre}</th>
-                      {celdas(p[campo], "", p)}
+                      <th scope="row">
+                        {p.nombre} <Nota clave={`cf:${id}:fila:${p.clave}`} etiqueta={`Cash flow · ${p.nombre}`} />
+                      </th>
+                      {celdas(p[campo], "", p, { clave: p.clave, nombre: p.nombre })}
                       <td className="tabla__numero cf__total">{fmt(sumaFila(p[campo]))}</td>
                     </tr>
                   ))}
@@ -178,31 +184,22 @@ export function CashFlow() {
     </Fragment>
   );
 
-  const descargar = () => {
-    const filas: string[][] = [["Concepto", ...meses.map((m) => nombreMes(m)), "Total"]];
-    const agregar = (nombre: string, r: Record<string, number>) => filas.push([nombre, ...meses.map((m) => String(Math.round(r[m] ?? 0))), String(Math.round(sumaFila(r)))]);
-    if (vista === "comparacion") {
-      agregar("Ingresos proyectados", tp.ingresos);
-      agregar("Ingresos reales", tr.ingresos);
-      agregar("Egresos proyectados", tp.egresos);
-      agregar("Egresos reales", tr.egresos);
-      agregar("Flujo neto proyectado", tp.neto);
-      agregar("Flujo neto real", tr.neto);
-    } else {
-      for (const tipo of ["ingreso", "egreso"] as const) {
-        agregar(tipo === "ingreso" ? "INGRESOS" : "EGRESOS", tipo === "ingreso" ? t.ingresos : t.egresos);
-        for (const g of grupos(tipo, partidas)) {
-          agregar(`  ${g.nombre}`, t.porGrupo[g.clave] ?? {});
-          for (const p of partidas.filter((x) => x.grupo === g.clave)) agregar(`    ${p.nombre}`, p[campo]);
-        }
-      }
-      agregar("FLUJO NETO", t.neto);
-      agregar("CAJA ACUMULADA", tTodos.acumulado);
-    }
-    const csv = filas.map((f) => f.map((x) => (/[",;\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x)).join(";")).join("\n");
+  const descargar = async () => {
+    const { exportarCashFlow } = await import("@/lib/finanzas/cashflowExcel");
+    // La caja con la que se llega al primer mes exportado (si se exporta un año, lo que venía de antes).
+    const previo = datos.meses[datos.meses.indexOf(meses[0]) - 1];
+    const blob = await exportarCashFlow({
+      titulo: `Cash flow ${id}`,
+      vista: VISTAS.find((x) => x.v === vista)!.nombre,
+      moneda,
+      meses,
+      partidas,
+      cajaInicial: previo ? (tTodos.acumulado[previo] ?? 0) : 0,
+      comparar: vista === "comparacion" ? { proyectado: datos.proyectado, real: datos.real } : undefined,
+    });
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8" }));
-    a.download = `cash-flow-${id}-${vista}-${moneda.toLowerCase()}.csv`;
+    a.href = URL.createObjectURL(blob);
+    a.download = `cash-flow-${id}-${vista}-${moneda.toLowerCase()}.xlsx`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -212,6 +209,7 @@ export function CashFlow() {
   const mesMinimo = datos.meses.find((m) => (tTodos.acumulado[m] ?? 0) === minimo);
 
   return (
+    <NotasProvider ruta={`/proyectos/${id}/finanzas/cash-flow`} prefijo={`cf:${id}:`}>
     <div className="cf">
       <div className="cf__barra">
         <div className="crm__pestanias" role="tablist" aria-label="Vista">
@@ -248,8 +246,8 @@ export function CashFlow() {
           <button type="button" className="btn btn--texto btn--chico" onClick={() => void cargar(true)} disabled={cargando}>
             <Icono nombre="recargar" size={14} /> {cargando ? "Actualizando…" : "Actualizar"}
           </button>
-          <button type="button" className="btn btn--borde btn--chico" onClick={descargar}>
-            Descargar CSV
+          <button type="button" className="btn btn--borde btn--chico" onClick={() => void descargar()}>
+            <Icono nombre="archivo" size={14} /> Exportar a Excel
           </button>
         </div>
       </div>
@@ -339,6 +337,7 @@ export function CashFlow() {
       </div>
       {detalle && <Detalle {...detalle} moneda={moneda} cerrar={() => setDetalle(null)} />}
     </div>
+    </NotasProvider>
   );
 }
 

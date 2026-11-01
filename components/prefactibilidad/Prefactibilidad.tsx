@@ -20,6 +20,7 @@ import { calcularPlusvalia, formatear, type DatosPlusvalia } from "@/lib/prefact
 import { BARRIOS_PRINCIPALES, MUNICIPIOS, OTROS_BARRIOS } from "@/lib/prefactibilidad/barrios";
 import { useDolarHoy } from "../indicadores/Dolar";
 import { leerJson } from "../formato";
+import { Nota, NotasProvider } from "../Notas";
 import { Icono } from "../Icono";
 
 const m2 = (x: number | null | undefined) => (x == null ? "—" : `${x.toLocaleString("es-AR", { maximumFractionDigits: 2 })} m²`);
@@ -257,6 +258,7 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
   const proyecto = p.proyecto ? buscarProyecto(p.proyecto) : null;
 
   return (
+    <NotasProvider ruta={`/prefactibilidad?id=${id}`} prefijo={`pf:${id}:`}>
     <div className="pf">
       {volver && (
         <button type="button" className="btn btn--texto btn--chico propuesta__volver" onClick={volver}>
@@ -389,6 +391,7 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
           poner={(pv) => poner({ plusvalia: pv })}
           conExcel={!!p.proyecto && !!buscarProyecto(p.proyecto)?.planillaMadre}
           id={id}
+          nombre={p.nombre}
         />
       )}
       {pestania === "resultados" && (
@@ -403,40 +406,40 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
         <div>
           <span>Terreno</span>
           <strong>
-            {m2(c.superficieTerreno)} <Cuenta texto={cu.terreno} />
+            {m2(c.superficieTerreno)} <Cuenta texto={cu.terreno} /> <Nota clave={`pf:${id}:terreno`} etiqueta={`${p.nombre} · Terreno`} />
           </strong>
           {c.fosPermitido != null && (
             <small className="pf__sub">
-              FOS permitido {m2(c.fosPermitido)} <Cuenta texto={cu.fosPermitido} />
+              FOS permitido {m2(c.fosPermitido)} <Cuenta texto={cu.fosPermitido} /> <Nota clave={`pf:${id}:fosPermitido`} etiqueta={`${p.nombre} · FOS permitido`} />
             </small>
           )}
         </div>
         <div>
           <span>Construible según GCBA</span>
           <strong>
-            {m2(c.construible.gcba)} <Cuenta texto={cu.gcba} />
+            {m2(c.construible.gcba)} <Cuenta texto={cu.gcba} /> <Nota clave={`pf:${id}:gcba`} etiqueta={`${p.nombre} · Construible según GCBA`} />
           </strong>
           <small className="pf__sub">
-            Con descubiertas a su %: {m2(c.construible.conDescubiertas)} <Cuenta texto={cu.conDescubiertas} /> · Total: {m2(c.construible.total)} <Cuenta texto={cu.total} />
+            Con descubiertas a su %: {m2(c.construible.conDescubiertas)} <Cuenta texto={cu.conDescubiertas} /> <Nota clave={`pf:${id}:conDescubiertas`} etiqueta={`${p.nombre} · Construible con descubiertas a su %`} /> · Total: {m2(c.construible.total)} <Cuenta texto={cu.total} /> <Nota clave={`pf:${id}:total`} etiqueta={`${p.nombre} · Construible total`} />
           </small>
         </div>
         <div>
           <span>Vendible</span>
           <strong>
-            {m2(c.vendible.teorico)} <Cuenta texto={cu.vendibleTeorico} />
+            {m2(c.vendible.teorico)} <Cuenta texto={cu.vendibleTeorico} /> <Nota clave={`pf:${id}:vendibleTeorico`} etiqueta={`${p.nombre} · Vendible teórico`} />
           </strong>
           <small className="pf__sub">
-            Real: {m2(c.vendible.real)} <Cuenta texto={cu.vendibleReal} />
+            Real: {m2(c.vendible.real)} <Cuenta texto={cu.vendibleReal} /> <Nota clave={`pf:${id}:vendibleReal`} etiqueta={`${p.nombre} · Vendible real`} />
           </small>
         </div>
         <div>
           <span>Comunes</span>
           <strong>
-            {m2(c.vendible.comunes)} <Cuenta texto={cu.comunes} />
+            {m2(c.vendible.comunes)} <Cuenta texto={cu.comunes} /> <Nota clave={`pf:${id}:comunes`} etiqueta={`${p.nombre} · Comunes`} />
           </strong>
           {c.vendible.porcentaje != null && (
             <small className="pf__sub">
-              {(c.vendible.porcentaje * 100).toLocaleString("es-AR", { maximumFractionDigits: 1 })}% vendible <Cuenta texto={cu.porcentaje} />
+              {(c.vendible.porcentaje * 100).toLocaleString("es-AR", { maximumFractionDigits: 1 })}% vendible <Cuenta texto={cu.porcentaje} /> <Nota clave={`pf:${id}:porcentaje`} etiqueta={`${p.nombre} · % vendible`} />
             </small>
           )}
         </div>
@@ -591,26 +594,26 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
           <div>
             <dt>Según GCBA (cubierta + semicubierta)</dt>
             <dd>
-              {m2(c.construible.gcba)} <Cuenta texto={cu.gcba} />
+              {m2(c.construible.gcba)} <Cuenta texto={cu.gcba} /> <Nota clave={`pf:${id}:gcba`} etiqueta={`${p.nombre} · Construible según GCBA`} />
             </dd>
           </div>
           <div>
             <dt>Con las descubiertas a su %</dt>
             <dd>
-              {m2(c.construible.conDescubiertas)} <Cuenta texto={cu.conDescubiertas} />
+              {m2(c.construible.conDescubiertas)} <Cuenta texto={cu.conDescubiertas} /> <Nota clave={`pf:${id}:conDescubiertas`} etiqueta={`${p.nombre} · Construible con descubiertas a su %`} />
             </dd>
           </div>
           <div>
             <dt>Totales (todo al 100%)</dt>
             <dd>
-              {m2(c.construible.total)} <Cuenta texto={cu.total} />
+              {m2(c.construible.total)} <Cuenta texto={cu.total} /> <Nota clave={`pf:${id}:total`} etiqueta={`${p.nombre} · Construible total`} />
             </dd>
           </div>
           {c.capacidadFot != null && (
             <div>
               <dt>Lo que permite el FOT (terreno × FOT)</dt>
               <dd>
-                {m2(c.capacidadFot)} <Cuenta texto={cu.capacidadFot} />
+                {m2(c.capacidadFot)} <Cuenta texto={cu.capacidadFot} /> <Nota clave={`pf:${id}:capacidadFot`} etiqueta={`${p.nombre} · Lo que permite el FOT`} />
               </dd>
             </div>
           )}
@@ -768,6 +771,7 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
         </ul>
       </section>
     </div>
+    </NotasProvider>
   );
 }
 
@@ -902,6 +906,7 @@ function Plusvalia({
   poner,
   conExcel,
   id,
+  nombre,
 }: {
   d: DatosPrefactibilidad;
   c: ReturnType<typeof calcular>;
@@ -912,6 +917,7 @@ function Plusvalia({
   poner: (pv: DatosPlusvalia) => void;
   conExcel: boolean;
   id: string;
+  nombre: string;
 }) {
   const pv = d.plusvalia;
   const [uvaManual, setUvaManual] = useState<number | null>(null);
@@ -987,7 +993,9 @@ function Plusvalia({
             {r.pasos.map((x) => (
               <tr key={x.clave} className={x.total ? "pf__paso-total" : undefined}>
                 <th scope="row">{x.nombre}</th>
-                <td className="tabla__numero">{x.clave === "uva" && uvaManual == null && !uva ? "—" : formatear(x.valor, x.unidad)}</td>
+                <td className="tabla__numero">
+                  {x.clave === "uva" && uvaManual == null && !uva ? "—" : formatear(x.valor, x.unidad)} <Nota clave={`pf:${id}:pv:${x.clave}`} etiqueta={`${nombre} · Plusvalía · ${x.nombre}`} />
+                </td>
                 <td className="pf__paso-cuenta">{x.cuenta}</td>
               </tr>
             ))}

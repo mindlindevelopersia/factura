@@ -7,6 +7,8 @@ En **Finanzas → Cash flow** de cada proyecto. Cuatro vistas:
 - **Real + proyectado**: real hasta el mes pasado y proyectado desde este mes: con qué caja se termina la obra (y el mes más bajo).
 - **Proyectado vs real**: por mes (hasta hoy), proyectado, real y la diferencia (verde si es a favor).
 
-**Resumido** (ingresos, egresos, flujo neto, caja acumulada) o **desglosado** (cada grupo se abre en sus partidas; en lo real, tocando un número se ven los movimientos). **US$ o $**: lo real al **MEP del día de cada pago** (serie histórica de ArgentinaDatos); lo proyectado al MEP de cada mes y los meses que vienen al de hoy. Filtro por año y **Descargar CSV** (se abre en Excel).
+**Resumido** (ingresos, egresos, flujo neto, caja acumulada) o **desglosado** (cada grupo se abre en sus partidas; en lo real, tocando un número se ven los movimientos). **US$ o $**: lo real al **MEP del día de cada pago** (serie histórica de ArgentinaDatos); lo proyectado al MEP de cada mes y los meses que vienen al de hoy. Filtro por año y **Exportar a Excel**: cada partida con sus valores (en azul) y, con fórmulas simples, los grupos y totales (SUMA), el flujo neto (ingresos − egresos) y la caja acumulada (la del mes anterior + el flujo del mes, arrancando con la caja al inicio si se exporta un año); en "Proyectado vs real", las dos listas y la diferencia. Con lo real, una hoja "Movimientos" con cada pago. Verificado recalculándolo: da lo mismo que el hub.
+
+**Notas**: cada fila y cada celda puede llevar notas con @ y respuestas (ver docs/comentarios.md).
 
 Código: `lib/finanzas/cashflow.ts` (puro, con tests), `lib/finanzas/cashflowFuente.ts`, `grillaCashFlow` e `historicoMep` en `lib/finanzas/fuente.ts`, `app/api/proyectos/[proyecto]/cash-flow/route.ts` y `components/finanzas/CashFlow.tsx`.
