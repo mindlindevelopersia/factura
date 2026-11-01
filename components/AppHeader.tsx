@@ -1,9 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "@/auth";
+import { perfilDe } from "@/lib/permisos/fuente";
 import { Campanita } from "./Campanita";
+import { Icono } from "./Icono";
+import { MenuUsuario } from "./MenuUsuario";
 
-export function AppHeader({ email }: { email: string }) {
+export async function AppHeader({ email }: { email: string }) {
+  const { nombre } = await perfilDe(email);
   return (
     <header className="app-header">
       <a className="saltar-contenido" href="#contenido">
@@ -24,17 +28,22 @@ export function AppHeader({ email }: { email: string }) {
         </div>
         <div className="app-header__user">
           <Campanita />
-          <span>{email}</span>
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/login" });
-            }}
-          >
-            <button type="submit" className="btn btn--borde-claro btn--chico">
-              Salir
-            </button>
-          </form>
+          <MenuUsuario
+            nombre={nombre}
+            email={email}
+            salir={
+              <form
+                action={async () => {
+                  "use server";
+                  await signOut({ redirectTo: "/login" });
+                }}
+              >
+                <button type="submit" className="menu-usuario__item">
+                  <Icono nombre="volver" size={16} /> Salir
+                </button>
+              </form>
+            }
+          />
         </div>
       </div>
     </header>
