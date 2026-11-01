@@ -7,6 +7,7 @@ import { nombreMes } from "@/lib/finanzas/ingresos";
 import { conAcumulado, resumenCuenta, type Cuenta } from "@/lib/inversores/cuentas";
 import { avanceEnPesos, type IndicesCac } from "@/lib/inversores/pesos";
 import { Origen } from "../proyectos/Origen";
+import { DocumentosInversor } from "./Documentacion";
 import { Icono } from "../Icono";
 import { useBaseProyecto } from "../proyecto";
 import { BarraLectura, monto, redondo } from "../finanzas/comun";
@@ -110,6 +111,8 @@ function Contenido({
           </button>
         </div>
       </section>
+
+      <DocumentosInversor cuenta={c.id} />
 
       {c.avisos.length > 0 && (
         <div className="alerta alerta--aviso solo-pantalla" role="note">

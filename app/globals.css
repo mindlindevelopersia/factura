@@ -8121,3 +8121,100 @@ html[data-privado-simple] dd {
   width: 100%;
   font: inherit;
 }
+
+/* Documentación firmada de los inversores (de Drive) */
+.docs {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 16px 20px;
+}
+.docs h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.crm-ficha .docs {
+  margin: 0 0 12px;
+  padding: 14px;
+  box-shadow: none;
+}
+.docs__lista {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.docs__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  color: var(--texto);
+  text-decoration: none;
+}
+.docs__item:hover {
+  border-color: var(--negro);
+}
+.docs__item > span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.docs__item strong {
+  color: var(--negro);
+  font-size: 14px;
+}
+.docs__item small {
+  overflow: hidden;
+  color: var(--texto-suave);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.docs__sin-asignar {
+  margin-bottom: 16px;
+  padding: 14px 18px;
+}
+.docs__sin-asignar summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.docs__asignar {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.docs__asignar li {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(200px, 1.4fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.docs__asignar li > span {
+  display: grid;
+}
+.docs__asignar select {
+  padding: 8px 10px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo);
+  background: var(--blanco);
+  font: inherit;
+  font-size: 13px;
+}
+.docs__asignar small {
+  color: var(--texto-suave);
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .docs__asignar li {
+    grid-template-columns: 1fr;
+  }
+}
