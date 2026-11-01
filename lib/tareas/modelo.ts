@@ -7,7 +7,17 @@
  * escrito: en el tablero va a la columna "Bloqueada" y vuelve sola a la suya cuando se destraba.
  *
  * Se guardan en la planilla del CRM, pestañas "Tareas" y "Tareas Comentarios". Todo puro (sin red).
+ * Los features de Producto son tareas con proyecto "producto" (tienen su propio tablero).
  */
+
+import { PROYECTO_PRINCIPAL, rutaProyecto } from "../modulos";
+
+/** El proyecto de los features de Producto. */
+export const PROYECTO_PRODUCTO = "producto";
+
+/** Dónde se abre una tarea: el tablero de su proyecto, o el de features si es de Producto. */
+export const rutaDeTarea = (t: { id: string; proyecto: string }) =>
+  t.proyecto === PROYECTO_PRODUCTO ? `/producto/features?tarea=${t.id}` : `${rutaProyecto(t.proyecto || PROYECTO_PRINCIPAL.id, "tareas")}?tarea=${t.id}`;
 
 export const ESTADOS = ["Por hacer", "En curso", "Hecha", "Cancelada"] as const;
 export type EstadoTarea = (typeof ESTADOS)[number];

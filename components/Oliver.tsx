@@ -70,7 +70,7 @@ export function Oliver() {
   const [error, setError] = useState<string | null>(null);
   const lista = useRef<HTMLDivElement>(null);
   const entrada = useRef<HTMLTextAreaElement>(null);
-  const seccion = camino(ruta).slice(1).map((m) => m.nombre).join(" › ") || "Inicio";
+  const seccion = camino(ruta).slice(1).map((m) => m.nombre).join(" › ") || "HQ";
 
   useEffect(() => {
     lista.current?.scrollTo({ top: lista.current.scrollHeight });

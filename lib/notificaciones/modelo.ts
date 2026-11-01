@@ -14,7 +14,7 @@ import type { Contacto } from "../crm/modelo";
 import type { EventoAgenda } from "../calendario/eventos";
 import { rutaProyecto, PROYECTO_PRINCIPAL } from "../modulos";
 import type { PropuestaGuardada } from "../proyectos/propuestasGuardadas";
-import { abierta, type Tarea } from "../tareas/modelo";
+import { abierta, rutaDeTarea, type Tarea } from "../tareas/modelo";
 
 export type TipoNotificacion = "mencion" | "asignacion" | "comentario" | "vencimiento";
 
@@ -105,7 +105,7 @@ export function vencimientosDe(
   const base = { para: "", de: "", leida: false, tipo: "vencimiento" as const };
   for (const t of datos.tareas) {
     if (!abierta(t) || sinTildes(t.responsable) !== yo || !toca(t.vence)) continue;
-    r.push({ ...base, id: `venc-tarea-${t.id}-${t.vence}`, fecha: `${t.vence}T00:00:00.000Z`, titulo: `Tarea: ${t.titulo}`, texto: `${cuando(t.vence, hoy)}${t.hora ? ` a las ${t.hora}` : ""}${t.con ? ` · ${t.con}` : ""}`, link: `${rutaProyecto(t.proyecto || PROYECTO_PRINCIPAL.id, "tareas")}?tarea=${t.id}` });
+    r.push({ ...base, id: `venc-tarea-${t.id}-${t.vence}`, fecha: `${t.vence}T00:00:00.000Z`, titulo: `Tarea: ${t.titulo}`, texto: `${cuando(t.vence, hoy)}${t.hora ? ` a las ${t.hora}` : ""}${t.con ? ` · ${t.con}` : ""}`, link: rutaDeTarea(t) });
   }
   for (const c of datos.contactos) {
     const f = c.proximaFecha?.slice(0, 10);

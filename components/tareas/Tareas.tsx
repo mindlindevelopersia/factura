@@ -46,9 +46,13 @@ const AYUDA_COLUMNA: Record<ColumnaTablero, string> = {
   Hecha: "Terminadas.",
 };
 
-function useTareas() {
-  const id = useProyectoId();
-  const base = `/api/proyectos/${id}/tareas`;
+/** "proyecto": las tareas de un proyecto (y las generales). "producto": el tablero de features de Producto. */
+export type ModoTareas = "proyecto" | "producto";
+
+function useTareas(modo: ModoTareas) {
+  const idProyecto = useProyectoId();
+  const id = modo === "producto" ? "producto" : idProyecto;
+  const base = modo === "producto" ? "/api/producto/features" : `/api/proyectos/${id}/tareas`;
   const [datos, setDatos] = useState<Datos | null>(null);
   const [error, setError] = useState<string | null>(null);
   const cargar = useCallback(async () => {
@@ -79,13 +83,26 @@ function useTareas() {
     );
     setDatos((d) => (d ? { ...d, comentarios: [...d.comentarios, comentario] } : d));
   };
-  return { proyecto: id, datos, error, cargar, crear, cambiar, comentar };
+  return { proyecto: id, modo, datos, error, cargar, crear, cambiar, comentar };
 }
 type Hook = ReturnType<typeof useTareas>;
 
-/** El tablero de tareas del proyecto (y las generales de la empresa). */
-export function Tareas() {
-  const h = useTareas();
+/** Lo que hay para hacer en Producto, para arrancar el tablero de features. */
+const FEATURES_INICIALES = [
+  "Mejorar todos los módulos de administración",
+  "Automatizar los procesos que le pasamos a Axel",
+  "Presupuesto base 0",
+  "Módulo de compras y presupuestos",
+  "Módulo de marketing",
+  "Mails de notificaciones (resumen diario y avisos)",
+  "Calendario del hub en la Mac y el celular",
+];
+
+/** El tablero de tareas del proyecto (y las generales de la empresa), o el de features de Producto. */
+export function Tareas({ modo = "proyecto" }: { modo?: ModoTareas }) {
+  const h = useTareas(modo);
+  const producto = modo === "producto";
+  const [cargandoLista, setCargandoLista] = useState(false);
   const [abiertaId, setAbiertaId] = useState<string | null>(null);
   const [nueva, setNueva] = useState(false);
   const [quien, setQuien] = useState("");
@@ -106,11 +123,11 @@ export function Tareas() {
     const t = buscar.trim().toLowerCase();
     return d.tareas.filter(
       (x) =>
-        (empresa || x.proyecto === h.proyecto || !x.proyecto) &&
+        (producto || (empresa ? x.proyecto !== "producto" : x.proyecto === h.proyecto || !x.proyecto)) &&
         (!quien || x.responsable === quien) &&
         (!t || `${x.titulo} ${x.con} ${x.descripcion} ${x.responsable}`.toLowerCase().includes(t)),
     );
-  }, [d, buscar, empresa, quien, h.proyecto]);
+  }, [d, buscar, empresa, quien, h.proyecto, producto]);
 
   if (h.error && !d) return <p className="alerta alerta--error">{h.error}</p>;
   if (!d) return <p className="ficha__nota">Cargando las tareas…</p>;
@@ -137,9 +154,29 @@ export function Tareas() {
     <>
       <div className="tareas__barra">
         <button type="button" className="btn btn--primario" onClick={() => setNueva(true)}>
-          + Nueva tarea
+          {producto ? "+ Nuevo feature" : "+ Nueva tarea"}
         </button>
-        <input type="search" value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Buscar tarea, inversor, proveedor…" aria-label="Buscar tareas" />
+        {producto && !d.tareas.length && (
+          <button
+            type="button"
+            className="btn btn--borde"
+            disabled={cargandoLista}
+            onClick={async () => {
+              setCargandoLista(true);
+              setError(null);
+              try {
+                for (const titulo of FEATURES_INICIALES) await h.crear({ titulo, tipo: "Otro", responsable: "", prioridad: "Normal" });
+              } catch (e) {
+                setError(e instanceof Error ? e.message : String(e));
+              } finally {
+                setCargandoLista(false);
+              }
+            }}
+          >
+            {cargandoLista ? "Cargando…" : "Cargar la lista inicial"}
+          </button>
+        )}
+        <input type="search" value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder={producto ? "Buscar feature…" : "Buscar tarea, inversor, proveedor…"} aria-label="Buscar tareas" />
         <select value={quien} onChange={(e) => setQuien(e.target.value)} aria-label="Responsable">
           <option value="">Todos</option>
           {d.equipo.map((p) => (
@@ -148,9 +185,11 @@ export function Tareas() {
             </option>
           ))}
         </select>
-        <label className="crm__check">
-          <input type="checkbox" checked={empresa} onChange={(e) => setEmpresa(e.target.checked)} /> Toda la empresa
-        </label>
+        {!producto && (
+          <label className="crm__check">
+            <input type="checkbox" checked={empresa} onChange={(e) => setEmpresa(e.target.checked)} /> Toda la empresa
+          </label>
+        )}
         <span className="crm-ficha__sub">
           Tenés {mias.length} {mias.length === 1 ? "abierta" : "abiertas"}
           {vencidas ? `, ${vencidas} ${vencidas === 1 ? "vencida" : "vencidas"}` : ""}. Arrastrá una tarjeta para cambiarla de columna.
@@ -355,6 +394,7 @@ function FichaTarea({ h, tarea, cerrar, creada }: { h: Hook; tarea: Tarea | null
                   ))}
                 </select>
               </label>
+              {h.modo !== "producto" && (
               <label className="campo">
                 Proyecto
                 <select value={f.proyecto ?? ""} onChange={(e) => poner("proyecto", e.target.value)}>
@@ -366,6 +406,7 @@ function FichaTarea({ h, tarea, cerrar, creada }: { h: Hook; tarea: Tarea | null
                   ))}
                 </select>
               </label>
+              )}
               <label className="campo">
                 Vence
                 <input type="date" value={f.vence ?? ""} onChange={(e) => poner("vence", e.target.value || null)} />

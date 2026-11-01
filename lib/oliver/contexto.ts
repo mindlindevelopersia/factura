@@ -299,7 +299,7 @@ async function contextoInicio(): Promise<Contexto> {
     () => null,
   );
   return {
-    seccion: "Inicio",
+    seccion: "HQ (inicio)",
     especialidad: "el hub de Mindlin Developers: sus proyectos, sus áreas y el dólar del día",
     datos: {
       dolarHoy: dolar,

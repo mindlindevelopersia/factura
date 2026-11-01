@@ -157,11 +157,12 @@ export const veArea = (a: Acceso, area: string, proyecto?: string) => a.superAdm
 export function requisitoDeRuta(ruta: string): { clave?: string; area?: string; proyecto?: string } | null {
   const camino = ruta.split("?")[0].replace(/\/+$/, "") || "/";
   if (camino === "/ajustes" || camino.startsWith("/ajustes/")) return { clave: "ajustes" };
-  if (camino.startsWith("/indicadores/")) {
-    const clave = PERMISOS.find((p) => !p.deProyecto && camino.startsWith(`/${p.clave}`))?.clave;
-    return clave ? { clave } : { area: "indicadores" };
+  // Las áreas de la empresa (Indicadores, Producto): cada módulo es una clave; la página del área, el área.
+  const deEmpresa = AREAS_EMPRESA.find((a) => camino === a.href || camino.startsWith(`${a.href}/`));
+  if (deEmpresa) {
+    const clave = PERMISOS.find((p) => !p.deProyecto && (camino === `/${p.clave}` || camino.startsWith(`/${p.clave}/`)))?.clave;
+    return clave ? { clave } : { area: deEmpresa.href.slice(1) };
   }
-  if (camino === "/indicadores") return { area: "indicadores" };
   const m = camino.match(/^\/proyectos\/([^/]+)(?:\/(.*))?$/);
   if (m) {
     const [, proyecto, resto = ""] = m;

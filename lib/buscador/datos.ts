@@ -8,7 +8,7 @@ import type { Pago } from "../finanzas/ingresos";
 import { diaVencimiento } from "../inversores/cobranzas";
 import { PROYECTO_PRINCIPAL, proyecto as buscarProyecto, rutaProyecto } from "../modulos";
 import type { PropuestaGuardada } from "../proyectos/propuestasGuardadas";
-import { abierta, type Tarea } from "../tareas/modelo";
+import { abierta, PROYECTO_PRODUCTO, rutaDeTarea, type Tarea } from "../tareas/modelo";
 import type { Resultado } from "./indice";
 
 const fecha = (f: string) => f.split("-").reverse().join("/");
@@ -88,13 +88,12 @@ export function resultadosTareas(tareas: Tarea[]): Resultado[] {
   return tareas
     .filter((t) => t.estado !== "Cancelada")
     .map((t) => {
-      const proyecto = t.proyecto || PROYECTO_PRINCIPAL.id;
       return {
         tipo: "Tarea",
-        etiqueta: abierta(t) ? "Tarea" : "Tarea hecha",
+        etiqueta: t.proyecto === PROYECTO_PRODUCTO ? "Feature" : abierta(t) ? "Tarea" : "Tarea hecha",
         titulo: t.titulo,
         detalle: [t.responsable, t.con, t.vence ? `vence ${fecha(t.vence)}` : "", t.estado].filter(Boolean).join(" · "),
-        href: `${rutaProyecto(proyecto, "tareas")}?tarea=${t.id}`,
+        href: rutaDeTarea(t),
         proyecto: t.proyecto,
         extra: `${t.descripcion} ${t.subtareas.map((s) => s.texto).join(" ")}`,
       };
