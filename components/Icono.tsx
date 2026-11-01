@@ -32,6 +32,7 @@ const trazos = {
   proyecto: "M4 21V5l8-3 8 3v16 M9 21v-4h6v4 M8 8h2 M14 8h2 M8 12h2 M14 12h2 M2 21h20",
   hub: "M3 3h8v8H3z M13 3h8v8h-8z M3 13h8v8H3z M13 13h8v8h-8z",
   administracion: "M3 7h18v13H3z M8 7V4h8v3 M3 12h18",
+  calendario: "M3 5h18v16H3z M3 10h18 M8 3v4 M16 3v4 M7 14h2 M11 14h2 M15 14h2 M7 17h2 M11 17h2",
   finanzas: "M3 20h18 M6 16v-4 M11 16V8 M16 16v-6 M20 4l-6 5-4-3-6 5",
 } as const;
 

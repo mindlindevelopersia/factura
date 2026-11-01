@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { alarmasDe, dias, hoyBA, tablero, temperatura, todasLasAlarmas, ultimoTrato, type Alarma } from "@/lib/crm/alarmas";
 import { abierto, claseEtapa, DESCRIPCION_ETAPA, ETAPAS, ETAPAS_ABIERTAS, NOMBRE_TEMPERATURA, ORIGENES, TEMPERATURAS, type Contacto, type Etapa } from "@/lib/crm/modelo";
 import { proyecto as buscarProyecto } from "@/lib/modulos";
@@ -96,6 +96,11 @@ function ListaAlarmas({ alarmas, abrir, max }: { alarmas: Alarma[]; abrir: (id: 
 export function CrmDashboard() {
   const crm = useCrm();
   const [abierta, setAbierta] = useState<string | null>(null);
+  // Desde el calendario (o un link): ?contacto=<id> abre su ficha.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("contacto");
+    if (id) setAbierta(id);
+  }, []);
   const d = crm.datos;
   const t = useMemo(() => (d ? tablero(crm.contactos, d.actividad, d.ahora, crm.precioMinimo) : null), [crm.contactos, d, crm.precioMinimo]);
   const alarmas = useMemo(() => (d ? todasLasAlarmas(crm.contactos, d.ahora, crm.precioMinimo, crm.estados) : []), [crm.contactos, d, crm.precioMinimo, crm.estados]);
