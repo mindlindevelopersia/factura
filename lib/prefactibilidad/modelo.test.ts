@@ -106,3 +106,16 @@ describe("prefactibilidad", () => {
     expect(calcular(d).construible.gcba).toBe(280);
   });
 });
+
+describe("municipio y barrio", () => {
+  it("el barrio se guarda y los barrios están ordenados", async () => {
+    const { BARRIOS_PRINCIPALES, OTROS_BARRIOS } = await import("./barrios");
+    expect(limpiarDatos({ barrio: "Villa Crespo", ciudad: "La Plata" }, hoy)).toMatchObject({ barrio: "Villa Crespo", ciudad: "La Plata" });
+    expect(limpiarDatos({}, hoy)).toMatchObject({ barrio: "", ciudad: "CABA" });
+    const orden = (l: string[]) => [...l].sort((a, b) => a.localeCompare(b, "es"));
+    expect(BARRIOS_PRINCIPALES).toEqual(orden(BARRIOS_PRINCIPALES));
+    expect(OTROS_BARRIOS).toEqual(orden(OTROS_BARRIOS));
+    expect(OTROS_BARRIOS).toContain("Villa Lugano");
+    expect(OTROS_BARRIOS).not.toContain("Palermo");
+  });
+});
