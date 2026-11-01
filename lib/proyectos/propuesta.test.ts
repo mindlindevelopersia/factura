@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calcularPropuesta, parametrosIniciales, propuestaAUrl, propuestaDeUrl, type ParametrosPropuesta } from "./propuesta";
+import { calcularPropuesta, nombreDelPdf, parametrosIniciales, propuestaAUrl, propuestaDeUrl, type ParametrosPropuesta } from "./propuesta";
 
 // La propuesta de Virginia (2C): US$ 113.286 a $ 1.570, 70/30, anticipos 1.000 y 10.000,
 // 17 cuotas (nov 26 a abr 28), dos refuerzos de A del 20% y uno de B.
@@ -60,5 +60,15 @@ describe("planos", () => {
     expect(planoDe("lerma-439", { nivel: 4, tipologia: "3 ambientes", orientacion: "Frente" })).toBe("/api/proyectos/lerma-439/imagenes/plano-3amb-frente.png");
     expect(planoDe("lerma-439", { nivel: 0, tipologia: "3 ambientes + jardín", orientacion: "Contrafrente" })).toBe("/api/proyectos/lerma-439/imagenes/plano-pb.png");
     expect(planoDe("lerma-439", { nivel: 8, tipologia: "2 ambientes", orientacion: "Frente" })).toBe(null);
+  });
+});
+
+describe("nombreDelPdf", () => {
+  it("arma UF, proyecto y cliente", () => {
+    expect(nombreDelPdf({ unidad: "2C", cliente: "Persona Inventada" }, "Lerma 439")).toBe("UF 2C - LERMA 439 - Persona Inventada by Mindlin Developers");
+  });
+  it("sin cliente y sin caracteres prohibidos", () => {
+    expect(nombreDelPdf({ unidad: "2C", cliente: "" }, "Lerma 439")).toBe("UF 2C - LERMA 439 by Mindlin Developers");
+    expect(nombreDelPdf({ unidad: "2C", cliente: "Ana / Juan: socios" }, "Lerma 439")).toBe("UF 2C - LERMA 439 - Ana Juan socios by Mindlin Developers");
   });
 });

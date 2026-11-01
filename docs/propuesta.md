@@ -20,3 +20,5 @@ Franja negra con el logo de Mindlin y "LERMA 439" escrito, render de portada, pa
 ## Planos e imágenes (`privado/proyectos/lerma-439/`, `lib/proyectos/planos.ts`)
 
 Sacados de "Propuestas comerciales" del Excel madre: 2 ambientes frente (A) y contrafrente (C), monoambiente frente (B) y contrafrente (D), 3 ambientes frente (A+B) y contrafrente (C+D), PB, planta tipo y renders. No están en `public/`: los sirve `/api/proyectos/<id>/imagenes/<archivo>` solo con sesión. Pisos 8 y 9: sin plano propio (va la planta tipo).
+
+Al guardar el PDF, el nombre sale del título de la página: `UF 2C - LERMA 439 - Virginia Alegre by Mindlin Developers` (unidad, proyecto y cliente; `nombreDelPdf` en `lib/proyectos/propuesta.ts`).
