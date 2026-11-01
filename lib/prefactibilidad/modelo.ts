@@ -7,6 +7,8 @@
  * los dos lados). Las versiones guardan cómo estaba en cada momento. Todo puro (sin red).
  */
 
+import { limpiarPlusvalia, PLUSVALIA_VACIA, type DatosPlusvalia } from "./plusvalia";
+
 export interface Descubierta {
   nombre: string;
   m2: number;
@@ -70,6 +72,7 @@ export interface DatosPrefactibilidad {
   pisos: PisoConstruible[];
   unidades: UnidadVendible[];
   notas: string;
+  plusvalia: DatosPlusvalia;
 }
 
 export const ESTADOS_PREFACTIBILIDAD = ["En análisis", "Asignada", "Descartada"] as const;
@@ -129,6 +132,7 @@ export const datosVacios = (hoy: string): DatosPrefactibilidad => ({
   ],
   unidades: [],
   notas: "",
+  plusvalia: { ...PLUSVALIA_VACIA },
 });
 
 const n = (v: unknown): number => {
@@ -178,6 +182,7 @@ export function limpiarDatos(x: unknown, hoy: string): DatosPrefactibilidad {
       return { codigo: t(u?.codigo, 20), piso: t(u?.piso, 40), tipologia: t(u?.tipologia, 60), cubierta: n(u?.cubierta), semicubierta: n(u?.semicubierta), descubiertas: descubiertas(u?.descubiertas), real: nn(u?.real), nota: t(u?.nota, 200) };
     }),
     notas: t(o.notas, 5000),
+    plusvalia: limpiarPlusvalia(o.plusvalia),
   };
 }
 
@@ -397,3 +402,29 @@ export function leerSuperficiesExcel(filas: { valor: number | string | null }[][
     },
   };
 }
+
+const fmt = (x: number) => x.toLocaleString("es-AR", { maximumFractionDigits: 2 });
+const sumaTexto = (l: number[], max = 12) => (l.length ? (l.length > max ? `${l.slice(0, max).map(fmt).join(" + ")} + … (${l.length} valores)` : l.map(fmt).join(" + ")) : "0");
+
+/** "La cuenta" de cada número de Superficies: de dónde sale, con los valores, para revisarla sin abrir nada. */
+export function cuentas(d: DatosPrefactibilidad, c: Calculo): Record<string, string> {
+  const gcba = d.pisos.filter((p) => p.computaGcba);
+  const desc = d.pisos.flatMap((p) => p.descubiertas.map((x) => `${fmt(x.m2)} × ${fmt(x.computa * 100)}%`));
+  const conReal = d.unidades.filter((u) => u.real != null);
+  return {
+    terreno: d.terrenos.map((t) => `${fmt(t.frente)} × ${fmt(t.fondo)}`).join(" + ") + ` = ${fmt(c.superficieTerreno)} m²`,
+    fosPermitido: c.fosPermitido != null ? `${fmt(c.superficieTerreno)} × FOS ${fmt(d.normativa.fos!)} = ${fmt(c.fosPermitido)} m²` : "Falta el FOS.",
+    capacidadFot: c.capacidadFot != null ? `${fmt(c.superficieTerreno)} × FOT ${fmt(d.normativa.fot!)} = ${fmt(c.capacidadFot)} m²` : "Falta el FOT.",
+    gcba: `Cubierta + semicubierta de los pisos marcados GCBA (${gcba.map((p) => p.nombre).join(", ") || "ninguno"}): ${sumaTexto(gcba.flatMap((p) => [p.cubierta, p.semicubierta].filter(Boolean)))} = ${fmt(c.construible.gcba)} m²`,
+    conDescubiertas: `Cubierta ${fmt(c.construible.cubierta)} + semicubierta ${fmt(c.construible.semicubierta)} + descubiertas a su % (${desc.join(" + ") || "ninguna"}) = ${fmt(c.construible.conDescubiertas)} m²`,
+    total: `Cubierta ${fmt(c.construible.cubierta)} + semicubierta ${fmt(c.construible.semicubierta)} + descubiertas al 100% ${fmt(c.construible.descubierta)} = ${fmt(c.construible.total)} m²`,
+    vendibleTeorico: `Suma de las ${d.unidades.length} unidades (cubierta + semicubierta + cada descubierta a su %): ${sumaTexto(d.unidades.map(vendibleTeorico))} = ${fmt(c.vendible.teorico)} m²`,
+    vendibleReal: conReal.length ? `Lo teórico, salvo ${conReal.map((u) => `${u.codigo} (${fmt(u.real!)} en vez de ${fmt(vendibleTeorico(u))})`).join(", ")} = ${fmt(c.vendible.real)} m²` : `Igual a lo teórico (ninguna unidad tiene real distinto) = ${fmt(c.vendible.real)} m²`,
+    comunes: `Construible con descubiertas ${fmt(c.construible.conDescubiertas)} − vendible teórico ${fmt(c.vendible.teorico)} = ${fmt(c.vendible.comunes)} m²`,
+    porcentaje: c.vendible.porcentaje != null ? `Vendible teórico ${fmt(c.vendible.teorico)} ÷ construible con descubiertas ${fmt(c.construible.conDescubiertas)} = ${fmt(c.vendible.porcentaje * 100)}%` : "—",
+  };
+}
+
+/** La cuenta del total de un piso o de lo teórico de una unidad. */
+export const cuentaPiso = (p: PisoConstruible) => `${fmt(p.cubierta)} + ${fmt(p.semicubierta)}${p.descubiertas.map((x) => ` + ${fmt(x.m2)} × ${fmt(x.computa * 100)}%`).join("")} = ${fmt(construiblePiso(p))} m²`;
+export const cuentaUnidad = (u: UnidadVendible) => `${fmt(u.cubierta)} + ${fmt(u.semicubierta)}${u.descubiertas.map((x) => ` + ${fmt(x.m2)} × ${fmt(x.computa * 100)}%`).join("")} = ${fmt(vendibleTeorico(u))} m²`;
