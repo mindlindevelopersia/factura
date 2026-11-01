@@ -11,6 +11,7 @@ function nombres(): Map<string, string> {
     ["/", "Inicio"],
     ["/ajustes", "Ajustes"],
     ["/sin-permiso", "Sin permiso"],
+    ["/perfil", "Mi perfil"],
   ]);
   for (const a of AREAS_EMPRESA) {
     m.set(a.href, a.nombre);

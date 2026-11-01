@@ -79,3 +79,11 @@ export async function guardarConfig(c: ConfigUsuario): Promise<void> {
   else await t.agregar(filaDeUsuario(c));
   cache = null;
 }
+
+/** El nombre para mostrar y el @usuario de alguien (de Ajustes, o el de siempre). */
+export async function perfilDe(email: string): Promise<{ nombre: string; apodo: string; config: ConfigUsuario | null }> {
+  const e = email.trim().toLowerCase();
+  const config = (await leerConfigs().catch(() => [] as ConfigUsuario[])).find((c) => c.email === e) ?? null;
+  const p = persona(e);
+  return { nombre: (config && [config.nombre, config.apellido].filter(Boolean).join(" ")) || p.nombre, apodo: config?.usuario || p.apodo, config };
+}
