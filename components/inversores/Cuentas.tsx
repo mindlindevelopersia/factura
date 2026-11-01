@@ -109,9 +109,15 @@ export function Cuentas() {
               c.avisos.map((a) => ({
                 titulo: a.titulo,
                 detalle: a.detalle,
-                donde: [`UF ${c.unidad}`, c.inversor, a.filas.length ? `${a.filas.length === 1 ? "fila" : "filas"} ${a.filas.join(", ")}` : null, c.columna && `bloque en la columna ${c.columna}`]
-                  .filter(Boolean)
-                  .join(" · "),
+                donde: (
+                  <>
+                    UF {c.unidad} · <span data-sensible="">{c.inversor}</span>
+                    {[a.filas.length ? `${a.filas.length === 1 ? "fila" : "filas"} ${a.filas.join(", ")}` : null, c.columna && `bloque en la columna ${c.columna}`]
+                      .filter(Boolean)
+                      .map((x) => ` · ${x}`)
+                      .join("")}
+                  </>
+                ),
                 monto: null,
                 moneda: null,
               })),
@@ -209,7 +215,7 @@ function FilaCuenta({ c, r }: { c: Cuenta; r: ResumenCuenta }) {
   return (
     <tr>
       <td data-etiqueta="Inversor">
-        <Link href={`${base}/inversores/cuentas-corrientes/${c.id}`} className="ingresos__enlace">
+        <Link href={`${base}/inversores/cuentas-corrientes/${c.id}`} className="ingresos__enlace" data-sensible="">
           {c.inversor}
         </Link>
         <span className="tabla__sub">

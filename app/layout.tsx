@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Sora } from "next/font/google";
+import { SCRIPT_PRIVADO } from "@/components/Privado";
 import "./globals.css";
 
 const sora = Sora({
@@ -20,7 +21,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={sora.variable}>
+    // El modo privado se aplica antes de pintar (ver components/Privado.tsx): por eso el aviso de hidratación.
+    <html lang="es" className={sora.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_PRIVADO }} />
+      </head>
       <body>{children}</body>
     </html>
   );

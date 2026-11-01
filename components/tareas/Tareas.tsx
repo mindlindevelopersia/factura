@@ -258,7 +258,7 @@ function TarjetaTarea({ t, todas, hoy, comentarios, abrir, empresa }: { t: Tarea
       {t.con && (
         <span className="crm-tarjeta__datos">
           {t.relacion !== "Interna" ? `${t.relacion}: ` : ""}
-          {t.con}
+          <span data-sensible="">{t.con}</span>
         </span>
       )}
       {(espera.length > 0 || t.motivoBloqueo) && abierta(t) && (

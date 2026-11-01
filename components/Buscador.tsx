@@ -134,7 +134,7 @@ export function Buscador() {
             <li key={`${r.tipo}-${r.href}-${r.titulo}`} data-i={i} role="option" aria-selected={i === elegido}>
               <button type="button" className={`omni__resultado${i === elegido ? " omni__resultado--elegido" : ""}`} onMouseEnter={() => setElegido(i)} onClick={() => ir(r)}>
                 <span className="omni__textos">
-                  <strong>{r.titulo}</strong>
+                  <strong data-sensible={r.tipo === "Inversor" || r.tipo === "Lead" || r.tipo === "Propuesta" ? "" : undefined}>{r.titulo}</strong>
                   {r.detalle && <small>{r.detalle}</small>}
                 </span>
                 <span className={`omni__tag omni__tag--${r.tipo === "Página" ? "pagina" : r.tipo.toLowerCase()}${r.etiqueta === "Cobro vencido" ? " omni__tag--vencido" : ""}`}>{r.etiqueta}</span>

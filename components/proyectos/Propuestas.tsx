@@ -84,7 +84,7 @@ export function Propuestas() {
                       {x.actualizada.slice(0, 16) !== x.creada.slice(0, 16) && <span className="tabla__sub">Cambiada el {fecha(x.actualizada)}</span>}
                     </td>
                     <td data-etiqueta="Cliente">
-                      <Link className="ingresos__enlace" href={abrir(x)}>
+                      <Link className="ingresos__enlace" href={abrir(x)} data-sensible="">
                         {x.cliente || "Sin nombre"}
                       </Link>
                     </td>

@@ -144,7 +144,7 @@ export function CrmDashboard() {
                     {semana.map((c) => (
                       <li key={c.id}>
                         <button type="button" onClick={() => setAbierta(c.id)}>
-                          <strong>{fechaCorta(c.proximaFecha)}</strong> {c.nombre}
+                          <strong>{fechaCorta(c.proximaFecha)}</strong> <span data-sensible="">{c.nombre}</span>
                           <span>{c.proximoPaso}</span>
                         </button>
                       </li>
@@ -250,7 +250,7 @@ function Tarjeta({ c, crm, abrir }: { c: Contacto; crm: Crm; abrir: (id: string)
       onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)}
     >
       <span className="crm-tarjeta__arriba">
-        <strong>{c.nombre}</strong>
+        <strong data-sensible="">{c.nombre}</strong>
         <ChipTemperatura t={t} manual={!!c.temperaturaManual} />
       </span>
       <span className="crm-tarjeta__datos">
@@ -461,14 +461,23 @@ export function CrmContactos() {
               {lista.map((c) => (
                 <tr key={c.id}>
                   <td data-etiqueta="Contacto">
-                    <button type="button" className="ingresos__enlace" onClick={() => setAbierta(c.id)}>
+                    <button type="button" className="ingresos__enlace" onClick={() => setAbierta(c.id)} data-sensible="">
                       {c.nombre}
                     </button>
                     <span className="tabla__sub">{[c.telefono, c.mail].filter(Boolean).join(" · ") || "Sin datos de contacto"}</span>
                   </td>
                   <td data-etiqueta="Etapa">
                     <span className={`crm-etapa crm-etapa--${claseEtapa(c.etapa)}`}>{c.etapa}</span> <ChipTemperatura t={temperatura(c, hoy, crm.precioMinimo)} manual={!!c.temperaturaManual} />
-                    <span className="tabla__sub">{[c.origen, c.referido, empresa && c.proyectos.length ? c.proyectos.map((p) => proyectoNombre(p)).join(", ") : null].filter(Boolean).join(" · ")}</span>
+                    <span className="tabla__sub">
+                      {c.origen}
+                      {c.referido && (
+                        <>
+                          {c.origen ? " · " : ""}
+                          <span data-sensible="">{c.referido}</span>
+                        </>
+                      )}
+                      {empresa && c.proyectos.length ? `${c.origen || c.referido ? " · " : ""}${c.proyectos.map((p) => proyectoNombre(p)).join(", ")}` : ""}
+                    </span>
                   </td>
                   <td data-etiqueta="Próximo paso">
                     {c.proximaFecha ? <span className={c.proximaFecha < hoy ? "ingresos__vencido" : undefined}>{fechaCorta(c.proximaFecha)}</span> : "—"}

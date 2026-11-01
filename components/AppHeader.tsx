@@ -5,6 +5,7 @@ import { perfilDe } from "@/lib/permisos/fuente";
 import { Campanita } from "./Campanita";
 import { Icono } from "./Icono";
 import { MenuUsuario } from "./MenuUsuario";
+import { BotonPrivado } from "./Privado";
 
 export async function AppHeader({ email }: { email: string }) {
   const { nombre } = await perfilDe(email);
@@ -27,6 +28,7 @@ export async function AppHeader({ email }: { email: string }) {
           </Link>
         </div>
         <div className="app-header__user">
+          <BotonPrivado />
           <Campanita />
           <MenuUsuario
             nombre={nombre}
