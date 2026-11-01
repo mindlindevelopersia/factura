@@ -28,6 +28,12 @@ export function Ajustes() {
   const [error, setError] = useState<string | null>(null);
   const [pestania, setPestania] = useState<"usuarios" | "roles">("usuarios");
   const [abierto, setAbierto] = useState<string | null>(null);
+  // Quiénes ya activaron el código de verificación (null: no se pudo saber).
+  const [conCodigo, setConCodigo] = useState<Set<string> | null>(null);
+  const cargarCodigos = useCallback(async () => {
+    const d = await leerJson<{ emails: string[] | null }>(await fetch("/api/tfa/reiniciar", { cache: "no-store" })).catch(() => ({ emails: null }));
+    setConCodigo(d.emails ? new Set(d.emails) : null);
+  }, []);
 
   const cargar = useCallback(async () => {
     try {
@@ -39,7 +45,8 @@ export function Ajustes() {
   }, []);
   useEffect(() => {
     void cargar();
-  }, [cargar]);
+    void cargarCodigos();
+  }, [cargar, cargarCodigos]);
 
   if (error && !datos) return <p className="alerta alerta--error">{error}</p>;
   if (!datos) return <p className="ficha__nota">Cargando los usuarios…</p>;
@@ -82,6 +89,7 @@ export function Ajustes() {
                       <span className="tabla__sub">
                         @{x.apodo} · {x.email}
                       </span>
+                      {conCodigo && <span className={`tabla__sub ajustes__codigo${conCodigo.has(x.email.toLowerCase()) ? " ajustes__codigo--si" : ""}`}>{conCodigo.has(x.email.toLowerCase()) ? "Código activado" : "Código pendiente (lo activa al entrar)"}</span>}
                     </td>
                     <td data-etiqueta="Puesto">{x.config?.puesto || "—"}</td>
                     <td data-etiqueta="Rol">
@@ -103,7 +111,17 @@ export function Ajustes() {
         <Roles datos={datos} cambiar={() => void cargar()} />
       )}
 
-      {u && <FichaUsuario key={u.email} u={u} datos={datos} cerrar={() => setAbierto(null)} guardado={(usuarios) => setDatos({ ...datos, usuarios })} />}
+      {u && (
+        <FichaUsuario
+          key={u.email}
+          u={u}
+          datos={datos}
+          cerrar={() => setAbierto(null)}
+          guardado={(usuarios) => setDatos({ ...datos, usuarios })}
+          tieneCodigo={conCodigo ? conCodigo.has(u.email.toLowerCase()) : null}
+          codigoReiniciado={() => void cargarCodigos()}
+        />
+      )}
     </div>
   );
 }
@@ -297,7 +315,21 @@ function FichaRol({ rol, datos, cerrar, guardado }: { rol: Rol | null; datos: Da
   );
 }
 
-function FichaUsuario({ u, datos, cerrar, guardado }: { u: UsuarioAjustes; datos: Datos; cerrar: () => void; guardado: (usuarios: UsuarioAjustes[]) => void }) {
+function FichaUsuario({
+  u,
+  datos,
+  cerrar,
+  guardado,
+  tieneCodigo,
+  codigoReiniciado,
+}: {
+  u: UsuarioAjustes;
+  datos: Datos;
+  cerrar: () => void;
+  guardado: (usuarios: UsuarioAjustes[]) => void;
+  tieneCodigo: boolean | null;
+  codigoReiniciado: () => void;
+}) {
   const esSuper = u.email === datos.superAdmin;
   const inicial = {
     nombre: u.config?.nombre ?? "",
@@ -384,6 +416,34 @@ function FichaUsuario({ u, datos, cerrar, guardado }: { u: UsuarioAjustes; datos
                 <input value={f.puesto} onChange={(e) => poner("puesto", e.target.value)} placeholder="Administración" />
               </label>
             </div>
+          </section>
+
+          <section className="crm-ficha__seccion">
+            <h3>Verificación en dos pasos</h3>
+            <p className="crm-ficha__sub">
+              {tieneCodigo === null
+                ? "No se pudo saber si ya la activó."
+                : tieneCodigo
+                  ? "Activada: al entrar en un navegador nuevo le pide el código de Google Authenticator."
+                  : "Todavía no la activó: la próxima vez que entre le va a pedir escanear el código QR."}
+            </p>
+            {datos.yo.superAdmin && tieneCodigo && (
+              <button
+                type="button"
+                className="btn btn--borde btn--chico"
+                onClick={async () => {
+                  if (!window.confirm(`¿Reiniciar la verificación de ${u.nombre}? Usalo si perdió o cambió el celular: la próxima vez que entre va a escanear un código nuevo.`)) return;
+                  try {
+                    await leerJson(await fetch("/api/tfa/reiniciar", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: u.email }) }));
+                    codigoReiniciado();
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : String(e));
+                  }
+                }}
+              >
+                Reiniciar (perdió el celular)
+              </button>
+            )}
           </section>
 
           {esSuper ? (

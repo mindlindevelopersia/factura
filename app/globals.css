@@ -7928,3 +7928,80 @@ html[data-privado-simple] dd {
     filter: none !important;
   }
 }
+
+/* Verificación en dos pasos (/verificar): sobre el estilo del login. */
+.verificar h1 {
+  font-size: 28px;
+}
+.verificar__pasos {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.verificar__qr {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.verificar__qr img {
+  padding: 8px;
+  border-radius: 12px;
+  background: #fff;
+}
+.verificar__qr small {
+  font-size: 11px;
+  line-height: 1.6;
+}
+.verificar__qr a {
+  color: var(--lima);
+}
+.verificar__qr code {
+  color: #fff;
+  letter-spacing: 0.04em;
+}
+.verificar__form {
+  display: grid;
+  gap: 12px;
+}
+.verificar__codigo {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #ffffff40;
+  border-radius: var(--radio-boton);
+  background: #ffffff10;
+  color: #fff;
+  font: inherit;
+  font-size: 26px;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+.verificar__codigo:focus {
+  outline: 2px solid var(--lima);
+  border-color: transparent;
+}
+.verificar__recordar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.verificar__salir {
+  margin-top: 18px;
+  border: 0;
+  background: none;
+  color: #aeb8a4;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ajustes__codigo {
+  color: var(--rojo);
+}
+.ajustes__codigo--si {
+  color: var(--verde);
+}
