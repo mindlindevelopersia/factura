@@ -7,7 +7,10 @@ import { contactoNuevo, ETAPAS, nuevoId as idContacto, ORIGENES, TIPOS_ACTIVIDAD
 import { historicoMep, unidadesDisponibles } from "../finanzas/fuente";
 import { sumarMeses } from "../finanzas/ingresos";
 import { PROYECTO_PRINCIPAL, PROYECTOS, rutaProyecto } from "../modulos";
-import { avisarAsignacion } from "../notificaciones/fuente";
+import { avisarAsignacion, avisarMenciones, notificar, usuariosDelSistema } from "../notificaciones/fuente";
+import { extracto, usuarioPorApodo } from "../notificaciones/modelo";
+import { comentarIdea, crearIdea, leerIdeas } from "../producto/fuente";
+import { limpiarTags, TODOS_LOS_TAGS } from "../producto/tags";
 import { puedeRuta, veProyecto, type Acceso } from "../permisos/modelo";
 import { calcularPropuesta, ENTREGA, parametrosIniciales, propuestaAUrl } from "../proyectos/propuesta";
 import { crearPropuesta } from "../proyectos/propuestasFuente";
@@ -152,6 +155,28 @@ export const HERRAMIENTAS: Anthropic.Beta.BetaTool[] = [
       contacto_id: textoONull("El id del contacto del CRM si está cargado; null si no."),
       precio_usd: numeroONull("Precio en dólares si se dijo uno distinto al de lista; null para el de lista."),
     }),
+  },
+  {
+    name: "buscar_ideas",
+    description: "Busca ideas del tablero de Producto (mejoras y módulos nuevos para el hub). Usala antes de cargar una idea, para no repetirla, o para comentar una.",
+    strict: true,
+    input_schema: objeto({ texto: textoONull("Palabras a buscar; null para las últimas.") }),
+  },
+  {
+    name: "crear_idea",
+    description: "Carga una idea en el tablero de Producto (algo para sumar o mejorar en el hub: un módulo, una pantalla, un proceso). No es una tarea: no tiene responsable ni fecha.",
+    strict: true,
+    input_schema: objeto({
+      titulo: texto("La idea en pocas palabras."),
+      descripcion: texto("Qué es, para qué sirve y cómo se la imagina, con lo que se dijo (sin inventar)."),
+      areas: { type: "array", items: { type: "string", enum: TODOS_LOS_TAGS }, description: 'A qué áreas o módulos del hub aplica ("Marketing", "Marketing · Blog"); vacío si no se sabe.' },
+    }),
+  },
+  {
+    name: "comentar_idea",
+    description: "Deja un comentario en una idea de Producto (por su id, de buscar_ideas). Le avisa a quien la escribió.",
+    strict: true,
+    input_schema: objeto({ id: texto("El id de la idea."), comentario: texto("El comentario.") }),
   },
   {
     name: "nota_en_factura",
@@ -326,6 +351,38 @@ export async function ejecutar(nombre: string, entrada: Record<string, unknown>,
         contenido: json({ propuesta: { id: g.id, unidad: p.unidad, cliente: p.cliente, precio_usd: p.precioUsd, dolar_mep: p.tipoCambio, total_ars: Math.round(r.totalArs), vence: r.hasta, cuotas: p.cuotas.cantidad }, link: url }),
         accion: `guardó la propuesta ${g.id} (${p.unidad} para ${p.cliente})`,
       };
+    }
+    case "buscar_ideas": {
+      if (!puedeRuta(ctx.acceso, "/producto/ideas")) return error("No tiene permiso para ver las ideas de Producto.");
+      const q = typeof entrada.texto === "string" ? sinTildes(entrada.texto) : "";
+      const { ideas } = await leerIdeas();
+      const l = ideas.filter((i) => !q || q.split(/\s+/).every((p) => sinTildes(`${i.titulo} ${i.texto} ${i.tags.join(" ")}`).includes(p))).slice(-10).reverse();
+      return { contenido: json({ total: l.length, ideas: l.map((i) => ({ id: i.id, titulo: i.titulo, estado: i.estado, autor: i.autor, areas: i.tags, creada: i.creada.slice(0, 10) })) }) };
+    }
+    case "crear_idea": {
+      if (!puedeRuta(ctx.acceso, "/producto/ideas")) return error("No tiene permiso para cargar ideas de Producto.");
+      const titulo = String(entrada.titulo ?? "").trim().slice(0, 200);
+      if (!titulo) return error("La idea necesita un título.");
+      const idea = await crearIdea(titulo, String(entrada.descripcion ?? "").slice(0, 10000), ctx.usuario, limpiarTags(entrada.areas));
+      const ruta = `/producto/ideas?idea=${idea.id}`;
+      await avisarMenciones({ texto: `${idea.titulo}\n${idea.texto}`, titulo: `Idea: ${idea.titulo}`, link: ruta, de: ctx.usuario, deEmail: ctx.email }).catch((e) => console.error("bot aviso", e));
+      return { contenido: json({ creada: { id: idea.id, titulo: idea.titulo, areas: idea.tags }, link: link(ruta) }), accion: `cargó la idea ${idea.id} "${idea.titulo}"` };
+    }
+    case "comentar_idea": {
+      if (!puedeRuta(ctx.acceso, "/producto/ideas")) return error("No tiene permiso para las ideas de Producto.");
+      const id = String(entrada.id ?? "");
+      const idea = (await leerIdeas()).ideas.find((i) => i.id === id);
+      if (!idea) return error("No encontré esa idea.");
+      const comentario = String(entrada.comentario ?? "").trim().slice(0, 3000);
+      if (!comentario) return error("El comentario está vacío.");
+      await comentarIdea(id, ctx.usuario, comentario);
+      const ruta = `/producto/ideas?idea=${id}`;
+      const autor = usuarioPorApodo(idea.autor, await usuariosDelSistema());
+      await Promise.all([
+        avisarMenciones({ texto: comentario, titulo: `Idea: ${idea.titulo}`, link: ruta, de: ctx.usuario, deEmail: ctx.email }),
+        autor && autor.email !== ctx.email ? notificar([{ para: autor, tipo: "comentario", titulo: `${ctx.usuario} comentó tu idea: ${idea.titulo}`, texto: extracto(comentario), link: ruta, de: ctx.usuario, deEmail: ctx.email }]) : null,
+      ]).catch((e) => console.error("bot aviso", e));
+      return { contenido: json({ ok: true, link: link(ruta) }), accion: `comentó la idea ${id}` };
     }
     case "nota_en_factura": {
       if (!ctx.factura) return error("No hay una factura de este chat en la última media hora.");
