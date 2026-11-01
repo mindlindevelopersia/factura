@@ -13,10 +13,10 @@ Comercial → Propuesta comercial (también "Armar propuesta" desde la ficha del
 
 ## El documento
 
-Franja negra con el logo de Mindlin y el de Lerma 439, render de portada, para quién es, fecha y vigencia (7 días), la unidad con sus superficies y su **plano**, el aporte estimado en dólares y pesos (y A/B, si se muestra), cómo se paga mes a mes y las notas (al costo, CAC, pesos, plazos, vigencia).
+Franja negra con el logo de Mindlin y "LERMA 439" escrito, render de portada, para quién es, fecha y vigencia (7 días), la unidad con sus superficies y su **plano**, el aporte estimado en dólares y pesos (y A/B, si se muestra), cómo se paga mes a mes y las notas (al costo, CAC, pesos, plazos, vigencia).
 
-"Copiar link" guarda los parámetros en el link. "Registrar en el CRM" la deja en el historial del contacto, lo pasa a Evaluando y agenda el seguimiento a 2 días.
+"Copiar link" guarda los parámetros en el link. "Registrar en el CRM" la deja en el historial del contacto, lo pasa a Propuesta enviada y agenda el seguimiento a 2 días.
 
 ## Planos e imágenes (`privado/proyectos/lerma-439/`, `lib/proyectos/planos.ts`)
 
-Sacados de "Propuestas comerciales" del Excel madre: 2 ambientes frente (A) y contrafrente (C), monoambiente frente (B) y contrafrente (D), 3 ambientes frente (A+B) y contrafrente (C+D), PB, planta tipo, renders y el logo de Lerma. No están en `public/`: los sirve `/api/proyectos/<id>/imagenes/<archivo>` solo con sesión. Pisos 8 y 9: sin plano propio (va la planta tipo).
+Sacados de "Propuestas comerciales" del Excel madre: 2 ambientes frente (A) y contrafrente (C), monoambiente frente (B) y contrafrente (D), 3 ambientes frente (A+B) y contrafrente (C+D), PB, planta tipo y renders. No están en `public/`: los sirve `/api/proyectos/<id>/imagenes/<archivo>` solo con sesión. Pisos 8 y 9: sin plano propio (va la planta tipo).

@@ -10,9 +10,8 @@ export interface UnidadParaPlano {
   orientacion: string;
 }
 
-export const IMAGENES: Record<string, { logo: string; render: string; renderTerraza: string; plantaTipo: string; frase: string } | undefined> = {
+export const IMAGENES: Record<string, { render: string; renderTerraza: string; plantaTipo: string; frase: string } | undefined> = {
   "lerma-439": {
-    logo: "/api/proyectos/lerma-439/imagenes/logo-lerma.png",
     render: "/api/proyectos/lerma-439/imagenes/render-interior.jpg",
     renderTerraza: "/api/proyectos/lerma-439/imagenes/render-terraza.jpg",
     plantaTipo: "/api/proyectos/lerma-439/imagenes/planta-tipo.png",

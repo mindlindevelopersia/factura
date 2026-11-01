@@ -412,3 +412,26 @@ export async function estadosDeUnidades(id: string): Promise<EstadoUnidadCrm[]> 
     return [];
   }
 }
+
+/** El ID de una planilla a partir de su link (o el ID mismo). */
+export function idDePlanilla(link: string): string | null {
+  const m = link.match(/\/d\/([a-zA-Z0-9_-]{20,})/) ?? link.trim().match(/^([a-zA-Z0-9_-]{20,})$/);
+  return m ? m[1] : null;
+}
+
+/** Todas las pestañas de una planilla cualquiera (para importar contactos): título y filas. */
+export async function leerPlanillaCompleta(sheetId: string): Promise<{ pestania: string; filas: Celda[][] }[]> {
+  const client = googleClient();
+  if (!client) throw new FlujoSinConfigurar("Falta la cuenta de servicio de Google.");
+  try {
+    const r = await client.request<{ sheets: { properties: { title: string } }[] }>({ url: `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets.properties.title` });
+    const titulos = r.data.sheets.map((s) => s.properties.title).slice(0, 10);
+    return Promise.all(titulos.map(async (t) => ({ pestania: t, filas: await leerGrilla(t, "A1:Z6000", false, sheetId) })));
+  } catch (e) {
+    const status = (e as { response?: { status?: number } }).response?.status;
+    if (status === 403 || status === 404) {
+      throw new Error(`La app no puede abrir esa planilla. Compartila como Lector con ${process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ?? "la cuenta de servicio"}.`);
+    }
+    throw e;
+  }
+}

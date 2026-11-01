@@ -75,14 +75,14 @@ export function Propuesta() {
       await crm.actualizar(
         contacto.id,
         {
-          etapa: contacto.etapa === "Negociando" ? "Negociando" : "Evaluando",
+          etapa: "Propuesta enviada",
           unidades: [...new Set([...contacto.unidades, p.unidad])],
           proximoPaso: `Seguimiento de la propuesta de la ${p.unidad} (vence el ${r.hasta.split("-").reverse().join("/")})`,
           proximaFecha: d.toISOString().slice(0, 10),
         },
         { tipo: "Nota", detalle: `${resumenPropuesta(p, r)} Ver: ${link}` },
       );
-      setAviso("Listo: quedó en el historial del contacto, en Evaluando, con seguimiento en 2 días.");
+      setAviso("Listo: quedó en el historial del contacto, en Propuesta enviada, con seguimiento en 2 días.");
     } catch (e) {
       setAviso(e instanceof Error ? e.message : String(e));
     }
@@ -207,7 +207,10 @@ export function Propuesta() {
       <article className="propuesta-doc" aria-label="Propuesta comercial">
         <header className="propuesta-doc__encabezado">
           <img src="/brand/mindlin-logo.png" alt="Mindlin Developers" className="propuesta-doc__logo" />
-          {img && <img src={img.logo} alt={proyecto?.nombre ?? ""} className="propuesta-doc__logo-proyecto" onError={ocultar} />}
+          <span className="propuesta-doc__nombre-proyecto">
+            <strong>{proyecto?.nombre.toUpperCase()}</strong>
+            {img && <small>{img.frase.split(" · ")[0]}</small>}
+          </span>
         </header>
         {img && (
           <div className="propuesta-doc__portada" style={{ backgroundImage: `url(${img.render})` }}>

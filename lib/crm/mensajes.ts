@@ -34,13 +34,9 @@ export function mensajeSugerido(c: Contacto, unidades: UnidadDisponible[], proye
         ? `Hola ${nombre}! Con lo que me contaste, la que mejor te sirve es ${unidad}. Es un desarrollo al costo: pagás un anticipo y el resto en cuotas en pesos ajustadas por CAC. ¿Te armo la propuesta con los números?`
         : `Hola ${nombre}! Te mando la información de ${proyecto}. Es un desarrollo al costo: pagás un anticipo y el resto en cuotas en pesos ajustadas por CAC. ¿Te armo una propuesta con los números?`;
       break;
-    case "Evaluando":
+    case "Propuesta enviada":
       asunto = `${proyecto}: tu propuesta`;
-      cuerpo = `Hola ${nombre}, ¿pudiste ver la propuesta${unidad ? ` de ${unidad}` : ""}? Te recuerdo que la lista de precios se actualiza y la propuesta vale por 7 días. Si tenés alguna duda con las cuotas o los refuerzos, lo vemos juntos.`;
-      break;
-    case "Negociando":
-      asunto = `${proyecto}: cerramos`;
-      cuerpo = `Hola ${nombre}! Ya tenemos casi todo. Si te parece, avanzamos con el boleto esta semana para mantenerte el precio. ¿Qué día te queda bien?`;
+      cuerpo = `Hola ${nombre}, ¿pudiste ver la propuesta${unidad ? ` de ${unidad}` : ""}? Te recuerdo que la lista de precios se actualiza y la propuesta vale por 7 días. Si tenés alguna duda con las cuotas o los refuerzos, lo vemos juntos; y si querés avanzar, coordinamos el boleto.`;
       break;
     case "Vendido":
       asunto = `${proyecto}: gracias por confiar`;

@@ -4883,16 +4883,14 @@ h1 .etiqueta-beta {
 .crm-etapa--nuevo { background: #dbe7f6; }
 .crm-etapa--contactado { background: #e3e0f5; }
 .crm-etapa--interesado { background: #fdf0c8; }
-.crm-etapa--evaluando { background: #fbdcc0; }
-.crm-etapa--negociando { background: #f6c9b8; }
+.crm-etapa--propuesta-enviada { background: #fbdcc0; }
 .crm-etapa--vendido { background: var(--lima); }
 .crm-etapa--perdido { background: #e6e6e1; color: var(--texto-suave); }
 .crm-etapa--dormido { background: #e9eef0; color: var(--texto-suave); }
 .crm-barras__barra.crm-etapa--nuevo,
 .crm-barras__barra.crm-etapa--contactado,
 .crm-barras__barra.crm-etapa--interesado,
-.crm-barras__barra.crm-etapa--evaluando,
-.crm-barras__barra.crm-etapa--negociando,
+.crm-barras__barra.crm-etapa--propuesta-enviada,
 .crm-barras__barra.crm-etapa--vendido,
 .crm-barras__barra.crm-etapa--perdido,
 .crm-barras__barra.crm-etapa--dormido {
@@ -5655,4 +5653,50 @@ h1 .etiqueta-beta {
 
 .propuesta-doc__portada {
   background-color: var(--negro);
+}
+
+.propuesta-doc__nombre-proyecto {
+  display: grid;
+  justify-items: end;
+  color: white;
+  line-height: 1.1;
+}
+.propuesta-doc__nombre-proyecto strong {
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+}
+.propuesta-doc__nombre-proyecto small {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #c8ccc0;
+}
+
+.crm__botones {
+  display: flex;
+  gap: 6px;
+}
+.crm-importar {
+  display: grid;
+  gap: 8px;
+  margin: 0 20px 16px;
+  padding: 14px;
+  border-radius: var(--radio-campo);
+  background: var(--gris-claro);
+}
+.crm-importar input {
+  padding: 8px 10px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo);
+  font: inherit;
+  font-size: 13px;
+}
+.crm-importar__resultado {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.crm-importar__resultado p,
+.crm-importar__resultado ul {
+  margin: 0;
 }

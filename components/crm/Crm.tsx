@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 import { alarmasDe, dias, hoyBA, tablero, temperatura, todasLasAlarmas, ultimoTrato, type Alarma } from "@/lib/crm/alarmas";
-import { abierto, DESCRIPCION_ETAPA, ETAPAS, ETAPAS_ABIERTAS, NOMBRE_TEMPERATURA, ORIGENES, TEMPERATURAS, type Contacto, type Etapa } from "@/lib/crm/modelo";
+import { abierto, claseEtapa, DESCRIPCION_ETAPA, ETAPAS, ETAPAS_ABIERTAS, NOMBRE_TEMPERATURA, ORIGENES, TEMPERATURAS, type Contacto, type Etapa } from "@/lib/crm/modelo";
 import { proyecto as buscarProyecto } from "@/lib/modulos";
 import { Icono } from "../Icono";
 
 const proyectoNombre = (id: string) => buscarProyecto(id)?.nombre ?? id;
 import { useBaseProyecto } from "../proyecto";
 import { ChipTemperatura, Ficha } from "./Ficha";
-import { fechaCorta, useCrm, usd, type Crm } from "./datos";
+import { fechaCorta, useCrm, usd, type Crm, type ResultadoImportarBase } from "./datos";
 
 const SECCIONES = [
   ["", "Dashboard"],
@@ -153,7 +153,7 @@ export function CrmDashboard() {
                     <li key={e} title={DESCRIPCION_ETAPA[e]}>
                       <span>{e}</span>
                       <span className="crm-barras__pista">
-                        <span className={`crm-barras__barra crm-etapa--${e.toLowerCase()}`} style={{ width: `${(t.porEtapa[e] / Math.max(1, ...Object.values(t.porEtapa))) * 100}%` }} />
+                        <span className={`crm-barras__barra crm-etapa--${claseEtapa(e)}`} style={{ width: `${(t.porEtapa[e] / Math.max(1, ...Object.values(t.porEtapa))) * 100}%` }} />
                       </span>
                       <strong>{t.porEtapa[e]}</strong>
                     </li>
@@ -329,7 +329,7 @@ export function CrmEmbudo() {
                   }}
                 >
                   <header title={DESCRIPCION_ETAPA[e]}>
-                    <span className={`crm-etapa crm-etapa--${e.toLowerCase()}`}>{e}</span>
+                    <span className={`crm-etapa crm-etapa--${claseEtapa(e)}`}>{e}</span>
                     <span>
                       {lista.length}
                       {conAlarma > 0 && <span className="crm-tarjeta__alarma"> · {conAlarma} para hoy</span>}
@@ -361,6 +361,7 @@ export function CrmContactos() {
   const [origen, setOrigen] = useState("");
   const [nuevo, setNuevo] = useState(false);
   const [empresa, setEmpresa] = useState(false);
+  const [importando, setImportando] = useState(false);
   const hoy = crm.datos ? hoyBA(new Date(crm.datos.ahora)) : "";
   const q = buscar.trim().toLowerCase();
   const lista = (empresa ? crm.todos : crm.contactos)
@@ -374,11 +375,17 @@ export function CrmContactos() {
       <section className="card ingresos__seccion">
         <div className="ingresos__titulo cuentas__controles">
           <h2>Contactos ({lista.length})</h2>
-          <button type="button" className="btn btn--primario btn--chico" onClick={() => setNuevo((v) => !v)}>
-            {nuevo ? "Cancelar" : "+ Nuevo contacto"}
-          </button>
+          <span className="crm__botones">
+            <button type="button" className="btn btn--borde btn--chico" onClick={() => setImportando((v) => !v)}>
+              {importando ? "Cerrar" : "Importar planilla"}
+            </button>
+            <button type="button" className="btn btn--primario btn--chico" onClick={() => setNuevo((v) => !v)}>
+              {nuevo ? "Cancelar" : "+ Nuevo contacto"}
+            </button>
+          </span>
         </div>
         {nuevo && <Alta crm={crm} listo={(id) => (setNuevo(false), setAbierta(id))} />}
+        {importando && <ImportarPlanilla crm={crm} />}
         <div className="crm__filtros">
           <input type="search" value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Buscar nombre, mail, teléfono, notas…" aria-label="Buscar" />
           <select value={etapa} onChange={(e) => setEtapa(e.target.value)} aria-label="Etapa">
@@ -426,7 +433,7 @@ export function CrmContactos() {
                     <span className="tabla__sub">{[c.telefono, c.mail].filter(Boolean).join(" · ") || "Sin datos de contacto"}</span>
                   </td>
                   <td data-etiqueta="Etapa">
-                    <span className={`crm-etapa crm-etapa--${c.etapa.toLowerCase()}`}>{c.etapa}</span> <ChipTemperatura t={temperatura(c, hoy, crm.precioMinimo)} manual={!!c.temperaturaManual} />
+                    <span className={`crm-etapa crm-etapa--${claseEtapa(c.etapa)}`}>{c.etapa}</span> <ChipTemperatura t={temperatura(c, hoy, crm.precioMinimo)} manual={!!c.temperaturaManual} />
                     <span className="tabla__sub">{[c.origen, c.referido, empresa && c.proyectos.length ? c.proyectos.map((p) => proyectoNombre(p)).join(", ") : null].filter(Boolean).join(" · ")}</span>
                   </td>
                   <td data-etiqueta="Próximo paso">
@@ -513,5 +520,75 @@ function Alta({ crm, listo, conEtapa }: { crm: Crm; listo: (id: string) => void;
         {guardando ? "Guardando…" : "Crear y abrir la ficha"}
       </button>
     </form>
+  );
+}
+
+/** Importar una planilla de contactos: primero muestra qué va a hacer, después importa. */
+function ImportarPlanilla({ crm }: { crm: Crm }) {
+  const [link, setLink] = useState("");
+  const [r, setR] = useState<ResultadoImportarBase | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [trabajando, setTrabajando] = useState(false);
+  const correr = async (confirmar: boolean) => {
+    setTrabajando(true);
+    setError(null);
+    try {
+      setR(await crm.importarBase(link, confirmar));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setTrabajando(false);
+    }
+  };
+  return (
+    <div className="crm-importar">
+      <p className="crm-ficha__sub">
+        Pegá el link de una planilla de Google con contactos (compartida como Lector con la cuenta de la app). Se reconocen las columnas por el título (nombre, apellido, mail,
+        teléfono, empresa, origen, notas) y se sacan los duplicados por mail, teléfono o nombre. Los nuevos entran como Dormido, sin proyecto.
+      </p>
+      <div className="crm-ficha__ia">
+        <input value={link} onChange={(e) => (setLink(e.target.value), setR(null))} placeholder="https://docs.google.com/spreadsheets/d/…" aria-label="Link de la planilla" />
+        <button type="button" className="btn btn--borde btn--chico" disabled={!link || trabajando} onClick={() => void correr(false)}>
+          {trabajando && !r ? "Leyendo…" : "Revisar"}
+        </button>
+      </div>
+      {error && <p className="oliver__error">{error}</p>}
+      {r && (
+        <div className="crm-importar__resultado">
+          <p>
+            {r.confirmado ? "Listo: se importaron " : "Se van a importar "}
+            <strong>{r.nuevos} contactos nuevos</strong>. {r.totalYaEstaban} ya estaban en el CRM{r.completar ? ` (a ${r.completar} se les completa el mail o el teléfono)` : ""} y {r.repetidos}{" "}
+            estaban repetidos en la planilla.
+          </p>
+          <ul>
+            {r.pestanias.map((p) => (
+              <li key={p.pestania}>
+                <strong>{p.pestania}</strong>: {p.nuevos} nuevos, {p.yaEstaban} ya estaban, {p.repetidos} repetidos{p.sinNombre ? `, ${p.sinNombre} filas sin nombre` : ""} · columnas: {p.columnas.join(", ")}
+              </li>
+            ))}
+          </ul>
+          {!r.confirmado && r.ejemplos.length > 0 && (
+            <p className="crm-ficha__sub">Por ejemplo: {r.ejemplos.map((e) => e.nombre).join(", ")}.</p>
+          )}
+          {!r.confirmado && r.yaEstaban.length > 0 && (
+            <details>
+              <summary className="crm-ficha__sub">Ver los que ya estaban</summary>
+              <ul className="crm-ficha__sub">
+                {r.yaEstaban.map((y, i) => (
+                  <li key={i}>
+                    {y.nombre} = {y.existente} (por {y.por})
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {!r.confirmado && r.nuevos + r.completar > 0 && (
+            <button type="button" className="btn btn--primario btn--chico" disabled={trabajando} onClick={() => void correr(true)}>
+              {trabajando ? "Importando…" : `Importar ${r.nuevos} contactos`}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

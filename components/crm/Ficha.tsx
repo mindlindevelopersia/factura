@@ -6,6 +6,7 @@ import { linkWhatsapp, mensajeSugerido, ZOHO_MAIL } from "@/lib/crm/mensajes";
 import {
   abierto,
   DESCRIPCION_ETAPA,
+  claseEtapa,
   ETAPAS,
   FORMAS_DE_PAGO,
   MOTIVOS_PERDIDA,
@@ -178,7 +179,7 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
           <div>
             <h2>{c.nombre}</h2>
             <span>
-              <span className={`crm-etapa crm-etapa--${c.etapa.toLowerCase()}`}>{c.etapa}</span> <ChipTemperatura t={temp} manual={!!c.temperaturaManual} />
+              <span className={`crm-etapa crm-etapa--${claseEtapa(c.etapa)}`}>{c.etapa}</span> <ChipTemperatura t={temp} manual={!!c.temperaturaManual} />
               {c.origen && <span className="crm-ficha__sub"> · {c.origen}{c.referido ? ` (${c.referido})` : ""}</span>}
             </span>
           </div>

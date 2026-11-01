@@ -5,25 +5,27 @@
  * o nota; solo se agregan). Todo lo de acá es puro (sin red). Ver docs/crm.md.
  */
 
-export const ETAPAS = ["Nuevo", "Contactado", "Interesado", "Evaluando", "Negociando", "Vendido", "Perdido", "Dormido"] as const;
+export const ETAPAS = ["Nuevo", "Contactado", "Interesado", "Propuesta enviada", "Vendido", "Perdido", "Dormido"] as const;
 export type Etapa = (typeof ETAPAS)[number];
 
 /** Las del embudo, en orden (Vendido, Perdido y Dormido se muestran aparte). */
-export const ETAPAS_ABIERTAS: Etapa[] = ["Nuevo", "Contactado", "Interesado", "Evaluando", "Negociando"];
+export const ETAPAS_ABIERTAS: Etapa[] = ["Nuevo", "Contactado", "Interesado", "Propuesta enviada"];
+
+/** Para las clases de CSS: "Propuesta enviada" → "propuesta-enviada". */
+export const claseEtapa = (e: string) => e.toLowerCase().replace(/\s+/g, "-");
 
 export const DESCRIPCION_ETAPA: Record<Etapa, string> = {
   Nuevo: "Entró y nadie le habló todavía.",
   Contactado: "Ya hablamos: hay que calificarlo (presupuesto, plazo, para qué compra, quién decide, cómo paga).",
   Interesado: "Calificado y con interés: hay que mandarle la info y la propuesta.",
-  Evaluando: "Tiene una propuesta concreta y la está pensando. La propuesta vence a los 7 días.",
-  Negociando: "Ajustando precio, forma de pago o refuerzos para cerrar.",
+  "Propuesta enviada": "Tiene una propuesta concreta (unidad, precio, cuotas) y la está pensando. La propuesta vence a los 7 días.",
   Vendido: "Firmó el boleto.",
   Perdido: "No compró (con el motivo).",
   Dormido: "No es ahora: se le mandan novedades cada tanto.",
 };
 
 /** Cuántos días puede estar en cada etapa antes de que salte la alarma de "estancado". */
-export const PLAZO_ETAPA: Partial<Record<Etapa, number>> = { Contactado: 7, Interesado: 14, Evaluando: 7, Negociando: 14 };
+export const PLAZO_ETAPA: Partial<Record<Etapa, number>> = { Contactado: 7, Interesado: 14, "Propuesta enviada": 7 };
 
 export const TEMPERATURAS = ["hot", "tibio", "frio"] as const;
 export type Temperatura = (typeof TEMPERATURAS)[number];
@@ -122,7 +124,8 @@ export const COLUMNAS_CONTACTOS = [
 
 export const COLUMNAS_ACTIVIDAD = ["Fecha", "Usuario", "Contacto ID", "Contacto", "Tipo", "Detalle", "Etapa"] as const;
 
-const etapaValida = (t: string): Etapa => ((ETAPAS as readonly string[]).includes(t) ? (t as Etapa) : "Nuevo");
+/** Las etapas que ya no existen (Evaluando y Negociando, hasta noviembre 2026) pasan a "Propuesta enviada". */
+const etapaValida = (t: string): Etapa => ((ETAPAS as readonly string[]).includes(t) ? (t as Etapa) : t === "Evaluando" || t === "Negociando" ? "Propuesta enviada" : "Nuevo");
 const temperaturaValida = (t: string): Temperatura | null => ((TEMPERATURAS as readonly string[]).includes(t) ? (t as Temperatura) : null);
 const numero = (t: string) => {
   const n = Number(String(t).replace(/[^\d.,-]/g, "").replace(/\./g, "").replace(",", "."));
