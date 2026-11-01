@@ -5,6 +5,7 @@ import { resumen } from "@/lib/proyectos/comercial";
 import { Icono } from "../Icono";
 import { BarraLectura } from "../finanzas/comun";
 import { m2, pct, useComercial, usd } from "./datos";
+import { Honorarios } from "./Honorarios";
 import { Origen } from "./Origen";
 import { RevisionHq } from "./RevisionHq";
 import { Supuestos } from "./Supuestos";
@@ -77,6 +78,8 @@ export function Desarrolladores() {
               </div>
             </div>
           </section>
+
+          <Honorarios />
 
           <section className="card ingresos__seccion">
             <h2>Reparto entre socios</h2>
