@@ -5,6 +5,8 @@ import { EtiquetaBeta } from "@/components/Beta";
 import { Icono } from "@/components/Icono";
 import { DolarHoy } from "@/components/indicadores/Dolar";
 import { TarjetasModulos } from "@/components/TarjetasModulos";
+import { requireUser } from "@/lib/auth/session";
+import { persona, saludoDelMomento } from "@/lib/equipo";
 import { AREAS_EMPRESA, PROYECTOS, RUTA_FACTURAS, rutaProyecto } from "@/lib/modulos";
 
 export const metadata: Metadata = { title: "Inicio" };
@@ -17,14 +19,18 @@ export default async function Inicio({
   // Los avisos de Telegram anteriores al hub apuntan a /?revisar=<id>: siguen abriendo la factura.
   const { revisar } = await searchParams;
   if (revisar) redirect(`${RUTA_FACTURAS}?revisar=${encodeURIComponent(revisar)}`);
+  const user = await requireUser();
+  const quien = persona(user.email, user.name);
 
   return (
     <main className="app-main" id="contenido">
       <div className="pagina-encabezado">
         <div>
           <span className="eyebrow">Mindlin Developers</span>
-          <h1>Hub de la empresa</h1>
-          <p>Cada proyecto con su administración, sus finanzas, su comercial y sus inversores. Arriba, el dólar del día; abajo, lo que es de toda la empresa.</p>
+          <h1>
+            {saludoDelMomento()}, {quien.apodo}
+          </h1>
+          <p>El dólar del día, cada proyecto con su administración, sus finanzas, su comercial y sus inversores, y lo que es de toda la empresa.</p>
         </div>
       </div>
       <DolarHoy />

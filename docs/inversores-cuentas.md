@@ -60,3 +60,12 @@ La ficha de cada inversor muestra, además de los dólares, la cuenta en pesos l
 - Avance = pagado de hoy ÷ costo de hoy. Saldo = costo de hoy − pagado de hoy.
 
 La tabla de pagos suma la columna "En pesos de hoy" con el factor CAC de cada uno. Sin mes base CAC (por ejemplo, las de precio cerrado en dólares) no hay costo de hoy. Lógica en `lib/inversores/pesos.ts`; el CAC llega con las cuentas (`cac` en la respuesta de `/api/inversores/cuentas`).
+
+## Cruce con Ventas y el Flujo
+
+Las cuentas se cruzan con el machete de "Ventas" del Excel madre y con el Flujo de fondos (`lib/inversores/cruce.ts`):
+
+- **Completa** lo que falta en "Pagos por Inversor": el costo estimado de Ventas (si ninguna cuenta de la unidad lo tiene) y el mes base CAC del Flujo. Queda un aviso "completado" diciendo de dónde salió.
+- **Avisa** lo que no coincide: costo estimado (sumando las cuentas de la unidad, como la 4D), nombre, anticipo al boleto contra los anticipos cargados, mes base CAC, y en Ventas, blanco + negro contra el monto al boleto.
+- Lo que ya explica una corrección del proyecto (`ajustes` en `lib/modulos.ts`, por ejemplo el mutuo de la 4C) no se avisa.
+- Si el Excel madre no se puede leer, las cuentas salen igual, sin el cruce.

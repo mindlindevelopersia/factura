@@ -66,7 +66,7 @@ export interface Cuenta {
   sinUnidad?: boolean;
 }
 
-export type TipoAvisoCuenta = "fecha" | "sin-usd" | "sin-tipo" | "solo-flujo" | "mas-del-100" | "encabezado";
+export type TipoAvisoCuenta = "fecha" | "sin-usd" | "sin-tipo" | "solo-flujo" | "mas-del-100" | "encabezado" | "cruce" | "completado";
 
 export interface AvisoCuenta {
   tipo: TipoAvisoCuenta;
@@ -398,7 +398,7 @@ export function unirConFlujo(bloques: Omit<Cuenta, "pendientes" | "cobradoFlujo"
         {
           tipo: "encabezado" as const,
           titulo: "Encabezado copiado de otra cuenta",
-          detalle: `Sus pagos están en el bloque de la columna ${b.columna} de "Pagos por Inversor" (${mejor.iguales} de ${b.pagos.length} coinciden con el Flujo), pero el encabezado dice "${b.inversor}", unidad "${b.unidad || "vacía"}" y ${precio}. Hay que corregir nombre, unidad, CUIT, teléfono y costo estimado. Mientras tanto no hay precio: no se calcula el saldo ni el avance.`,
+          detalle: `Sus pagos están en el bloque de la columna ${b.columna} de "Pagos por Inversor" (${mejor.iguales} de ${b.pagos.length} coinciden con el Flujo), pero el encabezado dice "${b.inversor}", unidad "${b.unidad || "vacía"}" y ${precio}. Hay que corregir nombre, unidad, CUIT, teléfono y costo estimado. Mientras tanto, lo que falta se toma de otras planillas (Ventas y el Flujo), si está.`,
           filas: [],
         },
       ],
