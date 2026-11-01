@@ -13,6 +13,9 @@ export async function getUser(): Promise<Usuario | null> {
   const session = await auth();
   const email = session?.user?.email;
   if (!email || !isAllowedEmail(email)) return null;
+  // Segunda barrera de la verificación en dos pasos (la primera es proxy.ts).
+  const { segundoFactorOk } = await import("../tfa/sesion");
+  if (!(await segundoFactorOk(email))) return null;
   return { email, name: session.user?.name ?? email };
 }
 
@@ -24,7 +27,11 @@ export async function getUser(): Promise<Usuario | null> {
  */
 export async function requireUser(): Promise<Usuario> {
   const user = await getUser();
-  if (!user) redirect("/login");
+  if (!user) {
+    // Con la sesión de Google pero sin el código: a ponerlo.
+    const { emailDeGoogle } = await import("../tfa/sesion");
+    redirect((await emailDeGoogle()) ? "/verificar" : "/login");
+  }
   return user;
 }
 
