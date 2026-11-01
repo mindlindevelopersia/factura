@@ -104,7 +104,7 @@ const pesos = (n: number, moneda: string) =>
 
 export const TEXTOS = {
   ayuda:
-    "Hola, soy Oliver, el asistente del hub. Escribime lo que va pasando y lo cargo:\n\n• Tareas: \"mañana llamar a la constructora por el hormigón, que lo haga Eliana\"\n• Pendientes: \"¿qué tengo para esta semana?\"\n• Leads: \"nuevo lead Juan Pérez, lo refirió Lola, le interesa la 2C\"\n• Seguimientos: \"hablé con Juan, quiere la propuesta el lunes\"\n• Propuestas: \"armá una propuesta de la 2C para Juan Pérez\"\n• Facturas: mandámelas en PDF o foto, una por mensaje.\n\nSi me falta algo, te pregunto. /nuevo para empezar una charla de cero.",
+    "Hola, soy Oliver, el asistente del hub. Escribime lo que va pasando y lo cargo:\n\n• Tareas: \"mañana llamar a la constructora por el hormigón, que lo haga Eliana\"\n• Pendientes: \"¿qué tengo para esta semana?\"\n• Ideas para el hub: \"se me ocurre que el blog tenga un redactor en ruso\"\n• Leads: \"nuevo lead Juan Pérez, lo refirió Lola, le interesa la 2C\"\n• Seguimientos: \"hablé con Juan, quiere la propuesta el lunes\"\n• Propuestas: \"armá una propuesta de la 2C para Juan Pérez\"\n• Facturas: mandámelas en PDF o foto, una por mensaje.\n\nSi me falta algo, te pregunto. /nuevo para empezar una charla de cero.",
   sinAsistente: "Para entender mensajes escritos me falta la clave de la IA (ANTHROPIC_API_KEY en Vercel). Mientras tanto, mandame facturas en PDF o foto.",
   reiniciado: "Listo, arrancamos de cero. ¿Qué pasó?",
   noPude: (motivo: string) => `Uy, no pude: ${motivo}`,

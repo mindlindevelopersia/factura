@@ -14,7 +14,17 @@ vi.mock("../tareas/fuente", () => ({
   comentar: async () => ({}),
 }));
 const avisos: unknown[] = [];
-vi.mock("../notificaciones/fuente", () => ({ avisarAsignacion: async (a: unknown) => void avisos.push(a) }));
+vi.mock("../notificaciones/fuente", () => ({ avisarAsignacion: async (a: unknown) => void avisos.push(a), avisarMenciones: async () => {}, notificar: async () => {}, usuariosDelSistema: async () => [] }));
+const ideas: { id: string; titulo: string; texto: string; autor: string; tags: string[] }[] = [];
+vi.mock("../producto/fuente", () => ({
+  leerIdeas: async () => ({ ideas, comentarios: [] }),
+  crearIdea: async (titulo: string, texto: string, autor: string, tags: string[]) => {
+    const i = { id: `i${ideas.length + 1}`, titulo, texto, autor, tags, creada: "2026-11-01T00:00:00Z", actualizada: "", estado: "Abierta", featureId: "" };
+    ideas.push(i);
+    return i;
+  },
+  comentarIdea: async () => ({}),
+}));
 vi.mock("../crm/fuente", () => ({ leerCrm: async () => ({ contactos: [], actividad: [] }), crearContacto: async () => {}, actualizarContacto: async () => null }));
 vi.mock("../finanzas/fuente", () => ({ unidadesDisponibles: async () => [], historicoMep: async () => ({ valor: [], leido: "" }) }));
 vi.mock("../proyectos/propuestasFuente", () => ({ crearPropuesta: async () => ({}) }));
@@ -30,6 +40,7 @@ const todo = accesoDe("matimindlin111@gmail.com", undefined, true);
 const ctx = { email: "matimindlin111@gmail.com", usuario: "Mati", acceso: todo, equipo: ["Mati", "Eliana"], appUrl: "https://hub.ejemplo", factura: null };
 
 beforeEach(() => {
+  ideas.length = 0;
   tareas.length = 0;
   avisos.length = 0;
 });
@@ -60,12 +71,23 @@ describe("bot de Telegram", () => {
     expect(avisos).toHaveLength(1);
   });
 
+  it("crear_idea: la carga en Producto con sus áreas (las que existen) y pasa el link", async () => {
+    const r = await ejecutar("crear_idea", { titulo: "Redactor del blog en ruso", descripcion: "Para el público ruso.", areas: ["Marketing · Blog", "Inventada"] }, ctx);
+    expect(r.error).toBeFalsy();
+    expect(ideas[0]).toMatchObject({ titulo: "Redactor del blog en ruso", autor: "Mati", tags: ["Marketing · Blog"] });
+    expect(JSON.parse(r.contenido).link).toBe("https://hub.ejemplo/producto/ideas?idea=i1");
+    const b = JSON.parse((await ejecutar("buscar_ideas", { texto: "ruso" }, ctx)).contenido);
+    expect(b.ideas.map((i: { id: string }) => i.id)).toEqual(["i1"]);
+  });
+
   it("respeta los permisos de quien escribe", async () => {
     const sinNada = { ...ctx, acceso: accesoDe("otra@ejemplo.com", undefined, false) };
     const r = await ejecutar("crear_tarea", { titulo: "x", descripcion: "", responsable: "", vence: null, hora: null, prioridad: "Normal", tipo: "Otro", proyecto: "lerma-439", relacion: "Interna", con: "", subtareas: [] }, sinNada);
     expect(r.error).toBe(true);
     expect(tareas).toHaveLength(0);
     expect((await ejecutar("nota_en_factura", { texto: "hola" }, ctx)).error).toBe(true);
+    expect((await ejecutar("crear_idea", { titulo: "x", descripcion: "", areas: [] }, sinNada)).error).toBe(true);
+    expect(ideas).toHaveLength(0);
   });
 
   it("ofrecer_opciones arma los botones", async () => {

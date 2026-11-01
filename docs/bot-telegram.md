@@ -11,6 +11,7 @@ duda, pregunta, con botones para contestar con un toque.
 | Crear tareas | "mañana llamar a la constructora por el hormigón, que lo haga Eliana" |
 | Ver pendientes | "¿qué tengo para esta semana?", "las tareas de Eliana" |
 | Cambiar tareas | "la del hormigón ya está hecha", "pasala al viernes" |
+| Cargar ideas de Producto | "se me ocurre que el blog tenga un redactor en ruso" (con su área; si ya existe, la comenta) |
 | Cargar leads | "nuevo lead Juan Pérez, lo refirió Lola, le interesa la 2C" |
 | Anotar seguimientos | "hablé con Juan, quiere la propuesta el lunes" |
 | Unidades disponibles | "¿qué dos ambientes quedan en Lerma?" |
