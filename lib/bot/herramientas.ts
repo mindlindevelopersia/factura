@@ -10,7 +10,7 @@ import { PROYECTO_PRINCIPAL, PROYECTOS, rutaProyecto } from "../modulos";
 import { avisarAsignacion, avisarMenciones, notificar, usuariosDelSistema } from "../notificaciones/fuente";
 import { extracto, usuarioPorApodo } from "../notificaciones/modelo";
 import { comentarIdea, crearIdea, leerIdeas } from "../producto/fuente";
-import { limpiarTags, TODOS_LOS_TAGS } from "../producto/tags";
+import { GRUPOS_TAGS, limpiarTags } from "../producto/tags";
 import { puedeRuta, veProyecto, type Acceso } from "../permisos/modelo";
 import { calcularPropuesta, ENTREGA, parametrosIniciales, propuestaAUrl } from "../proyectos/propuesta";
 import { crearPropuesta } from "../proyectos/propuestasFuente";
@@ -52,6 +52,7 @@ const lista = (vals: readonly string[], description: string) => ({ type: "string
 const objeto = (props: Record<string, object>) => ({ type: "object" as const, properties: props, required: Object.keys(props), additionalProperties: false });
 
 const IDS_PROYECTOS = PROYECTOS.map((p) => p.id);
+const AREAS_TAGS = GRUPOS_TAGS.map((g) => (g.modulos.length ? `${g.area} (${g.modulos.join(", ")})` : g.area)).join("; ");
 const proyectoTarea = lista(["", PROYECTO_PRODUCTO, ...IDS_PROYECTOS], 'El proyecto: el id ("lerma-439"), "" para algo general de la empresa, o "producto" para un feature del hub.');
 const proyectoComercial = lista(IDS_PROYECTOS, "El id del proyecto.");
 const fecha = (d: string) => texto(`${d} En formato AAAA-MM-DD, calculada desde hoy. Vacío si no se dijo.`);
@@ -169,7 +170,8 @@ export const HERRAMIENTAS: Anthropic.Beta.BetaTool[] = [
     input_schema: objeto({
       titulo: texto("La idea en pocas palabras."),
       descripcion: texto("Qué es, para qué sirve y cómo se la imagina, con lo que se dijo (sin inventar)."),
-      areas: { type: "array", items: { type: "string", enum: TODOS_LOS_TAGS }, description: 'A qué áreas o módulos del hub aplica ("Marketing", "Marketing · Blog"); vacío si no se sabe.' },
+      // Texto libre (una lista cerrada de ~60 opciones hace pesado el esquema): el hub deja solo las que existen.
+      areas: { type: "array", items: { type: "string" }, description: `A qué áreas del hub aplica, con el nombre exacto del área y, si se sabe, el módulo con " · " ("Marketing", "Marketing · Blog"). Áreas: ${AREAS_TAGS}. Vacío si no se sabe.` },
     }),
   },
   {

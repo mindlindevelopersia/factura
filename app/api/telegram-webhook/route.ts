@@ -5,6 +5,7 @@ import { candadosDesdeEnv, serviciosDesdeEnv, usuariosTelegramDesdeEnv } from "@
 import { agregarNota, ArchivoEnCurso, ArchivoRepetido, ingresar, ultimoDelChat } from "@/lib/cola/servicio";
 import { secretoWebhook, TelegramApi, tokenTelegram, type MensajeTelegram } from "@/lib/telegram/api";
 import { atenderConAsistente, motivoAmable } from "@/lib/bot/telegram";
+import { SUPER_ADMIN } from "@/lib/permisos/modelo";
 import { guardarConversacion } from "@/lib/bot/conversacion";
 import { adjuntoDe, audioDe, emailDeCodigo, nombreDe, TEXTOS } from "@/lib/telegram/mensajes";
 
@@ -109,7 +110,7 @@ export async function POST(req: Request) {
           await telegram.enviar(m.chat.id, r.texto.slice(0, 4000), undefined, r.opciones);
         } catch (e) {
           console.error("bot: asistente", e);
-          await responder(TEXTOS.noPude(motivoAmable(e))).catch(() => {});
+          await responder(TEXTOS.noPude(motivoAmable(e, email.toLowerCase() === SUPER_ADMIN))).catch(() => {});
         } finally {
           parar();
         }
