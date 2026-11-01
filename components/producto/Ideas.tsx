@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { ComentarioIdea, EstadoIdea, Idea } from "@/lib/producto/ideas";
+import { IDEAS_SUGERIDAS, type IdeaSugerida } from "@/lib/producto/sugeridas";
+import { areaDeTag, esDelArea, GRUPOS_TAGS, SEP_TAG } from "@/lib/producto/tags";
 import { leerJson } from "../formato";
 import { Icono } from "../Icono";
 import { CampoMenciones, ConMenciones } from "../Menciones";
@@ -23,6 +25,7 @@ export function Ideas() {
   const [abierta, setAbierta] = useState<string | null>(null);
   const [nueva, setNueva] = useState(false);
   const [ver, setVer] = useState<EstadoIdea | "todas">("Abierta");
+  const [area, setArea] = useState("");
 
   const cargar = useCallback(async () => {
     try {
@@ -40,7 +43,8 @@ export function Ideas() {
 
   if (error && !datos) return <p className="alerta alerta--error">{error}</p>;
   if (!datos) return <p className="ficha__nota">Cargando las ideas…</p>;
-  const lista = datos.ideas.filter((i) => ver === "todas" || i.estado === ver);
+  const lista = datos.ideas.filter((i) => (ver === "todas" || i.estado === ver) && (!area || esDelArea(i.tags, area)));
+  const areasUsadas = GRUPOS_TAGS.map((g) => g.area).filter((a) => datos.ideas.some((i) => esDelArea(i.tags, a)));
   const idea = datos.ideas.find((i) => i.id === abierta);
   const cuenta = (e: EstadoIdea) => datos.ideas.filter((i) => i.estado === e).length;
 
@@ -57,7 +61,22 @@ export function Ideas() {
             </button>
           ))}
         </div>
+        {areasUsadas.length > 0 && (
+          <select className="ideas__filtro-area" value={area} onChange={(e) => setArea(e.target.value)} aria-label="Filtrar por área">
+            <option value="">Todas las áreas</option>
+            {areasUsadas.map((a) => (
+              <option key={a}>{a}</option>
+            ))}
+          </select>
+        )}
       </div>
+      <Sugeridas
+        publicadas={datos.ideas.map((i) => i.titulo)}
+        listo={async (i) => {
+          await cargar();
+          setAbierta(i.id);
+        }}
+      />
       {nueva && (
         <NuevaIdea
           listo={async (i) => {
@@ -79,6 +98,7 @@ export function Ideas() {
                   {i.estado !== "Abierta" && <span className={`ideas__estado ideas__estado--${i.estado === "En features" ? "features" : "descartada"}`}>{i.estado}</span>}
                 </span>
                 {i.texto && <span className="ideas__texto">{extracto(i.texto)}</span>}
+                <Tags tags={i.tags} />
                 <span className="tarea__pie">
                   <span className="tarea__responsable">{i.autor || "—"}</span>
                   <span>{fechaHora(i.creada)}</span>
@@ -107,6 +127,7 @@ export function Ideas() {
 
 function NuevaIdea({ listo }: { listo: (i: Idea) => void }) {
   const [titulo, setTitulo] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [texto, setTexto] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -118,7 +139,7 @@ function NuevaIdea({ listo }: { listo: (i: Idea) => void }) {
         setGuardando(true);
         setError(null);
         try {
-          const { idea } = await leerJson<{ idea: Idea }>(await fetch("/api/producto/ideas", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ titulo, texto }) }));
+          const { idea } = await leerJson<{ idea: Idea }>(await fetch("/api/producto/ideas", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ titulo, texto, tags }) }));
           listo(idea);
         } catch (x) {
           setError(x instanceof Error ? x.message : String(x));
@@ -135,6 +156,7 @@ function NuevaIdea({ listo }: { listo: (i: Idea) => void }) {
         Descripción
         <CampoMenciones rows={6} value={texto} onChange={setTexto} placeholder="Qué es, para qué sirve, cómo lo imaginás… (con @ le avisás a alguien)" />
       </label>
+      <ElegirTags value={tags} onChange={setTags} />
       {error && <p className="oliver__error">{error}</p>}
       <div className="tarea-ficha__acciones">
         <button type="submit" className="btn btn--primario btn--chico" disabled={guardando || !titulo.trim()}>
@@ -149,6 +171,7 @@ function FichaIdea({ idea, comentarios, usuario, cerrar, cambio }: { idea: Idea;
   const [editando, setEditando] = useState(false);
   const [titulo, setTitulo] = useState(idea.titulo);
   const [texto, setTexto] = useState(idea.texto);
+  const [tags, setTags] = useState(idea.tags);
   const [comentario, setComentario] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
@@ -205,15 +228,19 @@ function FichaIdea({ idea, comentarios, usuario, cerrar, cambio }: { idea: Idea;
                   Descripción
                   <CampoMenciones rows={8} value={texto} onChange={setTexto} />
                 </label>
+                <ElegirTags value={tags} onChange={setTags} />
               </>
             ) : (
-              <p className="ideas__cuerpo">{idea.texto ? <ConMenciones texto={idea.texto} /> : <span className="crm-ficha__sub">Sin descripción.</span>}</p>
+              <>
+                <Tags tags={idea.tags} />
+                <p className="ideas__cuerpo">{idea.texto ? <ConMenciones texto={idea.texto} /> : <span className="crm-ficha__sub">Sin descripción.</span>}</p>
+              </>
             )}
             {error && <p className="oliver__error">{error}</p>}
             <div className="tarea-ficha__acciones">
               {editando ? (
                 <>
-                  <button type="button" className="btn btn--primario btn--chico" disabled={ocupado || !titulo.trim()} onClick={() => void patch({ titulo, texto })}>
+                  <button type="button" className="btn btn--primario btn--chico" disabled={ocupado || !titulo.trim()} onClick={() => void patch({ titulo, texto, tags })}>
                     Guardar
                   </button>
                   <button type="button" className="btn btn--texto btn--chico" onClick={() => setEditando(false)}>
@@ -297,5 +324,121 @@ function FichaIdea({ idea, comentarios, usuario, cerrar, cambio }: { idea: Idea;
         </div>
       </aside>
     </div>
+  );
+}
+
+/** Los tags de una idea, como chips (el módulo se muestra con su área). */
+function Tags({ tags }: { tags: string[] }) {
+  if (!tags.length) return null;
+  // Si está el área y también sus módulos, el área sola sobra en la tarjeta.
+  const mostrar = tags.filter((t) => t.includes(SEP_TAG) || !tags.some((x) => x !== t && areaDeTag(x) === t));
+  return (
+    <span className="ideas__tags">
+      {mostrar.map((t) => (
+        <span key={t} className="ideas__tag">
+          {t}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** Elegir a qué áreas (y módulos) aplica la idea: las áreas como chips; al marcar una, aparecen sus módulos. */
+function ElegirTags({ value, onChange }: { value: string[]; onChange: (t: string[]) => void }) {
+  const tiene = (t: string) => value.includes(t);
+  const poner = (t: string) => onChange(tiene(t) ? value.filter((x) => x !== t) : [...value, t]);
+  const abiertas = GRUPOS_TAGS.filter((g) => value.some((t) => areaDeTag(t) === g.area) && g.modulos.length);
+  return (
+    <div className="campo ideas__elegir-tags">
+      <span>¿A qué área aplica? (opcional)</span>
+      <div className="tarea-ficha__opciones" role="group" aria-label="Áreas">
+        {GRUPOS_TAGS.map((g) => (
+          <button
+            key={g.area}
+            type="button"
+            className={`tarea-ficha__opcion${value.some((t) => areaDeTag(t) === g.area) ? " tarea-ficha__opcion--activa" : ""}`}
+            aria-pressed={value.some((t) => areaDeTag(t) === g.area)}
+            onClick={() => (value.some((t) => areaDeTag(t) === g.area) ? onChange(value.filter((t) => areaDeTag(t) !== g.area)) : poner(g.area))}
+          >
+            {g.area}
+          </button>
+        ))}
+      </div>
+      {abiertas.map((g) => (
+        <div key={g.area} className="ideas__modulos-tag" role="group" aria-label={`Módulos de ${g.area}`}>
+          <small>{g.area}:</small>
+          {g.modulos.map((m) => {
+            const t = `${g.area}${SEP_TAG}${m}`;
+            return (
+              <button key={t} type="button" className={`tarea-ficha__opcion tarea-ficha__opcion--chica${tiene(t) ? " tarea-ficha__opcion--activa" : ""}`} aria-pressed={tiene(t)} onClick={() => poner(t)}>
+                {m}
+              </button>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const CLAVE_DESCARTADAS = "ideas-sugeridas-descartadas";
+
+/** Las ideas que propone el hub (por ejemplo, todo lo que falta de Marketing): se publican con un clic. */
+function Sugeridas({ publicadas, listo }: { publicadas: string[]; listo: (i: Idea) => Promise<void> }) {
+  const [descartadas, setDescartadas] = useState<string[]>([]);
+  const [abierta, setAbierta] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      setDescartadas(JSON.parse(localStorage.getItem(CLAVE_DESCARTADAS) ?? "[]"));
+    } catch {
+      /* nada guardado */
+    }
+  }, []);
+  const lista = IDEAS_SUGERIDAS.filter((s) => !publicadas.includes(s.titulo) && !descartadas.includes(s.clave));
+  if (!lista.length) return null;
+  const publicar = async (s: IdeaSugerida) => {
+    setOcupado(true);
+    setError(null);
+    try {
+      const { idea } = await leerJson<{ idea: Idea }>(await fetch("/api/producto/ideas", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ titulo: s.titulo, texto: s.texto, tags: s.tags }) }));
+      await listo(idea);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setOcupado(false);
+    }
+  };
+  const descartar = (s: IdeaSugerida) => {
+    const l = [...descartadas, s.clave];
+    setDescartadas(l);
+    localStorage.setItem(CLAVE_DESCARTADAS, JSON.stringify(l));
+  };
+  return (
+    <ul className="ideas__lista ideas__sugeridas">
+      {lista.map((s) => (
+        <li key={s.clave} className="ideas__sugerida">
+          <span className="ideas__arriba">
+            <strong>{s.titulo}</strong>
+            <span className="ideas__estado ideas__estado--sugerida">La propone el hub</span>
+          </span>
+          <Tags tags={s.tags} />
+          <p className="ideas__texto">{abierta === s.clave ? s.texto : extracto(s.texto)}</p>
+          {error && <p className="oliver__error">{error}</p>}
+          <div className="tarea-ficha__acciones">
+            <button type="button" className="btn btn--primario btn--chico" disabled={ocupado} onClick={() => void publicar(s)}>
+              {ocupado ? "Publicando…" : "Publicarla"}
+            </button>
+            <button type="button" className="btn btn--borde btn--chico" onClick={() => setAbierta(abierta === s.clave ? null : s.clave)}>
+              {abierta === s.clave ? "Ver menos" : "Verla completa"}
+            </button>
+            <button type="button" className="btn btn--texto btn--chico" onClick={() => descartar(s)}>
+              Ahora no
+            </button>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

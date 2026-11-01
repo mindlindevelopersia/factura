@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   const v = validarIdea(await req.json().catch(() => null), true);
   if ("error" in v) return NextResponse.json({ error: v.error }, { status: 400 });
   try {
-    const idea = await crearIdea(v.cambios.titulo!, v.cambios.texto ?? "", ctx.usuario);
+    const idea = await crearIdea(v.cambios.titulo!, v.cambios.texto ?? "", ctx.usuario, v.cambios.tags ?? []);
     await avisarMenciones({ texto: `${idea.titulo}\n${idea.texto}`, titulo: `Idea: ${idea.titulo}`, link: `/producto/ideas?idea=${idea.id}`, de: ctx.usuario, deEmail: ctx.email });
     return NextResponse.json({ idea });
   } catch (e) {
