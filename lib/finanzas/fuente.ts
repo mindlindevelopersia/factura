@@ -18,9 +18,10 @@ import { COLUMNAS_AVISOS, RegistroAvisos } from "../inversores/avisos";
 import { armarCobranzas, hoyBuenosAires, totalesCobranzas } from "../inversores/cobranzas";
 import { leerBloques, unirConFlujo, type CuentasCorrientes } from "../inversores/cuentas";
 import { indicesCac, type IndicesCac } from "../inversores/pesos";
+import { cruzarCuentas } from "../inversores/cruce";
 import { PestaniaSimple } from "../google/pestania";
-import { proyecto as buscarProyecto } from "../modulos";
-import { armarComercial, type Comercial } from "../proyectos/comercial";
+import { proyecto as buscarProyecto, PROYECTO_PRINCIPAL } from "../modulos";
+import { armarComercial, leerVentas, type Comercial } from "../proyectos/comercial";
 import { analizarHq, desarrolladores, m2DesarrolladoresEnPlanilla, type Desarrolladores, type GastoHq } from "../proyectos/management";
 import { leerCaja, unir, type CajaEgresos } from "./egresos";
 import { colorDe, leerFlujo, mesDeHoy, type Celda, type FlujoIngresos } from "./ingresos";
@@ -121,8 +122,17 @@ export async function cajaEgresos(opciones?: { fresco?: boolean }): Promise<{ ca
 const pagosInversor = conCache(async () => leerGrilla(configFinanzas().pagosInversor, "A1:LZ300", false));
 
 /** Las cuentas corrientes: los bloques de "Pagos por Inversor" unidos con lo pendiente del Flujo de fondos. */
-export async function cuentasCorrientes(opciones?: { fresco?: boolean }): Promise<{ cuentas: CuentasCorrientes; leido: string; cac: IndicesCac | null; errorCac: string | null }> {
-  const [bloques, { flujo }, cacLeido] = await Promise.all([
+/** El machete de "Ventas" del proyecto principal, para cruzar las cuentas corrientes. */
+const ventasPrincipal = conCache(async () => {
+  const sheet = planillaMadre(PROYECTO_PRINCIPAL.id);
+  if (!sheet) return null;
+  return leerVentas(await leerGrilla("Ventas", "A1:P120", false, sheet)).ventas;
+});
+
+export async function cuentasCorrientes(
+  opciones?: { fresco?: boolean },
+): Promise<{ cuentas: CuentasCorrientes; leido: string; cac: IndicesCac | null; errorCac: string | null; errorCruce: string | null }> {
+  const [bloques, { flujo }, cacLeido, ventas] = await Promise.all([
     pagosInversor(opciones),
     flujoIngresos(opciones),
     // El CAC es para mostrar las cuentas en pesos de hoy: si no se puede leer, se muestran sin eso.
@@ -130,8 +140,15 @@ export async function cuentasCorrientes(opciones?: { fresco?: boolean }): Promis
       (r) => ({ indices: indicesCac(r.valor), error: null as string | null }),
       (e: unknown) => ({ indices: null, error: e instanceof Error ? e.message : String(e) }),
     ),
+    // El machete de Ventas, para completar y validar: si no se puede leer, las cuentas salen igual.
+    ventasPrincipal(opciones).then(
+      (r) => ({ ventas: r.valor, error: null as string | null }),
+      (e: unknown) => ({ ventas: null, error: e instanceof Error ? e.message : String(e) }),
+    ),
   ]);
-  return { cuentas: unirConFlujo(leerBloques(bloques.valor, flujo.mesActual), flujo), leido: bloques.leido, cac: cacLeido.indices, errorCac: cacLeido.error };
+  const explicadas = new Set((PROYECTO_PRINCIPAL.ajustes ?? []).map((a) => a.codigo));
+  const cuentas = cruzarCuentas(unirConFlujo(leerBloques(bloques.valor, flujo.mesActual), flujo), ventas.ventas, explicadas);
+  return { cuentas, leido: bloques.leido, cac: cacLeido.indices, errorCac: cacLeido.error, errorCruce: ventas.error };
 }
 
 /** La planilla "Indicadores - REAL ESTATE", que se carga aparte de la contable. */

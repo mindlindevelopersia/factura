@@ -20,7 +20,6 @@ export function AppHeader({ email }: { email: string }) {
               priority
             />
           </Link>
-          <span className="app-header__producto">Hub de Mindlin</span>
         </div>
         <div className="app-header__user">
           <span>{email}</span>
