@@ -25,6 +25,7 @@ import { telefonoWhatsapp } from "@/lib/inversores/cobranzas";
 import { PROYECTOS, proyecto as buscarProyecto } from "@/lib/modulos";
 import Link from "next/link";
 import { Icono } from "../Icono";
+import { CampoMenciones } from "../Menciones";
 import { useBaseProyecto } from "../proyecto";
 import { fechaCorta, sumarDias, usd, type Crm } from "./datos";
 
@@ -65,6 +66,7 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
   const [indicacion, setIndicacion] = useState("");
   const [pidiendo, setPidiendo] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [telefonoNuevo, setTelefonoNuevo] = useState("");
 
   // Registro
   const [tipo, setTipo] = useState<string>("Llamada");
@@ -274,7 +276,36 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
                     Abrir WhatsApp
                   </a>
                 ) : (
-                  <span className="crm-ficha__sub">Cargá un teléfono para escribirle por WhatsApp.</span>
+                  <form
+                    className="crm-ficha__telefono"
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      const link = linkWhatsapp(telefonoNuevo, whatsapp, telefonoWhatsapp);
+                      if (!link) {
+                        setAviso("Ese número no sirve para WhatsApp: poné el celular con código de área (ej.: 11 2345 6789).");
+                        return;
+                      }
+                      // La ventana se abre ya (si no, el navegador la bloquea) y se le pone el link al guardar.
+                      const ventana = window.open("", "_blank");
+                      try {
+                        await crm.actualizar(c.id, { telefono: telefonoNuevo.trim() });
+                        setTipo("WhatsApp");
+                        setDetalle(`Le escribí: "${whatsapp.slice(0, 140)}${whatsapp.length > 140 ? "…" : ""}"`);
+                        setTelefonoNuevo("");
+                        if (ventana) ventana.location.href = link;
+                        else window.open(link, "_blank", "noopener");
+                      } catch (x) {
+                        ventana?.close();
+                        setAviso(x instanceof Error ? x.message : String(x));
+                      }
+                    }}
+                  >
+                    <span className="crm-ficha__sub">{c.telefono ? `El teléfono cargado (${c.telefono}) no sirve para WhatsApp. ` : "No tiene teléfono. "}Cargalo y te abro el chat:</span>
+                    <input inputMode="tel" value={telefonoNuevo} onChange={(e) => setTelefonoNuevo(e.target.value)} placeholder="Ej.: 11 2345 6789" aria-label="Teléfono" />
+                    <button type="submit" className="btn btn--primario btn--chico" disabled={!telefonoNuevo.trim()}>
+                      Guardar y abrir WhatsApp
+                    </button>
+                  </form>
                 )
               ) : c.mail ? (
                 <button type="button" className="btn btn--primario btn--chico" onClick={() => void abrirMail()}>
@@ -320,7 +351,7 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
             </div>
             <label className="campo">
               Qué pasó
-              <textarea rows={3} value={detalle} onChange={(e) => setDetalle(e.target.value)} placeholder="Qué te dijo, qué le mandaste, qué quedó pendiente…" />
+              <CampoMenciones rows={3} value={detalle} onChange={setDetalle} placeholder="Qué te dijo, qué le mandaste, qué quedó pendiente… (con @ avisás a alguien)" />
             </label>
             {etapa === "Perdido" && (
               <div className="crm-ficha__fila">
@@ -475,7 +506,7 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
             </fieldset>
             <label className="campo">
               Notas
-              <textarea rows={3} value={valor("notas") as string} onChange={(e) => cambiar("notas", e.target.value)} />
+              <CampoMenciones rows={3} value={valor("notas") as string} onChange={(v) => cambiar("notas", v)} placeholder="Con @ mencionás a alguien" />
             </label>
             <button type="button" className="btn btn--borde" onClick={() => void guardarPerfil()} disabled={guardando || !Object.keys(perfil).length}>
               Guardar datos

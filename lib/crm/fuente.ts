@@ -50,13 +50,14 @@ export async function importarContactos(nuevos: Contacto[]): Promise<void> {
   await pestanias().contactos.agregarVarias(nuevos.map(filaDeContacto));
 }
 
-/** Cambia un contacto (busca su fila por ID) y, si hay, registra la actividad. Devuelve el contacto nuevo. */
-export async function actualizarContacto(id: string, cambios: CambiosContacto, actividad: Omit<Actividad, "contacto" | "etapa"> | null, ahora: string): Promise<Contacto | null> {
+/** Cambia un contacto (busca su fila por ID) y, si hay, registra la actividad. Devuelve el contacto nuevo (y cómo estaba en `antes`). */
+export async function actualizarContacto(id: string, cambios: CambiosContacto, actividad: Omit<Actividad, "contacto" | "etapa"> | null, ahora: string, antesOut?: { contacto?: Contacto }): Promise<Contacto | null> {
   const p = pestanias();
   const filas = await p.contactos.filas();
   const i = filas.findIndex((f) => f[0] === id);
   if (i < 0) return null;
   const antes = contactoDeFila(filas[i]);
+  if (antesOut) antesOut.contacto = antes;
   let nuevo = aplicarCambios(antes, cambios, ahora);
   if (actividad && actividad.tipo !== "Nota") nuevo = { ...nuevo, ultimoContacto: ahora };
   await p.contactos.escribir(i + 2, filaDeContacto(nuevo));

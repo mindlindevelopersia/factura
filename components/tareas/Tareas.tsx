@@ -21,6 +21,7 @@ import {
 } from "@/lib/tareas/modelo";
 import { leerJson } from "../formato";
 import { Icono } from "../Icono";
+import { CampoMenciones, ConMenciones } from "../Menciones";
 import { useBaseProyecto } from "../proyecto";
 import { useProyectoId } from "../proyectos/datos";
 
@@ -416,7 +417,7 @@ function FichaTarea({ h, tarea, cerrar, creada }: { h: Hook; tarea: Tarea | null
             )}
             <label className="campo">
               Descripción
-              <textarea rows={4} value={f.descripcion ?? ""} onChange={(e) => poner("descripcion", e.target.value)} placeholder="Contexto, qué hace falta, próximos pasos…" />
+              <CampoMenciones rows={4} value={f.descripcion ?? ""} onChange={(v) => poner("descripcion", v)} placeholder="Contexto, qué hace falta, próximos pasos… (con @ mencionás a alguien)" />
             </label>
             {error && <p className="oliver__error">{error}</p>}
             <div className="tarea-ficha__acciones">
@@ -522,7 +523,9 @@ function FichaTarea({ h, tarea, cerrar, creada }: { h: Hook; tarea: Tarea | null
                     <span className="crm-ficha__sub">
                       <strong>{c.usuario}</strong> · {fechaHora(c.fecha)}
                     </span>
-                    <p>{c.texto}</p>
+                    <p>
+                      <ConMenciones texto={c.texto} />
+                    </p>
                   </li>
                 ))}
               </ul>
@@ -540,7 +543,7 @@ function FichaTarea({ h, tarea, cerrar, creada }: { h: Hook; tarea: Tarea | null
                   }
                 }}
               >
-                <textarea rows={2} value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder="Escribí un comentario…" aria-label="Comentario" />
+                <CampoMenciones rows={2} value={comentario} onChange={setComentario} placeholder="Escribí un comentario… (con @ mencionás a alguien)" aria-label="Comentario" />
                 <button type="submit" className="btn btn--primario btn--chico" disabled={!comentario.trim()}>
                   Comentar
                 </button>

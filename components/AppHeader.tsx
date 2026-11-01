@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "@/auth";
+import { Campanita } from "./Campanita";
 
 export function AppHeader({ email }: { email: string }) {
   return (
@@ -22,6 +23,7 @@ export function AppHeader({ email }: { email: string }) {
           </Link>
         </div>
         <div className="app-header__user">
+          <Campanita />
           <span>{email}</span>
           <form
             action={async () => {

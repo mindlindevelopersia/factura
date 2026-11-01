@@ -6,6 +6,7 @@ import { CATEGORIAS_AGENDA, semanasDelMes, TIPOS_EVENTO, type Evento, type TipoE
 import { nombreMes, sumarMeses } from "@/lib/finanzas/ingresos";
 import { leerJson } from "../formato";
 import { Icono } from "../Icono";
+import { CampoMenciones } from "../Menciones";
 import { useBaseProyecto } from "../proyecto";
 import { useProyectoId } from "./datos";
 
@@ -303,7 +304,7 @@ function NuevoEvento({ proyecto, fecha, usuario, personas, listo }: { proyecto: 
       </label>
       <label className="campo">
         Detalle (opcional)
-        <input value={f.detalle} onChange={(e) => setF({ ...f, detalle: e.target.value })} placeholder="Monto, con quién, dónde…" />
+        <CampoMenciones linea value={f.detalle} onChange={(v) => setF({ ...f, detalle: v })} placeholder="Monto, con quién, dónde… (con @ avisás a alguien)" />
       </label>
       {error && <p className="oliver__error">{error}</p>}
       <div className="calendario__form-fila">
