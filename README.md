@@ -74,7 +74,7 @@ Tomado de mindlindevelopers.com. Los colores y estilos están como variables en 
 - Los campos dudosos van en amarillo (`--dudoso`), un tono distinto del lima para que no se confundan.
 
 La auditoría de experiencia y los cambios del recorrido están documentados en [docs/auditoria-ux-2026-10-28.md](docs/auditoria-ux-2026-10-28.md). La bandeja permite buscar y filtrar, revisar un comprobante por vez sin perder ediciones y consultar un historial con búsquedas y estados. Las subidas continúan al cambiar de sección dentro de la app.
-- Logos en `public/brand/` y el ícono de la pestaña en `app/icon.png`, copiados del sitio.
+- Logos en `public/brand/` y el ícono de la pestaña en `app/icon.png`, copiados del sitio. De ese ícono salen `app/favicon.ico` (con el trazo más grueso para que se lea a 16 px), `app/apple-icon.png` (iPhone) y `public/brand/app-*.png`, que usa `app/manifest.ts` para instalar la web como app en el celular o en Chrome.
 
 ## Login
 
