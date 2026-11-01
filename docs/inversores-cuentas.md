@@ -49,3 +49,14 @@ No se compara lo pagado en pesos con lo marcado en verde en el Flujo: algunos in
 ## Bloques con el encabezado roto
 
 Si un bloque de "Pagos por Inversor" tiene la unidad rota (#REF!, NINGUNO o vacía), no se descarta enseguida: si al menos 3 de sus pagos coinciden (mismo monto y moneda) con los cobros del Flujo de alguien que no tiene bloque, el bloque es de esa persona. Se usan sus pagos, pero no su encabezado (nombre, unidad, CUIT, teléfono, costo): está copiado de otra cuenta. La cuenta queda sin precio, con el aviso "Encabezado copiado de otra cuenta", y no suma al saldo ni al avance del total hasta que se corrija. Caso real: 2D (Valentín Italiano), bloque de la columna AP con el encabezado de otra cuenta.
+
+## En pesos ajustados por CAC
+
+La ficha de cada inversor muestra, además de los dólares, la cuenta en pesos llevados al último CAC publicado (el del mes anterior a hoy, o el último que haya). Es la misma regla que las cuotas: el índice de un mes es el del mes anterior.
+
+- Costo de hoy = costo en pesos del contrato × CAC(último) ÷ CAC(mes anterior al mes base).
+- Cada pago en pesos = monto × CAC(último) ÷ CAC(mes anterior al del pago).
+- Los pagos en dólares (anticipos) van al tipo de cambio del contrato (costo en pesos ÷ costo en dólares) y se ajustan desde el mes base, como el costo: un dólar pagado vale lo mismo que un dólar del precio.
+- Avance = pagado de hoy ÷ costo de hoy. Saldo = costo de hoy − pagado de hoy.
+
+La tabla de pagos suma la columna "En pesos de hoy" con el factor CAC de cada uno. Sin mes base CAC (por ejemplo, las de precio cerrado en dólares) no hay costo de hoy. Lógica en `lib/inversores/pesos.ts`; el CAC llega con las cuentas (`cac` en la respuesta de `/api/inversores/cuentas`).

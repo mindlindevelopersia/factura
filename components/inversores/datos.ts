@@ -1,12 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { IndicesCac } from "@/lib/inversores/pesos";
 import type { CuentasCorrientes } from "@/lib/inversores/cuentas";
 import { leerJson } from "../formato";
 
 export interface RespuestaCuentas {
   cuentas: CuentasCorrientes;
   leido: string;
+  /** Para mostrar las cuentas en pesos ajustados por CAC. Null si no se pudo leer. */
+  cac?: IndicesCac | null;
+  errorCac?: string | null;
 }
 
 /** Las cuentas corrientes desde la API, con "Actualizar" para volver a leer la planilla. */

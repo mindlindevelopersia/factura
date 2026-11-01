@@ -17,6 +17,7 @@ import {
 import { COLUMNAS_AVISOS, RegistroAvisos } from "../inversores/avisos";
 import { armarCobranzas, hoyBuenosAires, totalesCobranzas } from "../inversores/cobranzas";
 import { leerBloques, unirConFlujo, type CuentasCorrientes } from "../inversores/cuentas";
+import { indicesCac, type IndicesCac } from "../inversores/pesos";
 import { PestaniaSimple } from "../google/pestania";
 import { proyecto as buscarProyecto } from "../modulos";
 import { armarComercial, type Comercial } from "../proyectos/comercial";
@@ -120,9 +121,17 @@ export async function cajaEgresos(opciones?: { fresco?: boolean }): Promise<{ ca
 const pagosInversor = conCache(async () => leerGrilla(configFinanzas().pagosInversor, "A1:LZ300", false));
 
 /** Las cuentas corrientes: los bloques de "Pagos por Inversor" unidos con lo pendiente del Flujo de fondos. */
-export async function cuentasCorrientes(opciones?: { fresco?: boolean }): Promise<{ cuentas: CuentasCorrientes; leido: string }> {
-  const [bloques, { flujo }] = await Promise.all([pagosInversor(opciones), flujoIngresos(opciones)]);
-  return { cuentas: unirConFlujo(leerBloques(bloques.valor, flujo.mesActual), flujo), leido: bloques.leido };
+export async function cuentasCorrientes(opciones?: { fresco?: boolean }): Promise<{ cuentas: CuentasCorrientes; leido: string; cac: IndicesCac | null; errorCac: string | null }> {
+  const [bloques, { flujo }, cacLeido] = await Promise.all([
+    pagosInversor(opciones),
+    flujoIngresos(opciones),
+    // El CAC es para mostrar las cuentas en pesos de hoy: si no se puede leer, se muestran sin eso.
+    cac().then(
+      (r) => ({ indices: indicesCac(r.valor), error: null as string | null }),
+      (e: unknown) => ({ indices: null, error: e instanceof Error ? e.message : String(e) }),
+    ),
+  ]);
+  return { cuentas: unirConFlujo(leerBloques(bloques.valor, flujo.mesActual), flujo), leido: bloques.leido, cac: cacLeido.indices, errorCac: cacLeido.error };
 }
 
 /** La planilla "Indicadores - REAL ESTATE", que se carga aparte de la contable. */

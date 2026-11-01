@@ -4413,3 +4413,17 @@ h1 .etiqueta-beta {
   font-size: 11px;
   color: var(--texto-suave);
 }
+
+/* Ficha: la cuenta en pesos ajustados por CAC. */
+.ficha__pesos {
+  display: grid;
+  gap: 8px;
+}
+.ficha__pesos-titulo {
+  margin: 4px 0 0;
+  font-size: 15px;
+}
+.ficha__pesos-titulo span {
+  font-weight: 400;
+  color: var(--texto-suave);
+}

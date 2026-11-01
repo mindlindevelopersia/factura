@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { nombreMes } from "@/lib/finanzas/ingresos";
 import { conAcumulado, resumenCuenta, type Cuenta } from "@/lib/inversores/cuentas";
+import { avanceEnPesos, type IndicesCac } from "@/lib/inversores/pesos";
+import { Origen } from "../proyectos/Origen";
 import { Icono } from "../Icono";
 import { useBaseProyecto } from "../proyecto";
 import { BarraLectura, monto, redondo } from "../finanzas/comun";
@@ -37,13 +39,28 @@ export function Ficha({ id }: { id: string }) {
         </p>
       )}
       {datos && !cuenta && <p className="card ingresos__vacio">No se encontró esta cuenta. Puede que haya cambiado el nombre o la unidad en la planilla.</p>}
-      {datos && cuenta && <Contenido c={cuenta} mesActual={datos.cuentas.mesActual} informal={informal} setInformal={setInformal} />}
+      {datos && cuenta && <Contenido c={cuenta} mesActual={datos.cuentas.mesActual} cac={datos.cac ?? null} errorCac={datos.errorCac ?? null} informal={informal} setInformal={setInformal} />}
     </div>
   );
 }
 
-function Contenido({ c, mesActual, informal, setInformal }: { c: Cuenta; mesActual: string; informal: boolean; setInformal: (v: boolean) => void }) {
+function Contenido({
+  c,
+  mesActual,
+  cac,
+  errorCac,
+  informal,
+  setInformal,
+}: {
+  c: Cuenta;
+  mesActual: string;
+  cac: IndicesCac | null;
+  errorCac: string | null;
+  informal: boolean;
+  setInformal: (v: boolean) => void;
+}) {
   const r = resumenCuenta(c, mesActual, informal);
+  const ep = avanceEnPesos(c, cac, mesActual, informal);
   const pagos = conAcumulado(informal ? c.pagos : c.pagos.filter((p) => p.formal === true), r.baseUsd);
   const pendientes = informal ? c.pendientes : c.pendientes.filter((p) => p.bn === "blanco");
   const hoy = new Intl.DateTimeFormat("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date());
@@ -129,6 +146,42 @@ function Contenido({ c, mesActual, informal, setInformal }: { c: Cuenta; mesActu
         </div>
       </div>
 
+      <section className="ficha__pesos" aria-label="En pesos ajustados por CAC">
+        <h2 className="ficha__pesos-titulo">
+          En pesos ajustados por CAC
+          {ep && <span> · a valores de {nombreMes(ep.mesCac).toLowerCase()}</span>}
+        </h2>
+        {ep && ep.costoHoy == null && ep.pagadoHoy === 0 ? (
+          <p className="ficha__nota">{ep.falta}: no se puede llevar a pesos de hoy. Si es a precio cerrado en dólares, no hace falta.</p>
+        ) : ep ? (
+          <div className="ingresos__cifras">
+            <div className="cifra">
+              <span className="cifra__titulo">{informal ? "Costo de hoy" : "Monto formal de hoy"}</span>
+              <span className="cifra__valor">{ep.costoHoy != null ? redondo(ep.costoHoy, "ARS") : "—"}</span>
+              <span className="cifra__nota">
+                {ep.costoContrato != null ? `${redondo(ep.costoContrato, "ARS")} del contrato${c.mesBaseCac ? ` (${nombreMes(c.mesBaseCac).toLowerCase()})` : ""}` : ep.falta}
+              </span>
+            </div>
+            <div className="cifra cifra--destacada">
+              <span className="cifra__titulo">Pagado, en pesos de hoy</span>
+              <span className="cifra__valor">{redondo(ep.pagadoHoy, "ARS")}</span>
+              <span className="cifra__nota">
+                {pct(ep.avance)} del total{ep.sinAjustar > 0 && ` · ${ep.sinAjustar} ${ep.sinAjustar === 1 ? "pago sin fecha no suma" : "pagos sin fecha no suman"}`}
+              </span>
+            </div>
+            <div className="cifra">
+              <span className="cifra__titulo">Saldo, en pesos de hoy</span>
+              <span className="cifra__valor">{ep.saldoHoy != null ? redondo(ep.saldoHoy, "ARS") : "—"}</span>
+              <Origen
+                texto={`Todo llevado al CAC de ${nombreMes(ep.mesCac).toLowerCase()}. Costo: costo en pesos del contrato × CAC ${nombreMes(ep.mesCac, true)} ÷ CAC del mes anterior al mes base. Cada pago en pesos: × CAC ${nombreMes(ep.mesCac, true)} ÷ CAC del mes anterior al pago. Los pagos en dólares, al tipo de cambio del contrato (${ep.tipoCambioContrato ? `$ ${Math.round(ep.tipoCambioContrato).toLocaleString("es-AR")}` : "—"}) y ajustados desde el mes base, como el costo.`}
+              />
+            </div>
+          </div>
+        ) : (
+          <p className="ficha__nota">{errorCac ? `No se pudo leer el índice CAC: ${errorCac}` : "Sin índice CAC para ajustar."}</p>
+        )}
+      </section>
+
       {r.baseUsd != null && (
         <section className="card grafico">
           <h2>Avance de pago</h2>
@@ -151,6 +204,7 @@ function Contenido({ c, mesActual, informal, setInformal }: { c: Cuenta; mesActu
                   <th className="tabla__numero">Monto</th>
                   <th className="tabla__numero">Tipo de cambio</th>
                   <th className="tabla__numero">En dólares</th>
+                  {ep && <th className="tabla__numero">En pesos de hoy</th>}
                   <th className="tabla__numero">Acumulado</th>
                 </tr>
               </thead>
@@ -165,6 +219,14 @@ function Contenido({ c, mesActual, informal, setInformal }: { c: Cuenta; mesActu
                     <td data-etiqueta="Monto" className="tabla__numero">{monto(p.monto, p.moneda)}</td>
                     <td data-etiqueta="Tipo de cambio" className="tabla__numero">{p.moneda === "ARS" && p.tipoCambio ? `$ ${p.tipoCambio.toLocaleString("es-AR")}` : "—"}</td>
                     <td data-etiqueta="En dólares" className="tabla__numero">{p.usd != null ? monto(p.usd, "USD") : "—"}</td>
+                    {ep && (
+                      <td data-etiqueta="En pesos de hoy" className="tabla__numero">
+                        {ep.pagos[p.fila]?.hoy != null ? redondo(ep.pagos[p.fila].hoy!, "ARS") : "—"}
+                        {ep.pagos[p.fila]?.factor != null && ep.pagos[p.fila].factor !== 1 && (
+                          <span className="tabla__sub">× {ep.pagos[p.fila].factor!.toLocaleString("es-AR", { maximumFractionDigits: 3 })} CAC</span>
+                        )}
+                      </td>
+                    )}
                     <td data-etiqueta="Acumulado" className="tabla__numero">
                       {usd(p.acumuladoUsd)}
                       <span className="tabla__sub">{pct(p.avance)}</span>
