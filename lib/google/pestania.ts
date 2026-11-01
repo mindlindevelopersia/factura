@@ -42,7 +42,9 @@ export class PestaniaSimple {
         }
       }
       const fila1 = await this.client.request<{ values?: string[][] }>({ url: this.url(`A1:${this.ultima}1`) });
-      if (!fila1.data.values?.[0]?.some((v) => v !== "")) {
+      // Vacía, o con menos columnas que ahora (se sumaron columnas al final): se escriben los títulos.
+      const actuales = fila1.data.values?.[0] ?? [];
+      if (!actuales.some((v) => v !== "") || (actuales.length < this.encabezados.length && actuales.every((v, i) => v === this.encabezados[i]))) {
         await this.client.request({
           url: `${this.url(`A1:${this.ultima}1`)}?valueInputOption=RAW`,
           method: "PUT",

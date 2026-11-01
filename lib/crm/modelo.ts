@@ -73,6 +73,9 @@ export interface Contacto {
   actualizado: string;
   entroEtapa: string;
   ultimoContacto: string | null;
+  /** Si compró: qué unidad y a cuánto (para cruzarlo con la Lista de precios). */
+  unidadVendida: string;
+  precioVentaUsd: number | null;
 }
 
 export interface Actividad {
@@ -113,6 +116,8 @@ export const COLUMNAS_CONTACTOS = [
   "Actualizado",
   "Entró a la etapa",
   "Último contacto",
+  "Unidad vendida",
+  "Precio de venta USD",
 ] as const;
 
 export const COLUMNAS_ACTIVIDAD = ["Fecha", "Usuario", "Contacto ID", "Contacto", "Tipo", "Detalle", "Etapa"] as const;
@@ -156,6 +161,8 @@ export function contactoDeFila(f: string[]): Contacto {
     actualizado: v(23),
     entroEtapa: v(24) || v(22),
     ultimoContacto: v(25) || null,
+    unidadVendida: v(26).toUpperCase(),
+    precioVentaUsd: numero(v(27)),
   };
 }
 
@@ -187,6 +194,8 @@ export function filaDeContacto(c: Contacto): string[] {
     c.actualizado,
     c.entroEtapa,
     c.ultimoContacto ?? "",
+    c.unidadVendida,
+    c.precioVentaUsd != null ? String(c.precioVentaUsd) : "",
   ];
 }
 

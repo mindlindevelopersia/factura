@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { unidadesDisponibles } from "@/lib/finanzas/fuente";
+import { estadosDeUnidades, unidadesDisponibles } from "@/lib/finanzas/fuente";
 import { errorCrm, preparar } from "@/lib/crm/api";
 import { crearContacto, leerCrm } from "@/lib/crm/fuente";
 import { nuevoId, validarContacto, type CambiosContacto, type Contacto } from "@/lib/crm/modelo";
@@ -9,8 +9,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ proyect
   const ctx = await preparar((await params).proyecto);
   if (ctx instanceof NextResponse) return ctx;
   try {
-    const [crm, unidades] = await Promise.all([leerCrm(), unidadesDisponibles(ctx.proyecto.id)]);
-    return NextResponse.json({ ...crm, actividad: crm.actividad.slice(0, 1500), unidades, usuario: ctx.usuario, ahora: new Date().toISOString() });
+    const [crm, unidades, estados] = await Promise.all([leerCrm(), unidadesDisponibles(ctx.proyecto.id), estadosDeUnidades(ctx.proyecto.id)]);
+    return NextResponse.json({ ...crm, actividad: crm.actividad.slice(0, 1500), unidades, estados, usuario: ctx.usuario, ahora: new Date().toISOString() });
   } catch (e) {
     return errorCrm(e, "crm GET");
   }
@@ -52,6 +52,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ proyect
     actualizado: ahora,
     entroEtapa: ahora,
     ultimoContacto: null,
+    unidadVendida: datos.unidadVendida ?? "",
+    precioVentaUsd: datos.precioVentaUsd ?? null,
   };
   try {
     const nota = body.nota?.trim();

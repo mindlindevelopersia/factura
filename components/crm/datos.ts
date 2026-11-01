@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { UnidadDisponible } from "@/lib/crm/alarmas";
+import type { EstadoUnidadCrm, UnidadDisponible } from "@/lib/crm/alarmas";
 import type { Actividad, CambiosContacto, Contacto } from "@/lib/crm/modelo";
 import type { MensajeSugerido } from "@/lib/crm/mensajes";
 import { leerJson } from "../formato";
@@ -11,6 +11,8 @@ export interface DatosCrm {
   contactos: Contacto[];
   actividad: Actividad[];
   unidades: UnidadDisponible[];
+  /** Cómo está cada unidad en la Lista de precios. */
+  estados: EstadoUnidadCrm[];
   usuario: string;
   ahora: string;
 }
@@ -73,7 +75,9 @@ export function useCrm() {
   const contactos = useMemo(() => (datos?.contactos ?? []).filter((c) => !c.proyecto || c.proyecto === id), [datos, id]);
   const precioMinimo = useMemo(() => (datos?.unidades.length ? Math.min(...datos.unidades.map((u) => u.precioUsd)) : null), [datos]);
 
-  return { datos, contactos, precioMinimo, error, cargando, recargar: cargar, crear, actualizar, importar, mensajeIa, proyecto: id };
+  const estados = useMemo(() => datos?.estados ?? [], [datos]);
+
+  return { datos, contactos, precioMinimo, estados, error, cargando, recargar: cargar, crear, actualizar, importar, mensajeIa, proyecto: id };
 }
 
 export type Crm = ReturnType<typeof useCrm>;

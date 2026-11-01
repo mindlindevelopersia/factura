@@ -34,6 +34,8 @@ const contacto = (x: Partial<Contacto> = {}): Contacto => ({
   actualizado: "2026-11-08T12:00:00.000Z",
   entroEtapa: "2026-11-05T12:00:00.000Z",
   ultimoContacto: "2026-11-08T12:00:00.000Z",
+  unidadVendida: "",
+  precioVentaUsd: null,
   ...x,
 });
 
@@ -89,6 +91,20 @@ describe("CRM: temperatura y alarmas", () => {
     expect(t).toMatchObject({ total: 4, abiertos: 2, conversion: 0.5, seguimientos: { vencidos: 1, hoy: 0, semana: 1 } });
     expect(t.motivosPerdida).toEqual([{ motivo: "Precio", total: 1 }]);
     expect(t.actividadSemana).toEqual([{ usuario: "Mati", total: 1 }]);
+  });
+});
+
+describe("CRM: cruce con la Lista de precios", () => {
+  const estados = [
+    { codigo: "2C", estado: "libre" as const, inversor: "", reventa: false },
+    { codigo: "5B", estado: "vendida" as const, inversor: "Pablo Pallini", reventa: false },
+    { codigo: "1A", estado: "vendida" as const, inversor: "Miranda", reventa: true },
+  ];
+  it("avisa si en el CRM se vendió y la lista sigue libre, y si se vendió la unidad que le interesaba a alguien", () => {
+    const vendido = alarmasDe(contacto({ etapa: "Vendido", unidadVendida: "2C", proximaFecha: null }), AHORA, null, estados);
+    expect(vendido.map((a) => a.texto)).toEqual(["Actualizá la planilla: en el CRM la 2C está vendida a Juana Pérez, pero en la Lista de precios sigue libre."]);
+    const interesada = alarmasDe(contacto({ unidades: ["5B", "1A"] }), AHORA, null, estados);
+    expect(interesada.filter((a) => a.tipo === "vendida").map((a) => a.texto)).toEqual(["La 5B se vendió (a Pablo Pallini): ofrecele otra a Juana."]);
   });
 });
 
