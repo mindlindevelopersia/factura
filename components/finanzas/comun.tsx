@@ -24,10 +24,11 @@ export function escala(maximo: number): number[] {
 }
 
 /** La hora de la última lectura y el botón para volver a leer la planilla. */
-export function BarraLectura({ leido, cargando, actualizar }: { leido: string | null; cargando: boolean; actualizar: () => void }) {
+export function BarraLectura({ leido, cargando, actualizar, extra }: { leido: string | null; cargando: boolean; actualizar: () => void; extra?: React.ReactNode }) {
   return (
     <div className="ingresos__barra">
       <span className="ingresos__leido">{leido ? `Planilla leída a las ${fechaHora(leido)}` : cargando ? "Leyendo la planilla…" : ""}</span>
+      {extra}
       <button type="button" className="btn btn--borde btn--chico" onClick={actualizar} disabled={cargando}>
         <Icono nombre="recargar" size={16} className={cargando ? "girando" : undefined} />
         Actualizar

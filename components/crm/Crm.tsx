@@ -6,6 +6,7 @@ import { alarmasDe, dias, hoyBA, tablero, temperatura, todasLasAlarmas, ultimoTr
 import { abierto, claseEtapa, DESCRIPCION_ETAPA, ETAPAS, ETAPAS_ABIERTAS, NOMBRE_TEMPERATURA, ORIGENES, TEMPERATURAS, type Contacto, type Etapa } from "@/lib/crm/modelo";
 import { proyecto as buscarProyecto } from "@/lib/modulos";
 import { Icono } from "../Icono";
+import { ExportarExcel } from "../ExportarExcel";
 
 const proyectoNombre = (id: string) => buscarProyecto(id)?.nombre ?? id;
 import { useBaseProyecto } from "../proyecto";
@@ -393,6 +394,34 @@ export function CrmContactos() {
         {importando && <ImportarPlanilla crm={crm} />}
         <div className="crm__filtros">
           <input type="search" value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Buscar nombre, mail, teléfono, notas…" aria-label="Buscar" />
+          <ExportarExcel
+            nombre="Contactos CRM"
+            hojas={() => [
+              {
+                nombre: "Contactos",
+                titulo: `Contactos del CRM (${lista.length}, con los filtros de la pantalla)`,
+                columnas: [
+                  { titulo: "Nombre", ancho: 28 },
+                  { titulo: "Teléfono", ancho: 16 },
+                  { titulo: "Mail", ancho: 26 },
+                  { titulo: "Etapa", ancho: 16 },
+                  { titulo: "Origen", ancho: 16 },
+                  { titulo: "Referido", ancho: 16 },
+                  { titulo: "Presupuesto (US$)", formato: "usd", total: true },
+                  { titulo: "Unidades de interés", ancho: 16 },
+                  { titulo: "Próximo paso", ancho: 30 },
+                  { titulo: "Fecha del próximo paso", formato: "fecha", ancho: 12 },
+                  { titulo: "Último contacto", formato: "fecha", ancho: 12 },
+                  { titulo: "Responsable", ancho: 12 },
+                  { titulo: "Proyectos", ancho: 16 },
+                  { titulo: "Vendida", ancho: 10 },
+                  { titulo: "Precio de venta (US$)", formato: "usd", total: true },
+                  { titulo: "Notas", ancho: 50 },
+                ],
+                filas: lista.map((c) => [c.nombre, c.telefono, c.mail, c.etapa, c.origen, c.referido, c.presupuestoUsd, c.unidades.join(", "), c.proximoPaso, c.proximaFecha, c.ultimoContacto, c.responsable, c.proyectos.join(", "), c.unidadVendida, c.precioVentaUsd, c.notas]),
+              },
+            ]}
+          />
           <select value={etapa} onChange={(e) => setEtapa(e.target.value)} aria-label="Etapa">
             <option value="">Todas las etapas</option>
             {ETAPAS.map((e) => (

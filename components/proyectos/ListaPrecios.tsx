@@ -4,6 +4,8 @@ import { useState } from "react";
 import { precioSimulado } from "@/lib/proyectos/comercial";
 import { Icono } from "../Icono";
 import { BarraLectura } from "../finanzas/comun";
+import { ExportarExcel } from "../ExportarExcel";
+import { hojaUnidades } from "./excelUnidades";
 import { m2, pct, useComercial, usd } from "./datos";
 import { Origen } from "./Origen";
 
@@ -25,7 +27,12 @@ export function ListaPrecios() {
 
   return (
     <div className="ingresos">
-      <BarraLectura leido={datos?.leido ?? null} cargando={cargando} actualizar={actualizar} />
+      <BarraLectura
+        leido={datos?.leido ?? null}
+        cargando={cargando}
+        actualizar={actualizar}
+        extra={c && <ExportarExcel nombre="Lista de precios" hojas={() => [hojaUnidades(libres, "Lista de precios: unidades libres", simulando ? (u) => precioSimulado(u, baseSim, aumentoSim) : undefined)]} />}
+      />
       {error && (
         <p role="alert" className="alerta alerta--error">
           <Icono nombre="alerta" size={18} />

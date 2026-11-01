@@ -3,7 +3,6 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  aCsv,
   filtrar,
   filtrosAUrl,
   filtrosDeUrl,
@@ -19,7 +18,8 @@ import {
 } from "@/lib/finanzas/ingresos";
 import { leerJson } from "../formato";
 import { Icono } from "../Icono";
-import { Atajos, BarraLectura, descargar, GraficoMeses, MONEDAS, monto, nombreMoneda, opcionesDeMeses, redondo, Revisar, Selector } from "./comun";
+import { ExportarExcel } from "../ExportarExcel";
+import { Atajos, BarraLectura, GraficoMeses, MONEDAS, monto, nombreMoneda, opcionesDeMeses, redondo, Revisar, Selector } from "./comun";
 
 interface Respuesta {
   flujo: FlujoIngresos;
@@ -250,10 +250,28 @@ function Detalle({ pagos }: { pagos: Pago[] }) {
     <section className="card ingresos__seccion">
       <div className="ingresos__titulo">
         <h2>Detalle de pagos ({pagos.length})</h2>
-        <button type="button" className="btn btn--borde btn--chico" onClick={() => descargar("ingresos-lerma.csv", aCsv(ordenados))}>
-          <Icono nombre="archivo" size={16} />
-          Descargar CSV
-        </button>
+        <ExportarExcel
+          nombre="Ingresos Lerma"
+          hojas={() => [
+            {
+              nombre: "Ingresos",
+              titulo: `Ingresos: pagos del Flujo de fondos (${ordenados.length})`,
+              columnas: [
+                { titulo: "Mes", ancho: 10 },
+                { titulo: "Inversor", ancho: 30 },
+                { titulo: "Unidad", ancho: 8 },
+                { titulo: "Tipo", ancho: 10 },
+                { titulo: "Detalle", ancho: 22 },
+                { titulo: "B/N", ancho: 8 },
+                { titulo: "Estado", ancho: 10 },
+                { titulo: "Monto en $", formato: "pesos", total: true },
+                { titulo: "Monto en US$", formato: "usd", total: true },
+                { titulo: "Celda del Flujo", ancho: 12 },
+              ],
+              filas: ordenados.map((p) => [p.mes ?? "", p.inversor, p.unidad, p.tipo, p.detalle, p.bn === "blanco" ? "Blanco" : "Negro", p.estado === "cobrado" ? "Cobrado" : "A cobrar", p.moneda === "ARS" ? p.monto : null, p.moneda === "USD" ? p.monto : null, p.celda]),
+            },
+          ]}
+        />
       </div>
       <div className="tabla-contenedor">
         <table className="tabla">

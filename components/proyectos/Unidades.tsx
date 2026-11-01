@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { MODALIDADES, precioDepto, type Unidad } from "@/lib/proyectos/comercial";
 import { Icono } from "../Icono";
 import { BarraLectura } from "../finanzas/comun";
+import { ExportarExcel } from "../ExportarExcel";
+import { hojaUnidades } from "./excelUnidades";
 import { m2, useComercial, useProyectoId, usd } from "./datos";
 import { Origen } from "./Origen";
 import { Supuestos } from "./Supuestos";
@@ -34,7 +36,7 @@ export function Unidades() {
 
   return (
     <div className="ingresos">
-      <BarraLectura leido={datos?.leido ?? null} cargando={cargando} actualizar={actualizar} />
+      <BarraLectura leido={datos?.leido ?? null} cargando={cargando} actualizar={actualizar} extra={c && <ExportarExcel nombre="Unidades" hojas={() => [hojaUnidades(c.unidades, "Unidades: todas, con su estado e inversor")]} />} />
       {error && (
         <p role="alert" className="alerta alerta--error">
           <Icono nombre="alerta" size={18} />

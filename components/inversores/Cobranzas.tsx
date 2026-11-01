@@ -9,6 +9,7 @@ import { fechaHora, leerJson } from "../formato";
 import { Icono } from "../Icono";
 import { useBaseProyecto } from "../proyecto";
 import { BarraLectura, monto, redondo } from "../finanzas/comun";
+import { ExportarExcel } from "../ExportarExcel";
 import { fechaCorta } from "./datos";
 
 interface Respuesta {
@@ -80,6 +81,41 @@ export function Cobranzas() {
           void cargar(true);
           void cargarAvisos();
         }}
+        extra={
+          datos && (
+            <ExportarExcel
+              nombre="Cobranzas"
+              hojas={() => [
+                {
+                  nombre: "Cobranzas",
+                  titulo: "Cobranzas: vencido, este mes y el próximo",
+                  columnas: [
+                    { titulo: "Inversor", ancho: 30 },
+                    { titulo: "Unidad", ancho: 9 },
+                    { titulo: "Cuándo", ancho: 12 },
+                    { titulo: "Vence", formato: "fecha", ancho: 12 },
+                    { titulo: "Días vencido", formato: "numero" },
+                    { titulo: "Detalle", ancho: 22 },
+                    { titulo: "Formal", ancho: 8 },
+                    { titulo: "Moneda", ancho: 8 },
+                    { titulo: "Monto del Flujo", formato: "numero", total: true },
+                    { titulo: "Actualizado por CAC", formato: "numero", total: true },
+                    { titulo: "Cuenta", ancho: 40 },
+                  ],
+                  filas: datos.cobranzas.flatMap((c) =>
+                    (
+                      [
+                        ["Vencido", c.vencidos],
+                        ["Este mes", c.esteMes],
+                        ["Mes próximo", c.proximoMes],
+                      ] as const
+                    ).flatMap(([cuando, items]) => items.map((i) => [c.inversor, c.unidad, cuando, i.vence, i.diasVencido || null, i.pago.detalle, i.formal ? "Sí" : "No", i.pago.moneda, i.pago.monto, i.actualizado ?? i.pago.monto, i.calculo])),
+                  ),
+                },
+              ]}
+            />
+          )
+        }
       />
       {error && (
         <p role="alert" className="alerta alerta--error">
