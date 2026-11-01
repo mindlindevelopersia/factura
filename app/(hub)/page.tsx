@@ -8,6 +8,8 @@ import { DolarHoy } from "@/components/indicadores/Dolar";
 import { TarjetasModulos } from "@/components/TarjetasModulos";
 import { requireUser } from "@/lib/auth/session";
 import { persona, saludoDelMomento } from "@/lib/equipo";
+import { accesoDeEmail } from "@/lib/permisos/fuente";
+import { veProyecto } from "@/lib/permisos/modelo";
 import { AREAS_EMPRESA, PROYECTOS, RUTA_FACTURAS, rutaProyecto } from "@/lib/modulos";
 
 export const metadata: Metadata = { title: "Inicio" };
@@ -22,6 +24,7 @@ export default async function Inicio({
   if (revisar) redirect(`${RUTA_FACTURAS}?revisar=${encodeURIComponent(revisar)}`);
   const user = await requireUser();
   const quien = persona(user.email, user.name);
+  const acceso = await accesoDeEmail(user.email).catch(() => null);
 
   return (
     <main className="app-main" id="contenido">
@@ -38,7 +41,7 @@ export default async function Inicio({
       <DolarHoy />
       <h2 className="cac__titulo-seccion">Proyectos</h2>
       <ul className="tarjetas-modulos">
-        {PROYECTOS.map((p) => (
+        {PROYECTOS.filter((p) => !acceso || veProyecto(acceso, p.id)).map((p) => (
           <li key={p.id}>
             {p.estado === "activo" ? (
               <Link href={rutaProyecto(p.id)} className="tarjeta-modulo">

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { AvisoBeta, EtiquetaBeta } from "@/components/Beta";
 import { CrmEmbudo } from "@/components/crm/Crm";
-import { requireUser } from "@/lib/auth/session";
+import { requireRuta } from "@/lib/auth/session";
 import { proyecto as buscar } from "@/lib/modulos";
 
 export const metadata: Metadata = { title: "CRM · Embudo" };
 
 export default async function Pagina({ params }: { params: Promise<{ proyecto: string }> }) {
-  await requireUser();
+  await requireRuta(`/proyectos/${(await params).proyecto}/comercial/crm/embudo`);
   const { proyecto } = await params;
   const p = buscar(proyecto)!;
   return (

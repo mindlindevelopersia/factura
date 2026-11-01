@@ -38,7 +38,13 @@ export interface Usuario {
   email: string;
   apodo: string;
   nombre: string;
+  /** Otros nombres con los que se lo encuentra (el apodo de siempre si en Ajustes se le puso otro @usuario). */
+  alias?: string[];
 }
+
+const sinTildes = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+const nombresDe = (u: Usuario) => [u.apodo, ...(u.alias ?? []), u.email.split("@")[0]].map(sinTildes);
 
 export const COLUMNAS_NOTIFICACIONES = ["ID", "Para", "Fecha", "Tipo", "Título", "Texto", "Link", "De"] as const;
 
@@ -56,12 +62,11 @@ export function leerFilas(filas: string[][], para: string): { guardadas: Notific
   return { guardadas, leidas };
 }
 
-const sinTildes = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /** Los usuarios mencionados con @ en un texto (por apodo o por la parte del mail antes de la @). */
 export function menciones(texto: string, usuarios: Usuario[]): Usuario[] {
   const nombres = [...texto.matchAll(/(?:^|[^\w@.])@([\p{L}\d._-]+)/gu)].map((m) => sinTildes(m[1]).replace(/[._-]+$/, ""));
-  return usuarios.filter((u) => nombres.some((n) => n === sinTildes(u.apodo) || n === sinTildes(u.email.split("@")[0])));
+  return usuarios.filter((u) => nombres.some((n) => nombresDe(u).includes(n)));
 }
 
 /** Los mencionados en el texto nuevo que no estaban en el anterior (para no avisar dos veces al editar). */
@@ -71,7 +76,7 @@ export function mencionesNuevas(antes: string, despues: string, usuarios: Usuari
 }
 
 /** El usuario con ese apodo (el responsable de una tarea o de un lead). */
-export const usuarioPorApodo = (apodo: string, usuarios: Usuario[]) => (apodo ? usuarios.find((u) => sinTildes(u.apodo) === sinTildes(apodo) || sinTildes(u.email.split("@")[0]) === sinTildes(apodo)) : undefined);
+export const usuarioPorApodo = (apodo: string, usuarios: Usuario[]) => (apodo ? usuarios.find((u) => nombresDe(u).includes(sinTildes(apodo))) : undefined);
 
 /** Un pedacito del texto para la notificación. */
 export const extracto = (t: string, max = 140) => {

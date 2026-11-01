@@ -27,3 +27,15 @@ export async function requireUser(): Promise<Usuario> {
   if (!user) redirect("/login");
   return user;
 }
+
+/**
+ * Para las páginas: el usuario, si puede abrir esta ruta del hub (ver lib/permisos). Si no tiene
+ * permiso, va a /sin-permiso.
+ */
+export async function requireRuta(ruta: string): Promise<Usuario> {
+  const user = await requireUser();
+  const { accesoDeEmail } = await import("../permisos/fuente");
+  const { puedeRuta } = await import("../permisos/modelo");
+  if (!puedeRuta(await accesoDeEmail(user.email), ruta)) redirect(`/sin-permiso?ruta=${encodeURIComponent(ruta)}`);
+  return user;
+}

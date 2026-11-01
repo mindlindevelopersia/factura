@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { AvisoBeta, EtiquetaBeta } from "@/components/Beta";
 import { Cobranzas } from "@/components/inversores/Cobranzas";
-import { requireUser } from "@/lib/auth/session";
+import { requireRuta } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Cobranzas" };
 
-export default async function PaginaCobranzas() {
-  await requireUser();
+export default async function PaginaCobranzas({ params }: { params: Promise<{ proyecto: string }> }) {
+  await requireRuta(`/proyectos/${(await params).proyecto}/inversores/cobranzas`);
 
   return (
     <main className="app-main" id="contenido">

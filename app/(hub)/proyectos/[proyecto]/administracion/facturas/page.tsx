@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
 import { Bandeja } from "@/components/Bandeja";
-import { requireUser } from "@/lib/auth/session";
+import { requireRuta } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Facturas y comprobantes" };
 
 export default async function Facturas({
+  params,
   searchParams,
 }: {
+  params: Promise<{ proyecto: string }>;
   searchParams: Promise<{ revisar?: string }>;
 }) {
-  await requireUser();
+  await requireRuta(`/proyectos/${(await params).proyecto}/administracion/facturas`);
   const { revisar } = await searchParams;
 
   return (

@@ -7,7 +7,11 @@ import { Icono } from "./Icono";
 
 /** El nombre de cada ruta conocida del hub (inicio, áreas, proyectos y módulos). */
 function nombres(): Map<string, string> {
-  const m = new Map<string, string>([["/", "Inicio"]]);
+  const m = new Map<string, string>([
+    ["/", "Inicio"],
+    ["/ajustes", "Ajustes"],
+    ["/sin-permiso", "Sin permiso"],
+  ]);
   for (const a of AREAS_EMPRESA) {
     m.set(a.href, a.nombre);
     for (const mod of a.modulos) m.set(mod.href, mod.nombre);

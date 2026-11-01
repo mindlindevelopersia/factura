@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/auth/session";
+import { exigir } from "@/lib/permisos/api";
+import { PROYECTO_PRINCIPAL, rutaProyecto } from "@/lib/modulos";
 import { registroAvisos } from "@/lib/finanzas/fuente";
 import { validarAviso, type AvisoCobranza } from "@/lib/inversores/avisos";
 
@@ -7,7 +8,8 @@ const SIN_REGISTRO = "El registro de avisos no está configurado: falta la plani
 
 /** El registro de avisos de cobranza. */
 export async function GET() {
-  if (!(await getUser())) return NextResponse.json({ error: "Sesión vencida. Volvé a ingresar." }, { status: 401 });
+  const permiso = await exigir(rutaProyecto(PROYECTO_PRINCIPAL.id, "inversores/cobranzas"));
+  if (permiso instanceof NextResponse) return permiso;
   const registro = registroAvisos();
   if (!registro) return NextResponse.json({ error: SIN_REGISTRO }, { status: 503 });
   try {
@@ -20,8 +22,9 @@ export async function GET() {
 
 /** Anota un aviso (quién lo registra sale de la sesión). */
 export async function POST(req: Request) {
-  const user = await getUser();
-  if (!user) return NextResponse.json({ error: "Sesión vencida. Volvé a ingresar." }, { status: 401 });
+  const permiso = await exigir(rutaProyecto(PROYECTO_PRINCIPAL.id, "inversores/cobranzas"));
+  if (permiso instanceof NextResponse) return permiso;
+  const user = permiso.user;
   const registro = registroAvisos();
   if (!registro) return NextResponse.json({ error: SIN_REGISTRO }, { status: 503 });
   const datos = (await req.json().catch(() => ({}))) as Partial<AvisoCobranza>;

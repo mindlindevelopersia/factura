@@ -3,15 +3,20 @@ import { AvisoBeta } from "@/components/Beta";
 import { CajaBuscar } from "@/components/Buscador";
 import { Tablero } from "@/components/proyectos/Tablero";
 import { TarjetasModulos } from "@/components/TarjetasModulos";
-import { requireUser } from "@/lib/auth/session";
+import { requireRuta } from "@/lib/auth/session";
 import { areasDeProyecto, proyecto as buscar } from "@/lib/modulos";
+import { accesoDeEmail } from "@/lib/permisos/fuente";
+import { veArea } from "@/lib/permisos/modelo";
 
 export const metadata: Metadata = { title: "Proyecto" };
 
 /** La portada de un proyecto: el tablero y sus áreas. */
 export default async function PaginaProyecto({ params }: { params: Promise<{ proyecto: string }> }) {
-  await requireUser();
+  const user = await requireRuta(`/proyectos/${(await params).proyecto}`);
   const { proyecto: id } = await params;
+  // El tablero muestra ventas y unidades: solo para quien ve algo de Comercial.
+  const acceso = await accesoDeEmail(user.email).catch(() => null);
+  const veComercial = !acceso || veArea(acceso, "comercial", id);
   const p = buscar(id)!;
   return (
     <main className="app-main" id="contenido">
@@ -24,7 +29,7 @@ export default async function PaginaProyecto({ params }: { params: Promise<{ pro
         </div>
       </div>
       <CajaBuscar placeholder={`Buscar en ${p.nombre}: leads, unidades, inversores, tareas…`} />
-      {p.planillaMadre && <Tablero />}
+      {p.planillaMadre && veComercial && <Tablero />}
       <h2 className="cac__titulo-seccion indicadores__modulos">Áreas del proyecto</h2>
       <TarjetasModulos items={areasDeProyecto(p.id)} />
     </main>

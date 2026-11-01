@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { AvisoBeta, EtiquetaBeta } from "@/components/Beta";
 import { IndiceCac } from "@/components/indicadores/IndiceCac";
-import { requireUser } from "@/lib/auth/session";
+import { requireRuta } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Índice CAC" };
 
 export default async function PaginaCac() {
-  await requireUser();
+  await requireRuta("/indicadores/cac");
 
   return (
     <main className="app-main" id="contenido">

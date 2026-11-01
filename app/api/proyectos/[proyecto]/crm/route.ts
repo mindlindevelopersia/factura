@@ -8,7 +8,7 @@ import { avisarAsignacion, avisarMenciones } from "@/lib/notificaciones/fuente";
 
 /** Los contactos y la actividad del CRM (de todos los proyectos; la pantalla filtra), y las unidades disponibles del proyecto. */
 export async function GET(_req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
-  const ctx = await preparar((await params).proyecto);
+  const ctx = await preparar((await params).proyecto, "comercial/crm", "comercial/propuesta");
   if (ctx instanceof NextResponse) return ctx;
   try {
     const [crm, unidades, estados] = await Promise.all([leerCrm(), unidadesDisponibles(ctx.proyecto.id), estadosDeUnidades(ctx.proyecto.id)]);
@@ -20,7 +20,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ proyect
 
 /** Un contacto nuevo. */
 export async function POST(req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
-  const ctx = await preparar((await params).proyecto);
+  const ctx = await preparar((await params).proyecto, "comercial/crm", "comercial/propuesta");
   if (ctx instanceof NextResponse) return ctx;
   const body = (await req.json().catch(() => ({}))) as { contacto?: CambiosContacto; nota?: string };
   const datos = body.contacto ?? {};

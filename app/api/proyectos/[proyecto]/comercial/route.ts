@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/auth/session";
+import { exigir } from "@/lib/permisos/api";
+import { rutaProyecto } from "@/lib/modulos";
 import { datosComercial, FlujoSinConfigurar } from "@/lib/finanzas/fuente";
 import { proyecto as buscar } from "@/lib/modulos";
 
 /** Unidades, lista de precios, superficies y management de un proyecto. ?fresco=1 vuelve a leer. */
 export async function GET(req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
-  if (!(await getUser())) return NextResponse.json({ error: "Sesión vencida. Volvé a ingresar." }, { status: 401 });
+  const idProyecto = (await params).proyecto;
+  const permiso = await exigir(...["comercial/unidades", "comercial/lista-de-precios", "comercial/propuesta", "comercial/crm", "management/desarrolladores", "calendario"].map((m) => rutaProyecto(idProyecto, m)));
+  if (permiso instanceof NextResponse) return permiso;
   const { proyecto } = await params;
   const p = buscar(proyecto);
   if (!p || p.estado !== "activo") return NextResponse.json({ error: "Proyecto inexistente o todavía en preparación." }, { status: 404 });

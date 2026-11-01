@@ -6,6 +6,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { AREAS_EMPRESA, areasDeProyecto, PROYECTOS, rutaProyecto, type Area } from "@/lib/modulos";
 import { EtiquetaBeta } from "./Beta";
 import { Icono } from "./Icono";
+import { useAcceso, usePuedeRuta } from "./Permisos";
+import { puede, veProyecto } from "@/lib/permisos/modelo";
 
 /**
  * El menú lateral del hub: lo de la empresa arriba y, abajo, cada proyecto con sus áreas y módulos.
@@ -14,6 +16,14 @@ import { Icono } from "./Icono";
  */
 export function Navegacion({ cerrar }: { cerrar?: ReactNode }) {
   const ruta = usePathname();
+  const ve = usePuedeRuta();
+  const acceso = useAcceso();
+  // Lo que no puede ver no aparece en el menú (y si entra por un link, el servidor no lo deja).
+  const filtrar = (area: Area): Area | null => {
+    const modulos = area.modulos.filter((m) => ve(m.href));
+    if (area.modulos.length ? !modulos.length : !ve(area.href)) return null;
+    return { ...area, modulos };
+  };
   const actual = (href: string) => (ruta === href ? "page" : undefined);
   const dentro = (href: string) => ruta === href || ruta.startsWith(`${href}/`);
 
@@ -76,7 +86,9 @@ export function Navegacion({ cerrar }: { cerrar?: ReactNode }) {
         </Link>
         {cerrar}
       </div>
-      {AREAS_EMPRESA.map((area) => (
+      {AREAS_EMPRESA.map(filtrar)
+        .filter((a): a is Area => !!a)
+        .map((area) => (
         <div key={area.href} className="navegacion__grupo">
           {fila(
             area.href,
@@ -92,7 +104,7 @@ export function Navegacion({ cerrar }: { cerrar?: ReactNode }) {
       ))}
 
       <span className="navegacion__titulo">Proyectos</span>
-      {PROYECTOS.map((p) => {
+      {PROYECTOS.filter((p) => !acceso || (veProyecto(acceso, p.id) && (p.estado === "bloqueado" || areasDeProyecto(p.id).some((a) => filtrar(a))))).map((p) => {
         if (p.estado === "bloqueado") {
           return (
             <Link
@@ -121,7 +133,10 @@ export function Navegacion({ cerrar }: { cerrar?: ReactNode }) {
               true,
             )}
             {abierto(base) &&
-              areasDeProyecto(p.id).map((area) => (
+              areasDeProyecto(p.id)
+                .map(filtrar)
+                .filter((a): a is Area => !!a)
+                .map((area) => (
                 <div key={area.href} className="navegacion__subgrupo">
                   {fila(
                     area.href,
@@ -137,6 +152,14 @@ export function Navegacion({ cerrar }: { cerrar?: ReactNode }) {
           </div>
         );
       })}
+      {(!acceso || puede(acceso, "ajustes")) && (
+        <div className="navegacion__fila navegacion__ajustes">
+          <Link href="/ajustes" className={`navegacion__area${dentro("/ajustes") ? " navegacion__area--activa" : ""}`} aria-current={actual("/ajustes")}>
+            <Icono nombre="ajustes" size={18} />
+            Ajustes
+          </Link>
+        </div>
+      )}
     </nav>
   );
 }

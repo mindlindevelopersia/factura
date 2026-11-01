@@ -6,7 +6,7 @@ import { validarPropuesta } from "@/lib/proyectos/propuestasGuardadas";
 /** Guarda los cambios de una propuesta. */
 export async function PUT(req: Request, { params }: { params: Promise<{ proyecto: string; id: string }> }) {
   const { proyecto, id } = await params;
-  const ctx = await preparar(proyecto);
+  const ctx = await preparar(proyecto, "comercial/propuesta");
   if (ctx instanceof NextResponse) return ctx;
   const v = validarPropuesta(await req.json().catch(() => null));
   if ("error" in v) return NextResponse.json({ error: v.error }, { status: 400 });

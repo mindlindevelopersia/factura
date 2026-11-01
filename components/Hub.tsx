@@ -6,6 +6,8 @@ import { Icono } from "./Icono";
 import { Migas } from "./Migas";
 import { Navegacion } from "./Navegacion";
 import { Oliver } from "./Oliver";
+import { PermisosProvider } from "./Permisos";
+import type { Acceso } from "@/lib/permisos/modelo";
 
 const CLAVE = "hub-menu-cerrado";
 
@@ -14,7 +16,7 @@ const CLAVE = "hub-menu-cerrado";
  * (botón «) para que la página use todo el ancho, y volver a abrir (botón »). Se acuerda en el
  * navegador. En pantallas angostas el menú es una franja arriba y no se esconde.
  */
-export function Hub({ children }: { children: ReactNode }) {
+export function Hub({ children, acceso }: { children: ReactNode; acceso: Acceso | null }) {
   const [cerrado, setCerrado] = useState(false);
   useEffect(() => {
     setCerrado(localStorage.getItem(CLAVE) === "1");
@@ -25,6 +27,7 @@ export function Hub({ children }: { children: ReactNode }) {
   };
 
   return (
+    <PermisosProvider acceso={acceso}>
     <div className={`hub${cerrado ? " hub--sin-menu" : ""}`}>
       {cerrado ? (
         <div className="hub__riel">
@@ -48,5 +51,6 @@ export function Hub({ children }: { children: ReactNode }) {
       <Oliver />
       <Buscador />
     </div>
+    </PermisosProvider>
   );
 }

@@ -9,7 +9,7 @@ export const maxDuration = 60;
 
 /** Trae los contactos de la pestaña "CRM" del Excel madre (los que ya están no se repiten). */
 export async function POST(_req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
-  const ctx = await preparar((await params).proyecto);
+  const ctx = await preparar((await params).proyecto, "comercial/crm");
   if (ctx instanceof NextResponse) return ctx;
   try {
     const [filas, { contactos }] = await Promise.all([filasCrmMadre(ctx.proyecto.id), leerCrm()]);
