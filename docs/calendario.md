@@ -8,6 +8,7 @@ En cada proyecto, **Calendario** (primera entrada del menú del proyecto) junta 
 | **Pagos** | Los egresos de las cajas cuyo "Corresponde" es el proyecto | El día del pago. |
 | **Leads** | El próximo paso de cada contacto abierto del CRM; "volver a contactar" de los perdidos y dormidos | La fecha del próximo paso (atrasado en rojo). "Ver" abre su ficha. |
 | **Propuestas** | Las propuestas comerciales guardadas | El día que vencen. |
+| **Tareas** | Las tareas abiertas con fecha (del proyecto y las generales) | El día que vencen (atrasadas en rojo). "Ver" abre la tarea. |
 | **Agenda** | Lo que se carga a mano ("+ Agregar a la agenda"): un pago a un proveedor, una reunión, una firma | El día elegido. Se guarda en la pestaña "Calendario" de la planilla del CRM y se puede borrar. |
 
 Arriba se filtra por tipo (con cuántos hay en el mes). Tocando un día se ve el detalle con los montos y los totales por moneda, y abajo lo atrasado. Si una fuente no se puede leer, el resto sale igual y se avisa cuál faltó.

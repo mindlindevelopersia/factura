@@ -5816,6 +5816,8 @@ h1 .etiqueta-beta {
   --cal-lead-texto: #8a3b00;
   --cal-propuesta: #ecece6;
   --cal-propuesta-texto: #3d4038;
+  --cal-tarea: #e9e4f7;
+  --cal-tarea-texto: #4b3a8c;
   --cal-agenda: var(--negro);
   --cal-agenda-texto: var(--lima);
   display: grid;
@@ -5888,6 +5890,12 @@ h1 .etiqueta-beta {
 .calendario__chip--propuesta {
   background: var(--cal-propuesta);
   color: var(--cal-propuesta-texto);
+}
+.calendario__filtro--tarea,
+.calendario__chip--tarea,
+.calendario__titulo-grupo--tarea {
+  background: var(--cal-tarea);
+  color: var(--cal-tarea-texto);
 }
 .calendario__filtro--agenda,
 .calendario__chip--agenda {
@@ -6097,5 +6105,196 @@ h1 .etiqueta-beta {
   }
   .calendario__numero {
     width: 100%;
+  }
+}
+
+/* Tareas */
+.tareas__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.tareas__barra input[type="search"],
+.tareas__barra select {
+  padding: 8px 10px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo);
+  font: inherit;
+  font-size: 13px;
+  background: var(--blanco);
+}
+.tareas__barra input[type="search"] {
+  flex: 1;
+  min-width: 200px;
+  max-width: 360px;
+}
+.tareas__tablero {
+  grid-auto-columns: minmax(240px, 1fr);
+}
+.tareas__columna header strong {
+  color: var(--negro);
+}
+.tareas__columna--bloqueada {
+  background: #fbefee;
+}
+.tareas__columna--hecha {
+  background: #eef3ea;
+}
+.tarea {
+  gap: 6px;
+}
+.tarea--alta {
+  border-left: 4px solid #d98a1f;
+}
+.tarea--urgente {
+  border-left: 4px solid var(--rojo);
+}
+.tarea__etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.tarea__tipo,
+.tarea__prioridad {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--gris-claro);
+  color: var(--texto-suave);
+}
+.tarea__prioridad--alta {
+  background: #fdf0dc;
+  color: #8a5300;
+}
+.tarea__prioridad--urgente {
+  background: #f8e1e0;
+  color: var(--rojo);
+}
+.tarea__titulo {
+  font-size: 14px;
+}
+.tarea__titulo--hecha {
+  text-decoration: line-through;
+  color: var(--texto-suave);
+}
+.tarea__bloqueo {
+  display: flex;
+  gap: 4px;
+  align-items: flex-start;
+  font-size: 12px;
+  color: var(--rojo);
+}
+.tarea__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+.tarea__pie > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.tarea__responsable {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--negro);
+  color: var(--lima);
+  font-weight: 700;
+}
+.tarea-ficha__opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tarea-ficha__opcion {
+  padding: 6px 10px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo);
+  background: var(--blanco);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tarea-ficha__opcion--activa {
+  border-color: var(--negro);
+  background: var(--negro);
+  color: var(--lima);
+}
+.tarea-ficha__grilla {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+.tarea-ficha__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tarea-ficha__subtareas,
+.tarea-ficha__comentarios {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tarea-ficha__subtareas li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid #efefe9;
+  font-size: 13px;
+}
+.tarea-ficha__subtareas label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tarea-ficha__subtareas input {
+  width: 16px;
+  height: 16px;
+}
+.tarea-ficha__agregar,
+.tarea-ficha__comentar {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.tarea-ficha__agregar input,
+.tarea-ficha__agregar select,
+.tarea-ficha__comentar textarea {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo);
+  font: inherit;
+  font-size: 13px;
+  background: var(--blanco);
+}
+.tarea-ficha__comentarios li {
+  padding: 8px 10px;
+  border-radius: var(--radio-campo);
+  background: var(--gris-claro);
+}
+.tarea-ficha__comentarios p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+@media (max-width: 650px) {
+  .tarea-ficha__grilla {
+    grid-template-columns: 1fr;
   }
 }

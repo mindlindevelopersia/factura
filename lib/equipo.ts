@@ -15,6 +15,9 @@ const EQUIPO: Record<string, Persona> = {
   "mindlindevops@gmail.com": { nombre: "Tadeo Ferrer", apodo: "Tade" },
 };
 
+/** Los apodos del equipo, para elegir responsable. */
+export const EQUIPO_APODOS = Object.values(EQUIPO).map((p) => p.apodo);
+
 export function persona(email: string, nombreCuenta?: string | null): Persona {
   const p = EQUIPO[email.trim().toLowerCase()];
   if (p) return p;
