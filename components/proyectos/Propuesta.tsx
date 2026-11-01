@@ -167,10 +167,15 @@ export function Propuesta() {
   const sinGuardar = p ? guardado !== propuestaAUrl(p) : false;
 
   // Desde la lista, "PDF" abre la propuesta y la manda a imprimir sola (una vez, con las imágenes cargadas).
+  // Enseguida se saca "imprimir=1" de la dirección: si la página se recarga (en el celular pasa al
+  // volver de WhatsApp), no vuelve a ofrecer el PDF y no termina mandándose dos veces.
   const imprimio = useRef(false);
   useEffect(() => {
     if (!r || imprimio.current || q.get("imprimir") !== "1") return;
     imprimio.current = true;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("imprimir");
+    window.history.replaceState(window.history.state, "", url);
     const t = setTimeout(() => window.print(), 1200);
     return () => clearTimeout(t);
   }, [r, q]);
@@ -200,11 +205,22 @@ export function Propuesta() {
 
   // El nombre del PDF sale del título de la página: "UF 2C - LERMA 439 - Virginia Alegre by Mindlin Developers".
   const titulo = p ? nombreDelPdf(p, proyecto?.nombre ?? id) : null;
+  // El hub pone después el título genérico de la página ("Propuestas comerciales · Mindlin"), a veces
+  // cuando la propuesta ya está abierta (en el celular, con la red lenta): se vuelve a poner el de la
+  // propuesta cada vez que cambie, y también justo antes de imprimir.
   useEffect(() => {
     if (!titulo) return;
     const antes = document.title;
-    document.title = titulo;
+    const poner = () => {
+      if (document.title !== titulo) document.title = titulo;
+    };
+    poner();
+    const obs = new MutationObserver(poner);
+    obs.observe(document.head, { subtree: true, childList: true, characterData: true });
+    window.addEventListener("beforeprint", poner);
     return () => {
+      obs.disconnect();
+      window.removeEventListener("beforeprint", poner);
       document.title = antes;
     };
   }, [titulo]);
@@ -250,7 +266,14 @@ export function Propuesta() {
           <button type="button" className="btn btn--primario" onClick={() => void guardar()} disabled={guardando || (!sinGuardar && !!guardadaId)}>
             {guardando ? "Guardando…" : !sinGuardar && guardadaId ? "Guardada ✓" : guardadaId ? "Guardar cambios" : "Guardar"}
           </button>
-          <button type="button" className="btn btn--borde btn--chico" onClick={() => window.print()}>
+          <button
+            type="button"
+            className="btn btn--borde btn--chico"
+            onClick={() => {
+              if (titulo) document.title = titulo;
+              window.print();
+            }}
+          >
             <Icono nombre="imprimir" size={16} /> Descargar PDF
           </button>
           <a className="btn btn--borde btn--chico" href={whatsappPropuesta(contacto?.telefono ?? "", mensajePropuesta(p, r, proyecto?.nombre.toUpperCase() ?? id))} target="_blank" rel="noreferrer">
