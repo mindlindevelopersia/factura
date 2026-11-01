@@ -456,3 +456,10 @@ export const historicoMep = conCache(async (): Promise<{ fecha: string; venta: n
     .map((x: { fecha?: unknown; venta?: unknown }) => ({ fecha: String(x.fecha ?? "").slice(0, 10), venta: Number(x.venta) }))
     .filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x.fecha) && x.venta > 0);
 });
+
+/** La pestaña "Superficies" del Excel madre del proyecto, tal cual (para cargar la prefactibilidad). */
+export async function grillaSuperficies(id: string): Promise<Celda[][]> {
+  const sheet = planillaMadre(id);
+  if (!sheet) throw new FlujoSinConfigurar("El proyecto no tiene configurado su Excel madre.");
+  return leerGrilla("Superficies", "A1:T120", false, sheet);
+}

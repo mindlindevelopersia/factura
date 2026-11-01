@@ -27,10 +27,14 @@ export interface Permiso {
 /** Todas las claves, armadas con el menú (lib/modulos.ts): un área sin módulos es una clave; si tiene módulos, cada módulo. */
 export const PERMISOS: Permiso[] = (() => {
   const r: Permiso[] = [];
-  for (const a of AREAS_EMPRESA) for (const m of a.modulos) r.push({ clave: m.href.slice(1), nombre: m.nombre, area: a.nombre, deProyecto: false });
+  for (const a of AREAS_EMPRESA) {
+    if (!a.modulos.length) r.push({ clave: a.href.slice(1), nombre: a.nombre, area: a.nombre, deProyecto: false });
+    for (const m of a.modulos) r.push({ clave: m.href.slice(1), nombre: m.nombre, area: a.nombre, deProyecto: false });
+  }
   const base = `/proyectos/${PROYECTO_PRINCIPAL.id}/`;
   for (const a of areasDeProyecto(PROYECTO_PRINCIPAL.id)) {
-    if (!a.modulos.length) r.push({ clave: a.href.slice(base.length), nombre: a.nombre, area: a.nombre, deProyecto: true });
+    // Prefactibilidad está en HQ y en cada proyecto con la misma clave: va una sola vez.
+    if (!a.modulos.length && !r.some((x) => x.clave === a.href.slice(base.length))) r.push({ clave: a.href.slice(base.length), nombre: a.nombre, area: a.nombre, deProyecto: true });
     for (const m of a.modulos) r.push({ clave: m.href.slice(base.length), nombre: m.nombre, area: a.nombre, deProyecto: true });
   }
   r.push({ clave: "ajustes", nombre: "Ajustes (usuarios y permisos)", area: "Ajustes", deProyecto: false });
@@ -65,12 +69,12 @@ export const ROLES: Rol[] = [
     claves: ["administracion/facturas", "finanzas/ingresos", "finanzas/cash-flow", "finanzas/egresos", "inversores/cuentas-corrientes", "inversores/cobranzas", "calendario", "tareas"],
   },
   { id: "vendedor", nombre: "Vendedor", descripcion: "Comercial (unidades, lista de precios, propuestas y CRM), Calendario y Tareas.", claves: ["comercial/unidades", "comercial/lista-de-precios", "comercial/propuesta", "comercial/crm", "calendario", "tareas"] },
-  { id: "arquitectura", nombre: "Arquitectura", descripcion: "Unidades, Indicadores (CAC y materiales), Calendario y Tareas.", claves: ["comercial/unidades", "indicadores/cac", "indicadores/materiales", "calendario", "tareas"] },
+  { id: "arquitectura", nombre: "Arquitectura", descripcion: "Prefactibilidad, Unidades, Indicadores (CAC y materiales), Calendario y Tareas.", claves: ["prefactibilidad", "comercial/unidades", "indicadores/cac", "indicadores/materiales", "calendario", "tareas"] },
   {
     id: "analista",
     nombre: "Analista",
-    descripcion: "Indicadores, Finanzas, Unidades y Lista de precios, Calendario y Tareas.",
-    claves: ["indicadores/cac", "indicadores/materiales", "finanzas/ingresos", "finanzas/cash-flow", "finanzas/egresos", "comercial/unidades", "comercial/lista-de-precios", "calendario", "tareas"],
+    descripcion: "Indicadores, Prefactibilidad, Finanzas, Unidades y Lista de precios, Calendario y Tareas.",
+    claves: ["indicadores/cac", "indicadores/materiales", "prefactibilidad", "finanzas/ingresos", "finanzas/cash-flow", "finanzas/egresos", "comercial/unidades", "comercial/lista-de-precios", "calendario", "tareas"],
   },
   { id: "sin-rol", nombre: "Sin permisos", descripcion: "Solo el inicio, hasta que se le asigne un rol.", claves: [] },
 ];
@@ -223,7 +227,7 @@ export function requisitoDeRuta(ruta: string): { clave?: string; area?: string; 
   if (m) {
     const [, proyecto, resto = ""] = m;
     if (!resto) return { proyecto };
-    const clave = PERMISOS.filter((p) => p.deProyecto && (resto === p.clave || resto.startsWith(`${p.clave}/`))).sort((a, b) => b.clave.length - a.clave.length)[0]?.clave;
+    const clave = PERMISOS.filter((p) => resto === p.clave || resto.startsWith(`${p.clave}/`)).sort((a, b) => b.clave.length - a.clave.length)[0]?.clave;
     return clave ? { clave, proyecto } : { area: resto.split("/")[0], proyecto };
   }
   return null;
