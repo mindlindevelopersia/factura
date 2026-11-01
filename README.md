@@ -96,7 +96,7 @@ Auth.js (`next-auth` v5) con Google. Solo entran los mails de `ALLOWED_EMAILS`, 
 ### Deploy en Vercel
 
 1. En Vercel, **Add New > Project** e importar el repo `mindlindevelopersia/factura`. Vercel detecta Next.js solo.
-2. Cargar `AUTH_SECRET` (generado con `npx auth secret`), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` y `ALLOWED_EMAILS`. `ANTHROPIC_API_KEY` todavía no hace falta en Vercel.
+2. Cargar `AUTH_SECRET` (generado con `npx auth secret`), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` y `ALLOWED_EMAILS`. `ANTHROPIC_API_KEY` hace falta en Vercel para Oliver (el chat de cada sección, ver docs/oliver.md) y la lectura de facturas.
 3. Desplegar y agregar el dominio que asigne Vercel en el paso 3 del cliente OAuth.
 
 ## Hub de la empresa: proyectos y áreas

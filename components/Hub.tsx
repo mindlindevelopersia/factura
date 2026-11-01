@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Icono } from "./Icono";
 import { Migas } from "./Migas";
 import { Navegacion } from "./Navegacion";
+import { Oliver } from "./Oliver";
 
 const CLAVE = "hub-menu-cerrado";
 
@@ -43,6 +44,7 @@ export function Hub({ children }: { children: ReactNode }) {
         <Migas />
         {children}
       </div>
+      <Oliver />
     </div>
   );
 }
