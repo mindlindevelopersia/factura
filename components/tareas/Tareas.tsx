@@ -21,6 +21,7 @@ import {
 } from "@/lib/tareas/modelo";
 import { leerJson } from "../formato";
 import { Icono } from "../Icono";
+import { pendientesSinCargar, RESPONSABLE_PENDIENTES, type FeaturePendiente } from "@/lib/producto/pendientes";
 import { ConDictado, sumarDictado, useDictado } from "../Dictado";
 import { CampoMenciones, ConMenciones } from "../Menciones";
 import { useBaseProyecto } from "../proyecto";
@@ -88,22 +89,11 @@ function useTareas(modo: ModoTareas) {
 }
 type Hook = ReturnType<typeof useTareas>;
 
-/** Lo que hay para hacer en Producto, para arrancar el tablero de features. */
-const FEATURES_INICIALES = [
-  "Mejorar todos los módulos de administración",
-  "Automatizar los procesos que le pasamos a Axel",
-  "Presupuesto base 0",
-  "Módulo de compras y presupuestos",
-  "Módulo de marketing",
-  "Mails de notificaciones (resumen diario y avisos)",
-  "Calendario del hub en la Mac y el celular",
-];
 
 /** El tablero de tareas del proyecto (y las generales de la empresa), o el de features de Producto. */
 export function Tareas({ modo = "proyecto" }: { modo?: ModoTareas }) {
   const h = useTareas(modo);
   const producto = modo === "producto";
-  const [cargandoLista, setCargandoLista] = useState(false);
   const [abiertaId, setAbiertaId] = useState<string | null>(null);
   const [nueva, setNueva] = useState(false);
   // Una tarea dictada: sus campos, para abrir la ficha ya completa.
@@ -163,26 +153,6 @@ export function Tareas({ modo = "proyecto" }: { modo?: ModoTareas }) {
         <button type="button" className="btn btn--borde" onClick={() => setDictando(true)}>
           <Icono nombre="microfono" size={16} /> {producto ? "Dictar feature" : "Dictar tarea"}
         </button>
-        {producto && !d.tareas.length && (
-          <button
-            type="button"
-            className="btn btn--borde"
-            disabled={cargandoLista}
-            onClick={async () => {
-              setCargandoLista(true);
-              setError(null);
-              try {
-                for (const titulo of FEATURES_INICIALES) await h.crear({ titulo, tipo: "Otro", responsable: "", prioridad: "Normal" });
-              } catch (e) {
-                setError(e instanceof Error ? e.message : String(e));
-              } finally {
-                setCargandoLista(false);
-              }
-            }}
-          >
-            {cargandoLista ? "Cargando…" : "Cargar la lista inicial"}
-          </button>
-        )}
         <input type="search" value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder={producto ? "Buscar feature…" : "Buscar tarea, inversor, proveedor…"} aria-label="Buscar tareas" />
         <select value={quien} onChange={(e) => setQuien(e.target.value)} aria-label="Responsable">
           <option value="">Todos</option>
@@ -203,6 +173,7 @@ export function Tareas({ modo = "proyecto" }: { modo?: ModoTareas }) {
         </span>
       </div>
       {(error || h.error) && <p className="alerta alerta--error">{error ?? h.error}</p>}
+      {producto && <PendientesHub titulos={d.tareas.map((t) => t.titulo)} cargadas={() => void h.cargar()} />}
       {dictando && (
         <DictarTarea
           equipo={d.equipo}
@@ -702,5 +673,79 @@ function DictarTarea({ equipo, producto, cerrar, lista }: { equipo: string[]; pr
         </button>
       </div>
     </section>
+  );
+}
+
+const CLAVE_DESCARTADOS = "features-pendientes-descartados";
+
+/**
+ * Los pendientes que propone el hub (lib/producto/pendientes.ts): cada uno con qué falta y el
+ * primer paso. Se cargan como features a nombre de Tadeo, de a uno o todos juntos.
+ */
+function PendientesHub({ titulos, cargadas }: { titulos: string[]; cargadas: () => void }) {
+  const [descartados, setDescartados] = useState<string[]>([]);
+  const [abierto, setAbierto] = useState<string | null>(null);
+  const [cargando, setCargando] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      setDescartados(JSON.parse(localStorage.getItem(CLAVE_DESCARTADOS) ?? "[]"));
+    } catch {
+      /* nada guardado */
+    }
+  }, []);
+  const lista = pendientesSinCargar(titulos).filter((p) => !descartados.includes(p.titulo));
+  if (!lista.length) return null;
+  const cargar = async (cuales: FeaturePendiente[] | null, clave: string) => {
+    setCargando(clave);
+    setError(null);
+    try {
+      await leerJson(await fetch("/api/producto/features/pendientes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(cuales ? { titulos: cuales.map((p) => p.titulo) } : {}) }));
+      cargadas();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCargando(null);
+    }
+  };
+  const descartar = (t: string) => {
+    const l = [...descartados, t];
+    setDescartados(l);
+    localStorage.setItem(CLAVE_DESCARTADOS, JSON.stringify(l));
+  };
+  return (
+    <details className="card pendientes-hub" open>
+      <summary>
+        <strong>Pendientes que propone el hub</strong> <span className="revisar__contador">{lista.length}</span>
+      </summary>
+      <p className="crm-ficha__sub">
+        Lo que quedó por hacer, cada uno con qué falta y el primer paso. Se cargan como features a nombre de @{RESPONSABLE_PENDIENTES} (le llega un solo aviso).
+      </p>
+      <div className="tarea-ficha__acciones">
+        <button type="button" className="btn btn--primario btn--chico" disabled={!!cargando} onClick={() => void cargar(lista, "todos")}>
+          {cargando === "todos" ? "Cargando…" : `Cargar todos (${lista.length})`}
+        </button>
+      </div>
+      {error && <p className="oliver__error">{error}</p>}
+      <ul className="pendientes-hub__lista">
+        {lista.map((p) => (
+          <li key={p.titulo}>
+            <button type="button" className="pendientes-hub__titulo" onClick={() => setAbierto(abierto === p.titulo ? null : p.titulo)} aria-expanded={abierto === p.titulo}>
+              <strong>{p.titulo}</strong>
+              {p.prioridad !== "Normal" && <span className={`tarea__prioridad tarea__prioridad--${p.prioridad.toLowerCase()}`}>{p.prioridad}</span>}
+            </button>
+            {abierto === p.titulo && <p className="pendientes-hub__texto">{p.descripcion}</p>}
+            <span className="pendientes-hub__acciones">
+              <button type="button" className="btn btn--borde btn--chico" disabled={!!cargando} onClick={() => void cargar([p], p.titulo)}>
+                {cargando === p.titulo ? "Cargando…" : "Cargar"}
+              </button>
+              <button type="button" className="btn btn--texto btn--chico" onClick={() => descartar(p.titulo)}>
+                Ahora no
+              </button>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }

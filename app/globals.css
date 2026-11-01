@@ -8218,3 +8218,69 @@ html[data-privado-simple] dd {
     grid-template-columns: 1fr;
   }
 }
+
+/* Producto · Features: los pendientes que propone el hub */
+.pendientes-hub {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 16px 20px;
+  border: 1px dashed var(--lima-oscuro);
+  background: #fafbea;
+}
+.pendientes-hub summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.pendientes-hub p {
+  margin: 0;
+}
+.pendientes-hub__lista {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pendientes-hub__lista li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--blanco);
+}
+.pendientes-hub__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--negro);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.pendientes-hub__texto {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+.pendientes-hub__acciones {
+  display: flex;
+  gap: 4px;
+}
+@media (max-width: 700px) {
+  .pendientes-hub__lista li {
+    grid-template-columns: 1fr;
+  }
+}
