@@ -2634,11 +2634,14 @@ html {
   display: grid;
   gap: 6px;
   flex: 1;
+  /* Que un título largo con su etiqueta no empuje el texto fuera de la tarjeta. */
+  min-width: 0;
 }
 .tarjeta-modulo__texto strong {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 4px 10px;
   font-size: 16px;
   color: var(--negro);
 }
@@ -7257,6 +7260,65 @@ h1 .etiqueta-beta {
 .ideas__estado--descartada {
   background: var(--gris-claro);
   color: var(--texto-suave);
+}
+.ideas__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ideas__tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #eef4fb;
+  color: #00508a;
+  font-size: 11px;
+  font-weight: 700;
+}
+.ideas__filtro-area {
+  padding: 8px 10px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo);
+  background: var(--blanco);
+  font: inherit;
+  font-size: 13px;
+}
+.ideas__elegir-tags {
+  display: grid;
+  gap: 6px;
+}
+.ideas__modulos-tag {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-left: 12px;
+  border-left: 2px solid var(--lima);
+}
+.ideas__modulos-tag small {
+  color: var(--texto-suave);
+  font-weight: 700;
+}
+.tarea-ficha__opcion--chica {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+.ideas__sugeridas {
+  margin-bottom: 12px;
+}
+.ideas__sugerida {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px dashed var(--lima-oscuro);
+  border-radius: var(--radio-tarjeta);
+  background: #fafbea;
+}
+.ideas__sugerida .ideas__texto {
+  margin: 0;
+}
+.ideas__estado--sugerida {
+  background: var(--negro);
+  color: var(--lima);
 }
 .ideas__cuerpo {
   margin: 0;

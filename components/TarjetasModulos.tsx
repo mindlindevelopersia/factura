@@ -14,7 +14,6 @@ export function TarjetasModulos({ items }: { items: (Area | Modulo)[] }) {
   return (
     <ul className="tarjetas-modulos">
       {visibles.map((item) => {
-        const pronto = "modulos" in item && item.modulos.length === 0;
         return (
           <li key={item.href}>
             <Link href={item.href} className="tarjeta-modulo">
@@ -26,7 +25,6 @@ export function TarjetasModulos({ items }: { items: (Area | Modulo)[] }) {
               <span className="tarjeta-modulo__texto">
                 <strong>
                   {item.nombre}
-                  {pronto && <span className="navegacion__pronto">Próximamente</span>}
                   {"beta" in item && item.beta && <EtiquetaBeta />}
                 </strong>
                 <span>{item.descripcion}</span>

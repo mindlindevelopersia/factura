@@ -23,9 +23,9 @@ export async function leerIdeas(): Promise<{ ideas: Idea[]; comentarios: Comenta
   return { ideas: i.filter((f) => f[0]).map(ideaDeFila), comentarios: c.filter((f) => f[0]).map(comentarioIdeaDeFila) };
 }
 
-export async function crearIdea(titulo: string, texto: string, autor: string): Promise<Idea> {
+export async function crearIdea(titulo: string, texto: string, autor: string, tags: string[] = []): Promise<Idea> {
   const ahora = new Date().toISOString();
-  const idea: Idea = { id: nuevoId(), titulo, texto, autor, creada: ahora, actualizada: ahora, estado: "Abierta", featureId: "" };
+  const idea: Idea = { id: nuevoId(), titulo, texto, autor, creada: ahora, actualizada: ahora, estado: "Abierta", featureId: "", tags };
   await pestanias().ideas.agregar(filaDeIdea(idea));
   return idea;
 }

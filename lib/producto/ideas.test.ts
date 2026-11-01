@@ -3,7 +3,7 @@ import { requisitoDeRuta } from "../permisos/modelo";
 import { rutaDeTarea } from "../tareas/modelo";
 import { filaDeIdea, ideaDeFila, ordenarIdeas, validarIdea, type Idea } from "./ideas";
 
-const idea = (id: string, actualizada: string): Idea => ({ id, titulo: `Idea ${id}`, texto: "", autor: "Persona", creada: actualizada, actualizada, estado: "Abierta", featureId: "" });
+const idea = (id: string, actualizada: string): Idea => ({ id, titulo: `Idea ${id}`, texto: "", autor: "Persona", creada: actualizada, actualizada, estado: "Abierta", featureId: "", tags: [] });
 
 describe("producto", () => {
   it("ida y vuelta por la fila y validación", () => {
