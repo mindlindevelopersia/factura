@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Acceso, ConfigUsuario, Permiso, Rol } from "@/lib/permisos/modelo";
+import { ROLES_FIJOS, type Acceso, type ConfigUsuario, type Permiso, type Rol } from "@/lib/permisos/modelo";
 import { leerJson } from "../formato";
 import { Icono } from "../Icono";
 
@@ -100,7 +100,7 @@ export function Ajustes() {
           </div>
         </section>
       ) : (
-        <Roles datos={datos} />
+        <Roles datos={datos} cambiar={() => void cargar()} />
       )}
 
       {u && <FichaUsuario key={u.email} u={u} datos={datos} cerrar={() => setAbierto(null)} guardado={(usuarios) => setDatos({ ...datos, usuarios })} />}
@@ -115,11 +115,24 @@ function porArea(permisos: Permiso[]) {
   return [...m];
 }
 
-function Roles({ datos }: { datos: Datos }) {
+function Roles({ datos, cambiar }: { datos: Datos; cambiar: (roles: Rol[]) => void }) {
   const roles = datos.roles.filter((r) => r.id !== "sin-rol");
+  const puedeEditar = datos.yo.superAdmin;
+  const [editando, setEditando] = useState<Rol | "nuevo" | null>(null);
+  const editable = (r: Rol) => puedeEditar && !ROLES_FIJOS.includes(r.id);
   return (
     <section className="card">
-      <p className="crm-ficha__sub">Lo que ve cada rol de entrada. A cada persona se le puede cambiar (en su ficha, &quot;Permisos a medida&quot;) y limitar los proyectos.</p>
+      <div className="ajustes__barra-roles">
+        <p className="crm-ficha__sub">
+          Lo que ve cada rol de entrada. A cada persona se le puede cambiar (en su ficha, &quot;Permisos a medida&quot;) y limitar los proyectos.
+          {puedeEditar ? " Tocá el nombre de un rol para editarlo." : " Los roles los edita el super administrador."}
+        </p>
+        {puedeEditar && (
+          <button type="button" className="btn btn--primario btn--chico" onClick={() => setEditando("nuevo")}>
+            + Nuevo rol
+          </button>
+        )}
+      </div>
       <div className="tabla-contenedor">
         <table className="tabla ajustes__matriz">
           <thead>
@@ -127,7 +140,15 @@ function Roles({ datos }: { datos: Datos }) {
               <th>Módulo</th>
               {roles.map((r) => (
                 <th key={r.id} title={r.descripcion}>
-                  {r.nombre}
+                  {editable(r) ? (
+                    <button type="button" className="ajustes__rol-boton" onClick={() => setEditando(r)}>
+                      {r.nombre} <Icono nombre="ajustes" size={12} />
+                    </button>
+                  ) : (
+                    r.nombre
+                  )}
+                  {r.modificado && <small className="ajustes__marca">cambiado</small>}
+                  {r.deFabrica === false && <small className="ajustes__marca">creado</small>}
                 </th>
               ))}
             </tr>
@@ -154,11 +175,125 @@ function Roles({ datos }: { datos: Datos }) {
       <ul className="ajustes__roles">
         {roles.map((r) => (
           <li key={r.id}>
-            <strong>{r.nombre}</strong>: {r.descripcion}
+            <strong>{r.nombre}</strong>: {r.descripcion || "—"}
           </li>
         ))}
       </ul>
+      {editando && (
+        <FichaRol
+          key={editando === "nuevo" ? "nuevo" : editando.id}
+          rol={editando === "nuevo" ? null : editando}
+          datos={datos}
+          cerrar={() => setEditando(null)}
+          guardado={(r) => {
+            cambiar(r);
+            setEditando(null);
+          }}
+        />
+      )}
     </section>
+  );
+}
+
+/** Editar un rol (o crear uno): nombre, descripción y qué módulos ve. Solo el super administrador. */
+function FichaRol({ rol, datos, cerrar, guardado }: { rol: Rol | null; datos: Datos; cerrar: () => void; guardado: (roles: Rol[]) => void }) {
+  const [nombre, setNombre] = useState(rol?.nombre ?? "");
+  const [descripcion, setDescripcion] = useState(rol?.descripcion ?? "");
+  const [claves, setClaves] = useState<Set<string>>(new Set(rol?.claves ?? []));
+  const [error, setError] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+  const usan = rol ? datos.usuarios.filter((u) => u.acceso.rol === rol.id && !u.config?.claves).length : 0;
+
+  const enviar = async (metodo: "PUT" | "DELETE") => {
+    setOcupado(true);
+    setError(null);
+    try {
+      const r = await leerJson<{ roles: Rol[] }>(
+        metodo === "PUT"
+          ? await fetch("/api/ajustes/roles", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: rol?.id, nombre, descripcion, claves: [...claves] }) })
+          : await fetch(`/api/ajustes/roles?id=${encodeURIComponent(rol!.id)}`, { method: "DELETE" }),
+      );
+      guardado(r.roles);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  return (
+    <div className="crm-ficha__fondo" onClick={cerrar}>
+      <aside className="crm-ficha" aria-label={rol ? `Rol ${rol.nombre}` : "Nuevo rol"} onClick={(e) => e.stopPropagation()}>
+        <header className="crm-ficha__encabezado">
+          <div>
+            <h2>{rol ? rol.nombre : "Nuevo rol"}</h2>
+            <span className="crm-ficha__sub">{rol ? `${usan} ${usan === 1 ? "persona lo usa" : "personas lo usan"} (sin permisos a medida)` : "Elegí el nombre y qué módulos ve"}</span>
+          </div>
+          <button type="button" className="oliver__accion crm-ficha__cerrar" onClick={cerrar} aria-label="Cerrar">
+            <Icono nombre="cerrar" size={18} />
+          </button>
+        </header>
+        <div className="crm-ficha__cuerpo">
+          <section className="crm-ficha__seccion">
+            <label className="campo">
+              Nombre
+              <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej.: Obra" autoFocus={!rol} />
+            </label>
+            <label className="campo">
+              Descripción
+              <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Qué hace y qué ve" />
+            </label>
+          </section>
+          <section className="crm-ficha__seccion">
+            <h3>Qué módulos ve</h3>
+            <div className="ajustes__grilla">
+              {porArea(datos.permisos).map(([area, lista]) => (
+                <fieldset key={area}>
+                  <legend>{area}</legend>
+                  {lista.map((p) => (
+                    <label key={p.clave} className="crm__check">
+                      <input
+                        type="checkbox"
+                        checked={claves.has(p.clave)}
+                        onChange={(e) => {
+                          const s = new Set(claves);
+                          if (e.target.checked) s.add(p.clave);
+                          else s.delete(p.clave);
+                          setClaves(s);
+                        }}
+                      />{" "}
+                      {p.nombre}
+                    </label>
+                  ))}
+                </fieldset>
+              ))}
+            </div>
+            {claves.has("ajustes") && <p className="crm-ficha__sub">Con Ajustes, este rol puede editar usuarios (no los roles).</p>}
+          </section>
+          {error && <p className="oliver__error">{error}</p>}
+          <div className="tarea-ficha__acciones">
+            <button type="button" className="btn btn--primario btn--chico" disabled={ocupado || !nombre.trim()} onClick={() => void enviar("PUT")}>
+              {ocupado ? "Guardando…" : rol ? "Guardar" : "Crear rol"}
+            </button>
+            {rol?.modificado && (
+              <button type="button" className="btn btn--borde btn--chico" disabled={ocupado} onClick={() => window.confirm(`¿Volver ${rol.nombre} a como venía?`) && void enviar("DELETE")}>
+                Volver a lo de fábrica
+              </button>
+            )}
+            {rol && rol.deFabrica === false && (
+              <button
+                type="button"
+                className="btn btn--texto btn--chico"
+                disabled={ocupado}
+                onClick={() => window.confirm(usan ? `¿Borrar ${rol.nombre}? ${usan} ${usan === 1 ? "persona queda" : "personas quedan"} sin permisos hasta que les asignes otro rol.` : `¿Borrar ${rol.nombre}?`) && void enviar("DELETE")}
+              >
+                Borrar rol
+              </button>
+            )}
+          </div>
+        </div>
+      </aside>
+    </div>
   );
 }
 

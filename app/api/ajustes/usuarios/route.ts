@@ -3,8 +3,8 @@ import { allowedEmails } from "@/lib/auth/allowed";
 import { CrmSinConfigurar } from "@/lib/crm/fuente";
 import { PROYECTOS } from "@/lib/modulos";
 import { exigir } from "@/lib/permisos/api";
-import { guardarConfig, usuariosConfigurados } from "@/lib/permisos/fuente";
-import { PERMISOS, ROLES, SUPER_ADMIN, validarConfig } from "@/lib/permisos/modelo";
+import { guardarConfig, leerRoles, usuariosConfigurados } from "@/lib/permisos/fuente";
+import { PERMISOS, SUPER_ADMIN, validarConfig } from "@/lib/permisos/modelo";
 
 /** Los usuarios con su configuración y permisos, los roles y los módulos (para Ajustes). */
 export async function GET() {
@@ -12,7 +12,7 @@ export async function GET() {
   if (permiso instanceof NextResponse) return permiso;
   return NextResponse.json({
     usuarios: await usuariosConfigurados(),
-    roles: ROLES,
+    roles: await leerRoles(),
     permisos: PERMISOS,
     proyectos: PROYECTOS.map((p) => ({ id: p.id, nombre: p.nombre })),
     superAdmin: SUPER_ADMIN,
@@ -24,7 +24,7 @@ export async function GET() {
 export async function PUT(req: Request) {
   const permiso = await exigir("/ajustes");
   if (permiso instanceof NextResponse) return permiso;
-  const v = validarConfig(await req.json().catch(() => null), [...allowedEmails()], permiso.acceso);
+  const v = validarConfig(await req.json().catch(() => null), [...allowedEmails()], permiso.acceso, await leerRoles());
   if ("error" in v) return NextResponse.json({ error: v.error }, { status: 400 });
   try {
     await guardarConfig({ ...v.config, actualizado: new Date().toISOString() });

@@ -64,3 +64,24 @@ describe("permisos", () => {
     expect(rolDe("inexistente").id).toBe("sin-rol");
   });
 });
+
+describe("roles editables", () => {
+  it("los cambios guardados reemplazan los de fábrica; los creados se suman; los fijos no cambian", async () => {
+    const { combinarRoles, rolDeFila, filaDeRol, validarRol, ROLES } = await import("./modelo");
+    const vendedorAmpliado = rolDeFila(filaDeRol({ id: "vendedor", nombre: "Vendedor", descripcion: "Con cash flow", claves: ["comercial/crm", "finanzas/cash-flow", "inventada"] }, ""));
+    expect(vendedorAmpliado.claves).toEqual(["comercial/crm", "finanzas/cash-flow"]);
+    const roles = combinarRoles([vendedorAmpliado, { id: "obra", nombre: "Obra", descripcion: "", claves: ["tareas"] }, { id: "super", nombre: "Hackeado", descripcion: "", claves: [] }]);
+    expect(roles.find((r) => r.id === "vendedor")).toMatchObject({ modificado: true, deFabrica: true, claves: ["comercial/crm", "finanzas/cash-flow"] });
+    expect(roles.find((r) => r.id === "obra")).toMatchObject({ deFabrica: false });
+    expect(roles.find((r) => r.id === "super")!.nombre).toBe("Super administrador");
+    expect(roles.at(-1)!.id).toBe("sin-rol");
+    // Un usuario con rol "obra" ve lo del rol creado.
+    const a = accesoDe("x@ejemplo.com", config({ email: "x@ejemplo.com", rol: "obra" }), false, roles);
+    expect(a.claves).toEqual(["tareas"]);
+    // Validación: crear arma el id con el nombre; no se editan los fijos ni se repite el nombre.
+    expect(validarRol({ nombre: "Marketing y Diseño", claves: ["tareas"] }, roles)).toMatchObject({ rol: { id: "marketing-y-diseno" } });
+    expect(validarRol({ id: "super", nombre: "x" }, roles)).toEqual({ error: "Ese rol no se puede editar." });
+    expect(validarRol({ nombre: "obra" }, roles)).toEqual({ error: "Ya hay un rol con ese nombre." });
+    expect(ROLES.find((r) => r.id === "vendedor")!.claves).not.toContain("finanzas/cash-flow");
+  });
+});
