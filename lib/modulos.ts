@@ -156,6 +156,12 @@ const AREAS_DE_PROYECTO: { sub: string; nombre: string; descripcion: string; ico
         descripcion: "La lista vigente: precio por m², ajuste por altura y simulador de lo que vale lo que falta vender.",
         beta: true,
       },
+      {
+        sub: "comercial/crm",
+        nombre: "CRM",
+        descripcion: "Los interesados: alarmas de a quién hablarle, embudo por etapa y base de contactos, con WhatsApp, mail y mensajes sugeridos.",
+        beta: true,
+      },
     ],
   },
   {
@@ -225,6 +231,12 @@ const AREAS_DE_PROYECTO: { sub: string; nombre: string; descripcion: string; ico
       },
     ],
   },
+];
+
+/** Páginas dentro de un módulo (para el camino de arriba de cada página). */
+export const SECCIONES_DE_PROYECTO: { sub: string; nombre: string }[] = [
+  { sub: "comercial/crm/embudo", nombre: "Embudo" },
+  { sub: "comercial/crm/contactos", nombre: "Base de datos" },
 ];
 
 /** Las áreas de un proyecto, con las rutas completas. */

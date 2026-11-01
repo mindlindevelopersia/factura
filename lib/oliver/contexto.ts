@@ -14,6 +14,9 @@ import { resumenCuenta, totalesCuentas, type Cuenta } from "../inversores/cuenta
 import { avanceEnPesos } from "../inversores/pesos";
 import { PROYECTOS, proyecto as buscarProyecto } from "../modulos";
 import { resumen } from "../proyectos/comercial";
+import { hoyBA, tablero, temperatura, todasLasAlarmas, unidadesPara } from "../crm/alarmas";
+import { leerCrm } from "../crm/fuente";
+import { unidadesDisponibles } from "../finanzas/fuente";
 
 /**
  * Lo que Oliver sabe de la sección en la que está la persona: un nombre, de qué es especialista y
@@ -305,6 +308,47 @@ async function contextoInicio(): Promise<Contexto> {
   };
 }
 
+async function contextoCrm(id: string): Promise<Contexto> {
+  const [{ contactos: todos, actividad }, unidades] = await Promise.all([leerCrm(), unidadesDisponibles(id)]);
+  const contactos = todos.filter((c) => !c.proyecto || c.proyecto === id);
+  const ahora = new Date().toISOString();
+  const hoy = hoyBA();
+  const minimo = unidades.length ? Math.min(...unidades.map((u) => u.precioUsd)) : null;
+  return {
+    seccion: `${buscarProyecto(id)?.nombre ?? id} · CRM`,
+    especialidad:
+      "el CRM de ventas: a quién hablarle y cuándo, en qué etapa está cada interesado (Nuevo, Contactado, Interesado, Evaluando, Negociando, Vendido, Perdido, Dormido), su temperatura (hot, tibio, frío) y qué mensaje mandarle",
+    datos: {
+      hoy,
+      reglas:
+        "Ningún contacto abierto queda sin próximo paso con fecha. Temperatura: hot si está evaluando o negociando (o decide en menos de 2 meses) y hablamos en la última semana; frío si hace más de 14 días que no hablamos, decide en más de 6 meses o no le alcanza; tibio el resto. Hablarle cada 2 días si es hot, 7 si es tibio, 30 si es frío. La propuesta vence a los 7 días en Evaluando.",
+      tablero: tablero(contactos, actividad, ahora, minimo),
+      alarmas: todasLasAlarmas(contactos, ahora, minimo).map((a) => `[${a.nivel}] ${a.texto}`),
+      contactos: contactos.map((c) => ({
+        nombre: c.nombre,
+        etapa: c.etapa,
+        temperatura: temperatura(c, hoy, minimo),
+        telefono: c.telefono || null,
+        mail: c.mail || null,
+        origen: [c.origen, c.referido].filter(Boolean).join(" · ") || null,
+        presupuestoUsd: c.presupuestoUsd,
+        formaPago: c.formaPago || null,
+        plazo: c.plazo || null,
+        ambientes: c.ambientes || null,
+        unidadesDeInteres: c.unidades,
+        unidadesQueLeSirven: unidadesPara(c, unidades).slice(0, 3).map((u) => u.codigo),
+        proximoPaso: c.proximoPaso || null,
+        proximaFecha: c.proximaFecha,
+        ultimoContacto: c.ultimoContacto?.slice(0, 10) ?? null,
+        motivoPerdida: c.motivoPerdida || null,
+        notas: c.notas || null,
+      })),
+      actividadReciente: actividad.slice(0, 150).map((a) => `${a.fecha.slice(0, 10)} ${a.usuario} · ${a.contacto} · ${a.tipo}: ${a.detalle}`),
+      unidadesDisponibles: unidades,
+    },
+  };
+}
+
 /** El contexto de la página en la que se está. */
 export async function contextoDe(ruta: string): Promise<Contexto> {
   const m = ruta.match(/^\/proyectos\/([^/]+)(?:\/([^/]+))?(?:\/([^/]+))?(?:\/([^/]+))?/);
@@ -317,6 +361,7 @@ export async function contextoDe(ruta: string): Promise<Contexto> {
     if (area === "finanzas" && modulo === "egresos") return contextoEgresos();
     if (area === "finanzas") return contextoIngresos();
     if (area === "management") return contextoComercial(id, true);
+    if (area === "comercial" && modulo === "crm") return contextoCrm(id);
     if (area === "administracion") {
       return {
         seccion: `${p.nombre} · Administración`,
