@@ -5805,3 +5805,297 @@ h1 .etiqueta-beta {
 .crm-importar__resultado ul {
   margin: 0;
 }
+
+/* Calendario del proyecto */
+.calendario {
+  --cal-cobro: #eef1c4;
+  --cal-cobro-texto: #4a4f12;
+  --cal-pago: #e1edf8;
+  --cal-pago-texto: #00508a;
+  --cal-lead: #fbe7d8;
+  --cal-lead-texto: #8a3b00;
+  --cal-propuesta: #ecece6;
+  --cal-propuesta-texto: #3d4038;
+  --cal-agenda: var(--negro);
+  --cal-agenda-texto: var(--lima);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+.calendario__principal {
+  padding: 16px;
+}
+.calendario__barra {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.calendario__mes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.calendario__mes h2 {
+  min-width: 170px;
+  margin: 0;
+  font-size: 20px;
+  text-align: center;
+}
+.calendario__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+}
+.calendario__filtro {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.calendario__filtro input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+.calendario__filtro small {
+  font-weight: 400;
+  opacity: 0.8;
+}
+.calendario__filtro--cobro,
+.calendario__chip--cobro {
+  background: var(--cal-cobro);
+  color: var(--cal-cobro-texto);
+}
+.calendario__filtro--pago,
+.calendario__chip--pago {
+  background: var(--cal-pago);
+  color: var(--cal-pago-texto);
+}
+.calendario__filtro--lead,
+.calendario__chip--lead {
+  background: var(--cal-lead);
+  color: var(--cal-lead-texto);
+}
+.calendario__filtro--propuesta,
+.calendario__chip--propuesta {
+  background: var(--cal-propuesta);
+  color: var(--cal-propuesta-texto);
+}
+.calendario__filtro--agenda,
+.calendario__chip--agenda {
+  background: var(--cal-agenda);
+  color: var(--cal-agenda-texto);
+}
+.calendario__grilla {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-top: 1px solid var(--borde);
+  border-left: 1px solid var(--borde);
+}
+.calendario__dia-semana {
+  padding: 6px;
+  border-right: 1px solid var(--borde);
+  border-bottom: 1px solid var(--borde);
+  background: var(--gris-claro);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+.calendario__celda {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  min-height: 96px;
+  padding: 5px;
+  border: 0;
+  border-right: 1px solid var(--borde);
+  border-bottom: 1px solid var(--borde);
+  background: var(--blanco);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.calendario__celda:hover {
+  background: #fafbf6;
+}
+.calendario__celda--vacia {
+  background: var(--gris-claro);
+  cursor: default;
+}
+.calendario__celda--elegida {
+  box-shadow: inset 0 0 0 2px var(--negro);
+}
+.calendario__numero {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+.calendario__celda--hoy .calendario__numero {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--lima);
+  color: var(--negro);
+}
+.calendario__celda--vencido .calendario__numero::after {
+  content: " •";
+  color: var(--rojo);
+}
+.calendario__chip {
+  overflow: hidden;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.calendario__mas {
+  font-size: 11px;
+  color: var(--texto-suave);
+}
+.calendario__panel {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 12px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 16px;
+}
+.calendario__panel h3 {
+  margin: 0;
+  font-size: 17px;
+}
+.calendario__grupo ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.calendario__titulo-grupo {
+  display: inline-flex;
+  gap: 6px;
+  margin: 0 0 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+.calendario__titulo-grupo small {
+  font-weight: 400;
+}
+.calendario__titulo-grupo--cobro {
+  background: var(--cal-cobro);
+  color: var(--cal-cobro-texto);
+}
+.calendario__titulo-grupo--pago {
+  background: var(--cal-pago);
+  color: var(--cal-pago-texto);
+}
+.calendario__titulo-grupo--lead {
+  background: var(--cal-lead);
+  color: var(--cal-lead-texto);
+}
+.calendario__titulo-grupo--propuesta {
+  background: var(--cal-propuesta);
+  color: var(--cal-propuesta-texto);
+}
+.calendario__titulo-grupo--agenda {
+  background: var(--cal-agenda);
+  color: var(--cal-agenda-texto);
+}
+.calendario__titulo-grupo--vencido {
+  background: #f8e1e0;
+  color: var(--rojo);
+}
+.calendario__evento {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #efefe9;
+  font-size: 13px;
+}
+.calendario__evento > div:first-child {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.calendario__evento small {
+  font-size: 11.5px;
+  color: var(--texto-suave);
+}
+.calendario__evento--vencido strong {
+  color: var(--rojo);
+}
+.calendario__evento-lado {
+  display: grid;
+  justify-items: end;
+  align-content: start;
+  gap: 2px;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.calendario__agregar {
+  justify-self: start;
+}
+.calendario__form {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo);
+}
+.calendario__form-fila {
+  display: flex;
+  gap: 8px;
+}
+.calendario__form-fila .campo {
+  flex: 1;
+}
+@media (max-width: 1100px) {
+  .calendario {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .calendario__panel {
+    position: static;
+    max-height: none;
+  }
+}
+@media (max-width: 650px) {
+  .calendario__celda {
+    min-height: 54px;
+    padding: 3px;
+  }
+  .calendario__chip {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 0;
+    background: currentColor;
+  }
+  .calendario__celda {
+    flex-flow: row wrap;
+    align-content: flex-start;
+  }
+  .calendario__numero {
+    width: 100%;
+  }
+}

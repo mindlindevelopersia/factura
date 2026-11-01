@@ -9,7 +9,7 @@
 
 import type { AjusteUnidad, OpcionesComercial } from "./proyectos/comercial";
 
-export type IconoArea = "administracion" | "finanzas" | "inversores" | "indicadores" | "comercial" | "management" | "proyecto";
+export type IconoArea = "calendario" | "administracion" | "finanzas" | "inversores" | "indicadores" | "comercial" | "management" | "proyecto";
 
 export interface Modulo {
   nombre: string;
@@ -141,6 +141,13 @@ export const RUTA_FACTURAS = rutaProyecto("lerma-439", "administracion/facturas"
 
 /** Las áreas que tiene cada proyecto (las rutas son relativas al proyecto). */
 const AREAS_DE_PROYECTO: { sub: string; nombre: string; descripcion: string; icono: IconoArea; modulos: { sub: string; nombre: string; descripcion: string; beta?: boolean }[] }[] = [
+  {
+    sub: "calendario",
+    nombre: "Calendario",
+    descripcion: "Todo lo que tiene fecha: cobros, pagos, leads, propuestas que vencen y la agenda.",
+    icono: "calendario",
+    modulos: [],
+  },
   {
     sub: "comercial",
     nombre: "Comercial",
