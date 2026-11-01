@@ -12,12 +12,13 @@ import { nuevoId, type Contacto } from "./modelo";
 type Campo = "nombre" | "apellido" | "mail" | "telefono" | "empresa" | "origen" | "referido" | "notas" | "tipo" | "presupuesto";
 
 const TITULOS: [Campo, RegExp][] = [
-  ["apellido", /^apellidos?$/],
-  ["nombre", /^(nombre( y apellido| completo)?|nombres?|name|contacto|cliente|inversor)$/],
-  ["mail", /(e-?mail|correo|^mail)/],
+  ["apellido", /^(apellidos?|last name)$/],
+  ["nombre", /^(nombre( y apellido| completo)?|nombres?|name|first name|contacto|cliente|inversor)$/],
+  ["mail", /(e-?mail|correo|\bmail\b)/],
   ["telefono", /(tel|cel|whats|movil|phone)/],
   ["empresa", /(empresa|compania|company)/],
-  ["referido", /(referid|recomend)/],
+  // "Referencia - Fuente": quién lo trajo. (No "OCUPACION + REFERENCIA", que empieza con otra cosa.)
+  ["referido", /^(referid|referencia|recomend)/],
   ["origen", /(origen|fuente|source|canal)/],
   ["notas", /(nota|coment|observ|situaci|detalle)/],
   ["tipo", /^(tipo|type|perfil)$/],
@@ -50,6 +51,8 @@ export interface Columnas {
   fila: number;
   campos: Partial<Record<Campo, number>>;
   titulos: string[];
+  /** Las columnas con título que no son ningún campo: van a las notas, con su título. */
+  extras: number[];
 }
 
 /** La fila de títulos (en las primeras 15) que reconoce al menos el nombre y otra columna. */
@@ -62,7 +65,11 @@ export function detectarColumnas(filas: Celda[][]): Columnas | null {
       const campo = TITULOS.find(([k, re]) => re.test(t) && campos[k] == null)?.[0];
       if (campo) campos[campo] = i;
     });
-    if (campos.nombre != null && Object.keys(campos).length >= 2) return { fila: r, campos, titulos: filas[r].map((c) => String(c.valor ?? "")) };
+    if (campos.nombre != null && Object.keys(campos).length >= 2) {
+      const usadas = new Set(Object.values(campos));
+      const extras = filas[r].flatMap((c, i) => (!usadas.has(i) && String(c.valor ?? "").trim() ? [i] : []));
+      return { fila: r, campos, titulos: filas[r].map((c) => String(c.valor ?? "").trim()), extras };
+    }
   }
   return null;
 }
@@ -84,7 +91,17 @@ export function importarBase(filas: Celda[][], existentes: Contacto[], ahora: st
   const vacio: ResultadoImportacion = { columnas, nuevos: [], repetidosEnPlanilla: 0, yaEstaban: [], completar: [], sinNombre: 0 };
   if (!columnas) return vacio;
   const { campos } = columnas;
-  const texto = (f: Celda[], k: Campo) => (campos[k] != null ? String(f[campos[k]!]?.valor ?? "").trim() : "");
+  // Los errores de la planilla ("#ERROR!", "#REF!") no son datos.
+  const limpio = (v: unknown) => {
+    const t = String(v ?? "").replace(/[\u200e\u202a-\u202e]/g, "").trim();
+    return t.startsWith("#") ? "" : t;
+  };
+  const texto = (f: Celda[], k: Campo) => (campos[k] != null ? limpio(f[campos[k]!]?.valor) : "");
+  const extras = (f: Celda[]) =>
+    columnas.extras
+      .map((i) => [columnas.titulos[i].replace(/[?:\s]+$/, ""), limpio(f[i]?.valor)] as const)
+      .filter(([, v]) => v && !/^(no|-)$/i.test(v))
+      .map(([t, v]) => `${t}: ${v}`);
 
   const porMail = new Map<string, Contacto>();
   const porTel = new Map<string, Contacto>();
@@ -149,7 +166,7 @@ export function importarBase(filas: Celda[][], existentes: Contacto[], ahora: st
       proximaFecha: null,
       motivoPerdida: "",
       volverAContactar: null,
-      notas: [empresa ? `Empresa: ${empresa}.` : "", texto(f, "notas")].filter(Boolean).join(" "),
+      notas: [empresa ? `Empresa: ${empresa}.` : "", texto(f, "notas"), ...extras(f)].filter(Boolean).join(" · "),
       responsable: "Mati",
       creado: ahora,
       actualizado: ahora,
