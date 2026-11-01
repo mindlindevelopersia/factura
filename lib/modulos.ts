@@ -46,6 +46,8 @@ export interface Proyecto {
   management?: { parteM2: number; socios: Socio[] };
   /** El "Excel madre" del proyecto (lista de precios, superficies, ventas, EE.RR). */
   planillaMadre?: string;
+  /** La carpeta de Drive con la documentación firmada: una subcarpeta por inversor (compartida como Lector con la cuenta de servicio). */
+  carpetaDocumentacion?: string;
   /** Cómo se miden los m² para el US$/m² (ver OpcionesComercial). */
   comercial?: OpcionesComercial;
   /** Para los proyectos en preparación: qué ítems del checklist de alta ya están (ids de lib/proyectos/alta.ts). */
@@ -70,6 +72,7 @@ export const PROYECTOS: Proyecto[] = [
     estado: "activo",
     management: { parteM2: 0.15, socios: SOCIOS },
     planillaMadre: "1B1cSVA9AtleBLajFwjkXdQOHnv2n0Ijv4sl3NtZP8c0",
+    carpetaDocumentacion: "1N3tredjzqd6AR0ebfFdODp0sVzXVEvG2",
     // El patio de PB casi no tiene costo (parquizado, parrilla): cuenta al 10% para el US$/m².
     comercial: { descubiertaPlantaBaja: 0.1 },
     ajustes: [

@@ -13,11 +13,11 @@ const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
  * con la web abierta y el bot recibiendo facturas, pasa) o, si es una lectura o una
  * escritura de un rango fijo, si falla la red o el servidor (ver reintentos.ts).
  */
-export function googleClient(): JWT | null {
+export function googleClient(scopes: string[] = SCOPES): JWT | null {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const key = process.env.GOOGLE_PRIVATE_KEY;
   if (!email || !key) return null;
-  const client = new JWT({ email, key: key.replace(/\\n/g, "\n"), scopes: SCOPES });
+  const client = new JWT({ email, key: key.replace(/\\n/g, "\n"), scopes });
   const pedir = client.request.bind(client) as (opts: { method?: string }) => Promise<unknown>;
   client.request = ((opts: { method?: string }) => {
     const metodo = (opts.method ?? "GET").toUpperCase();
@@ -25,3 +25,6 @@ export function googleClient(): JWT | null {
   }) as typeof client.request;
   return client;
 }
+
+/** Para leer archivos de Drive (solo lectura, y solo lo que se le comparta a la cuenta de servicio). */
+export const googleDriveLectura = () => googleClient(["https://www.googleapis.com/auth/drive.readonly"]);

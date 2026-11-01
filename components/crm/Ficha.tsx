@@ -25,6 +25,7 @@ import { telefonoWhatsapp } from "@/lib/inversores/cobranzas";
 import { PROYECTOS, proyecto as buscarProyecto } from "@/lib/modulos";
 import Link from "next/link";
 import { ConDictado } from "../Dictado";
+import { DocumentosInversor } from "../inversores/Documentacion";
 import { Icono } from "../Icono";
 import { CampoMenciones } from "../Menciones";
 import { useBaseProyecto } from "../proyecto";
@@ -219,6 +220,7 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
               </ul>
             </section>
           )}
+          {c.etapa === "Vendido" && c.unidadVendida && <DocumentosInversor unidad={c.unidadVendida} />}
           <p className="crm-ficha__estado">
             {c.proximaFecha ? (
               <>

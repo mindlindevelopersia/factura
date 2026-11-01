@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { nombreMes } from "@/lib/finanzas/ingresos";
 import { resumenCuenta, totalesCuentas, type Cuenta, type ResumenCuenta } from "@/lib/inversores/cuentas";
+import { DocumentacionSinAsignar } from "./Documentacion";
 import { Icono } from "../Icono";
 import { useBaseProyecto } from "../proyecto";
 import { BarraLectura, monto, redondo, Revisar } from "../finanzas/comun";
@@ -104,6 +105,7 @@ export function Cuentas() {
       )}
       {cc && totales && (
         <>
+          <DocumentacionSinAsignar />
           <Revisar
             avisos={cc.cuentas.flatMap((c) =>
               c.avisos.map((a) => ({
