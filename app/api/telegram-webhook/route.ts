@@ -4,6 +4,8 @@ import { isAllowedEmail } from "@/lib/auth/allowed";
 import { candadosDesdeEnv, serviciosDesdeEnv, usuariosTelegramDesdeEnv } from "@/lib/cola/env";
 import { agregarNota, ArchivoEnCurso, ArchivoRepetido, ingresar, ultimoDelChat } from "@/lib/cola/servicio";
 import { secretoWebhook, TelegramApi, tokenTelegram, type MensajeTelegram } from "@/lib/telegram/api";
+import { atenderConAsistente } from "@/lib/bot/telegram";
+import { guardarConversacion } from "@/lib/bot/conversacion";
 import { adjuntoDe, audioDe, emailDeCodigo, nombreDe, TEXTOS } from "@/lib/telegram/mensajes";
 
 // Bajar el archivo, guardarlo y leerlo con la IA sigue después de contestarle a Telegram.
@@ -31,8 +33,10 @@ function emailsHabilitados(): string[] {
  *
  * - Un PDF o una foto: entra en la cola. El texto que lo acompaña queda como comentario y la
  *   IA lo usa de contexto.
- * - Un texto o un audio: se anota como comentario en la última factura que mandó ese chat en
- *   la última media hora. Los audios se guardan en Drive junto a la factura.
+ * - Un texto: lo atiende el asistente (lib/bot): carga tareas, leads, seguimientos y propuestas,
+ *   o anota un comentario en la última factura, y pregunta lo que falte.
+ * - Un audio: se anota como comentario en la última factura que mandó ese chat en la última
+ *   media hora (se guarda en Drive junto a la factura).
  */
 export async function POST(req: Request) {
   const token = tokenTelegram();
@@ -69,22 +73,48 @@ export async function POST(req: Request) {
     const adjunto = adjuntoDe(m);
     if (adjunto && "error" in adjunto) return (await responder(adjunto.error), ok());
     if (!adjunto) {
-      // Un comentario suelto: texto o audio, para la última factura de este chat.
       const audio = audioDe(m);
       const texto = m.text?.trim();
-      if (!audio && (!texto || texto.startsWith("/"))) return (await responder(TEXTOS.ayuda), ok());
-      if (audio && "error" in audio) return (await responder(audio.error), ok());
-      const ultima = await ultimoDelChat(s, m.chat.id);
-      if (!ultima) return (await responder(TEXTOS.sinFacturaParaNota), ok());
       if (audio) {
+        // Un audio: por ahora, comentario de la última factura de este chat.
+        if ("error" in audio) return (await responder(audio.error), ok());
+        const ultima = await ultimoDelChat(s, m.chat.id);
+        if (!ultima) return (await responder(TEXTOS.sinFacturaParaNota), ok());
         const data = await telegram.bajar(audio.fileId);
         const guardado = await s.almacen.guardarPendiente({ nombre: audio.nombre, mediaType: audio.mediaType, data });
         const nota = { tipo: "audio" as const, audio: { ...guardado, driveId: guardado.id, mediaType: audio.mediaType, nombre: audio.nombre }, de, fecha };
         const conNota = await agregarNota(s, ultima.id, nota);
         return (await responder(TEXTOS.notaAgregada(conNota)), ok());
       }
-      const conNota = await agregarNota(s, ultima.id, { tipo: "texto", texto, de, fecha });
-      return (await responder(TEXTOS.notaAgregada(conNota)), ok());
+      if (!texto || /^\/(start|ayuda|help)\b/.test(texto)) return (await responder(TEXTOS.ayuda), ok());
+      if (/^\/(nuevo|olvidar)\b/.test(texto)) {
+        await guardarConversacion(m.chat.id, email, []).catch((e) => console.error("bot: reiniciar", e));
+        return (await responder(TEXTOS.reiniciado), ok());
+      }
+      if (texto.startsWith("/")) return (await responder(TEXTOS.ayuda), ok());
+      if (!process.env.ANTHROPIC_API_KEY) {
+        // Sin IA: como antes, el texto es un comentario de la última factura.
+        const ultima = await ultimoDelChat(s, m.chat.id);
+        if (!ultima) return (await responder(TEXTOS.sinAsistente), ok());
+        const conNota = await agregarNota(s, ultima.id, { tipo: "texto", texto, de, fecha });
+        return (await responder(TEXTOS.notaAgregada(conNota)), ok());
+      }
+      // Un mensaje escrito: lo atiende el asistente (después de contestarle a Telegram, que no espera).
+      const candadoTexto = await candadosDesdeEnv().tomar(`telegram:${m.chat.id}:${m.message_id}`, 48 * 60 * 60 * 1000);
+      if (!candadoTexto) return ok();
+      after(async () => {
+        const parar = telegram.escribiendo(m.chat.id);
+        try {
+          const r = await atenderConAsistente({ s, chat: m.chat.id, email, de, texto, appUrl });
+          await telegram.enviar(m.chat.id, r.texto.slice(0, 4000), undefined, r.opciones);
+        } catch (e) {
+          console.error("bot: asistente", e);
+          await responder(TEXTOS.noPude(e instanceof Error ? e.message : String(e))).catch(() => {});
+        } finally {
+          parar();
+        }
+      });
+      return ok();
     }
 
     // Si Telegram reintenta el mismo mensaje (por ejemplo, porque esta función tardó), no se

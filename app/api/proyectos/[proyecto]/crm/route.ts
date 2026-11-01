@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { estadosDeUnidades, unidadesDisponibles } from "@/lib/finanzas/fuente";
 import { errorCrm, preparar } from "@/lib/crm/api";
 import { crearContacto, leerCrm } from "@/lib/crm/fuente";
-import { nuevoId, validarContacto, type CambiosContacto, type Contacto } from "@/lib/crm/modelo";
+import { contactoNuevo, nuevoId, validarContacto, type CambiosContacto, type Contacto } from "@/lib/crm/modelo";
 import { rutaProyecto } from "@/lib/modulos";
 import { avisarAsignacion, avisarMenciones } from "@/lib/notificaciones/fuente";
 
@@ -27,36 +27,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ proyect
   const error = validarContacto(datos, true);
   if (error) return NextResponse.json({ error }, { status: 400 });
   const ahora = new Date().toISOString();
-  const c: Contacto = {
-    id: nuevoId(),
-    proyectos: datos.proyectos?.length ? datos.proyectos : [ctx.proyecto.id],
-    nombre: datos.nombre!.trim(),
-    telefono: datos.telefono ?? "",
-    mail: datos.mail ?? "",
-    tipo: datos.tipo ?? "Beneficiario al costo",
-    origen: datos.origen ?? "",
-    referido: datos.referido ?? "",
-    etapa: datos.etapa ?? "Nuevo",
-    temperaturaManual: datos.temperaturaManual ?? null,
-    presupuestoUsd: datos.presupuestoUsd ?? null,
-    formaPago: datos.formaPago ?? "",
-    plazo: datos.plazo ?? "",
-    uso: datos.uso ?? "",
-    ambientes: datos.ambientes ?? "",
-    unidades: datos.unidades ?? [],
-    proximoPaso: datos.proximoPaso ?? "",
-    proximaFecha: datos.proximaFecha ?? null,
-    motivoPerdida: datos.motivoPerdida ?? "",
-    volverAContactar: datos.volverAContactar ?? null,
-    notas: datos.notas ?? "",
-    responsable: datos.responsable || ctx.usuario,
-    creado: ahora,
-    actualizado: ahora,
-    entroEtapa: ahora,
-    ultimoContacto: null,
-    unidadVendida: datos.unidadVendida ?? "",
-    precioVentaUsd: datos.precioVentaUsd ?? null,
-  };
+  const c: Contacto = contactoNuevo(datos, { id: nuevoId(), proyecto: ctx.proyecto.id, usuario: ctx.usuario, ahora });
   try {
     const nota = body.nota?.trim();
     await crearContacto(c, { fecha: ahora, usuario: ctx.usuario, contactoId: c.id, contacto: c.nombre, tipo: "Nota", detalle: nota ? `Alta: ${nota}` : "Alta del contacto", etapa: c.etapa });

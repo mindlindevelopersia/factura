@@ -112,6 +112,9 @@ export function calcularPropuesta(p: ParametrosPropuesta): Propuesta {
   };
 }
 
+/** El mes de entrega estimado de cada proyecto (hasta ahí van las cuotas de la propuesta). */
+export const ENTREGA: Record<string, string> = { "lerma-439": "2028-04" };
+
 /** Los valores de partida (los de la propuesta de Virginia): 70/30, anticipos de US$ 1.000 y 10.000, cuotas hasta la entrega, dos refuerzos de A del 20% y uno de B. */
 export function parametrosIniciales(o: { cliente: string; unidad: string; precioUsd: number; tipoCambio: number; hoy: string; entrega: string }): ParametrosPropuesta {
   const mes = o.hoy.slice(0, 7);
