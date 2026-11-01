@@ -463,3 +463,41 @@ export async function grillaSuperficies(id: string): Promise<Celda[][]> {
   if (!sheet) throw new FlujoSinConfigurar("El proyecto no tiene configurado su Excel madre.");
   return leerGrilla("Superficies", "A1:T120", false, sheet);
 }
+
+/** Lee de una respuesta cualquier lista de { fecha, valor } (ArgentinaDatos o el BCRA). */
+function serieFechaValor(datos: unknown): { fecha: string; valor: number }[] {
+  const lista = Array.isArray(datos) ? datos : Array.isArray((datos as { results?: unknown })?.results) ? (datos as { results: unknown[] }).results : [];
+  return lista
+    .map((x) => {
+      const o = x as { fecha?: unknown; valor?: unknown };
+      return { fecha: String(o.fecha ?? "").slice(0, 10), valor: Number(o.valor) };
+    })
+    .filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x.fecha) && x.valor > 0)
+    .sort((a, b) => a.fecha.localeCompare(b.fecha));
+}
+
+/** El UVA día por día: ArgentinaDatos y, si falla, la API del BCRA (variable 31). */
+export const historicoUva = conCache(async (): Promise<{ serie: { fecha: string; valor: number }[]; fuente: string }> => {
+  const errores: string[] = [];
+  try {
+    const serie = serieFechaValor(await leerEnLinea("https://api.argentinadatos.com/v1/finanzas/indices/uva"));
+    if (serie.length) return { serie, fuente: "ArgentinaDatos" };
+  } catch (e) {
+    errores.push(`ArgentinaDatos: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  try {
+    const hasta = new Date().toISOString().slice(0, 10);
+    const serie = serieFechaValor(await leerEnLinea(`https://api.bcra.gob.ar/estadisticas/v3.0/monetarias/31?desde=2016-03-31&hasta=${hasta}&limit=5000`));
+    if (serie.length) return { serie, fuente: "BCRA" };
+  } catch (e) {
+    errores.push(`BCRA: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  throw new Error(`No se pudo leer el UVA. ${errores.join(" · ")}`);
+});
+
+/** La pestaña "EE.RR" del Excel madre del proyecto (para traer los datos de la plusvalía). */
+export async function grillaEERR(id: string): Promise<Celda[][]> {
+  const sheet = planillaMadre(id);
+  if (!sheet) throw new FlujoSinConfigurar("El proyecto no tiene configurado su Excel madre.");
+  return leerGrilla("EE.RR", "A1:H40", false, sheet);
+}

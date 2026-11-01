@@ -6,6 +6,9 @@ import { PROYECTOS, proyecto as buscarProyecto, rutaProyecto } from "@/lib/modul
 import {
   calcular,
   construiblePiso,
+  cuentaPiso,
+  cuentas,
+  cuentaUnidad,
   vendibleTeorico,
   type DatosPrefactibilidad,
   type Descubierta,
@@ -13,6 +16,8 @@ import {
   type Prefactibilidad,
   type Version,
 } from "@/lib/prefactibilidad/modelo";
+import { calcularPlusvalia, formatear, type DatosPlusvalia } from "@/lib/prefactibilidad/plusvalia";
+import { useDolarHoy } from "../indicadores/Dolar";
 import { leerJson } from "../formato";
 import { Icono } from "../Icono";
 
@@ -186,6 +191,18 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
   const [carpeta, setCarpeta] = useState<string | null>(null);
   const [nombreVersion, setNombreVersion] = useState("");
   const [viendo, setViendo] = useState<Version | null>(null);
+  const [pestania, setPestania] = useState<"superficies" | "plusvalia" | "resultados">("superficies");
+  const [uvas, setUvas] = useState<{ hoy: { valor: number; fecha: string; fuente: string } | null; fechas: Record<string, { valor: number; fecha: string; fuente: string } | null> } | null>(null);
+  const [errorUva, setErrorUva] = useState<string | null>(null);
+  const dolar = useDolarHoy();
+  const mep = dolar.de("mep")?.venta ?? null;
+  const fechaPago = d?.plusvalia?.pago?.fecha ?? "";
+  useEffect(() => {
+    void fetch(`/api/indicadores/uva${fechaPago ? `?fechas=${fechaPago}` : ""}`)
+      .then((r) => leerJson<NonNullable<typeof uvas>>(r))
+      .then((x) => (setUvas(x), setErrorUva(null)))
+      .catch((e) => setErrorUva(e instanceof Error ? e.message : String(e)));
+  }, [fechaPago]);
 
   const cargar = useCallback(async () => {
     try {
@@ -202,6 +219,7 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
   }, [cargar]);
 
   const c = useMemo(() => (d ? calcular(d) : null), [d]);
+  const cu = useMemo(() => (d && c ? cuentas(d, c) : null), [d, c]);
   const sinGuardar = !!p && !!d && JSON.stringify(p.datos) !== JSON.stringify(d);
 
   // Avisar si se va con cambios sin guardar.
@@ -213,7 +231,7 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
   }, [sinGuardar]);
 
   if (error && !p) return <p className="alerta alerta--error">{error}</p>;
-  if (!p || !d || !c) return <p className="ficha__nota">Cargando la prefactibilidad…</p>;
+  if (!p || !d || !c || !cu) return <p className="ficha__nota">Cargando la prefactibilidad…</p>;
 
   const put = async (cuerpo: Record<string, unknown>, ok?: string) => {
     setGuardando(true);
@@ -267,6 +285,21 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
           ) : (
             <span className="crm-ficha__sub">Sin carpeta de Drive.</span>
           )}
+          <button
+            type="button"
+            className="btn btn--borde btn--chico"
+            onClick={async () => {
+              const { exportarPrefactibilidad } = await import("@/lib/prefactibilidad/excel");
+              const blob = await exportarPrefactibilidad({ ...p, datos: d }, { uva: uvas?.hoy ?? null, mep });
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = `Prefactibilidad ${p.nombre}.xlsx`;
+              a.click();
+              URL.revokeObjectURL(a.href);
+            }}
+          >
+            <Icono nombre="archivo" size={14} /> Exportar a Excel
+          </button>
           {carpeta === null ? (
             <button type="button" className="btn btn--texto btn--chico" onClick={() => setCarpeta(p.carpeta)}>
               {p.carpeta ? "Cambiar el link" : "Poner el link de la carpeta"}
@@ -324,28 +357,81 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
         </button>
       </div>
 
+      <nav className="crm__pestanias" aria-label="Partes de la prefactibilidad">
+        {(
+          [
+            ["superficies", "Superficies"],
+            ["plusvalia", "Plusvalía"],
+            ["resultados", "Estado de resultados"],
+          ] as const
+        ).map(([k, n]) => (
+          <button key={k} type="button" className={`crm__pestania cf__pestania${pestania === k ? " crm__pestania--activa" : ""}`} onClick={() => setPestania(k)}>
+            {n}
+          </button>
+        ))}
+      </nav>
+
+      {pestania === "plusvalia" && (
+        <Plusvalia
+          d={d}
+          c={c}
+          uva={uvas?.hoy ?? null}
+          uvaDelPago={fechaPago ? (uvas?.fechas[fechaPago] ?? null) : null}
+          errorUva={errorUva}
+          mep={mep}
+          poner={(pv) => poner({ plusvalia: pv })}
+          conExcel={!!p.proyecto && !!buscarProyecto(p.proyecto)?.planillaMadre}
+          id={id}
+        />
+      )}
+      {pestania === "resultados" && (
+        <section className="card pf__vacia">
+          <h2>Estado de resultados</h2>
+          <p>Lo armamos más adelante: ingresos por ventas (con la lista de precios y lo vendible), costos (terreno, obra, plusvalía, honorarios) y el margen. La plusvalía ya sale de la pestaña Plusvalía.</p>
+        </section>
+      )}
+      {pestania === "superficies" && (
+      <>
       <div className="cf__resumen">
         <div>
           <span>Terreno</span>
-          <strong>{m2(c.superficieTerreno)}</strong>
-          {c.fosPermitido != null && <small className="pf__sub">FOS permitido {m2(c.fosPermitido)}</small>}
+          <strong>
+            {m2(c.superficieTerreno)} <Cuenta texto={cu.terreno} />
+          </strong>
+          {c.fosPermitido != null && (
+            <small className="pf__sub">
+              FOS permitido {m2(c.fosPermitido)} <Cuenta texto={cu.fosPermitido} />
+            </small>
+          )}
         </div>
         <div>
           <span>Construible según GCBA</span>
-          <strong>{m2(c.construible.gcba)}</strong>
+          <strong>
+            {m2(c.construible.gcba)} <Cuenta texto={cu.gcba} />
+          </strong>
           <small className="pf__sub">
-            Con descubiertas a su %: {m2(c.construible.conDescubiertas)} · Total: {m2(c.construible.total)}
+            Con descubiertas a su %: {m2(c.construible.conDescubiertas)} <Cuenta texto={cu.conDescubiertas} /> · Total: {m2(c.construible.total)} <Cuenta texto={cu.total} />
           </small>
         </div>
         <div>
           <span>Vendible</span>
-          <strong>{m2(c.vendible.teorico)}</strong>
-          <small className="pf__sub">Real: {m2(c.vendible.real)}</small>
+          <strong>
+            {m2(c.vendible.teorico)} <Cuenta texto={cu.vendibleTeorico} />
+          </strong>
+          <small className="pf__sub">
+            Real: {m2(c.vendible.real)} <Cuenta texto={cu.vendibleReal} />
+          </small>
         </div>
         <div>
           <span>Comunes</span>
-          <strong>{m2(c.vendible.comunes)}</strong>
-          {c.vendible.porcentaje != null && <small className="pf__sub">{(c.vendible.porcentaje * 100).toLocaleString("es-AR", { maximumFractionDigits: 1 })}% vendible</small>}
+          <strong>
+            {m2(c.vendible.comunes)} <Cuenta texto={cu.comunes} />
+          </strong>
+          {c.vendible.porcentaje != null && (
+            <small className="pf__sub">
+              {(c.vendible.porcentaje * 100).toLocaleString("es-AR", { maximumFractionDigits: 1 })}% vendible <Cuenta texto={cu.porcentaje} />
+            </small>
+          )}
         </div>
       </div>
       {c.avisos.map((a) => (
@@ -456,7 +542,9 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
                     <td>
                       <input type="checkbox" checked={pi.computaGcba} onChange={(e) => cambiar({ computaGcba: e.target.checked })} aria-label="Computa según GCBA" />
                     </td>
-                    <td className="tabla__numero">{m2(construiblePiso(pi))}</td>
+                    <td className="tabla__numero" title={cuentaPiso(pi)}>
+                      {m2(construiblePiso(pi))} <Cuenta texto={cuentaPiso(pi)} />
+                    </td>
                     <td>
                       <button type="button" className="btn btn--texto btn--chico" onClick={() => poner({ pisos: d.pisos.filter((_, j) => j !== i) })}>
                         Quitar
@@ -485,20 +573,28 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
         <dl className="pf__totales">
           <div>
             <dt>Según GCBA (cubierta + semicubierta)</dt>
-            <dd>{m2(c.construible.gcba)}</dd>
+            <dd>
+              {m2(c.construible.gcba)} <Cuenta texto={cu.gcba} />
+            </dd>
           </div>
           <div>
             <dt>Con las descubiertas a su %</dt>
-            <dd>{m2(c.construible.conDescubiertas)}</dd>
+            <dd>
+              {m2(c.construible.conDescubiertas)} <Cuenta texto={cu.conDescubiertas} />
+            </dd>
           </div>
           <div>
             <dt>Totales (todo al 100%)</dt>
-            <dd>{m2(c.construible.total)}</dd>
+            <dd>
+              {m2(c.construible.total)} <Cuenta texto={cu.total} />
+            </dd>
           </div>
           {c.capacidadFot != null && (
             <div>
               <dt>Lo que permite el FOT (terreno × FOT)</dt>
-              <dd>{m2(c.capacidadFot)}</dd>
+              <dd>
+                {m2(c.capacidadFot)} <Cuenta texto={cu.capacidadFot} />
+              </dd>
             </div>
           )}
         </dl>
@@ -546,7 +642,9 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
                     <td>
                       <Descubiertas lista={u.descubiertas} poner={(l) => cambiar({ descubiertas: l })} porDefecto={0.33} />
                     </td>
-                    <td className="tabla__numero">{m2(vendibleTeorico(u))}</td>
+                    <td className="tabla__numero" title={cuentaUnidad(u)}>
+                      {m2(vendibleTeorico(u))} <Cuenta texto={cuentaUnidad(u)} />
+                    </td>
                     <td>
                       <CeldaNumero valor={u.real} poner={(v) => cambiar({ real: v })} vacio placeholder={String(vendibleTeorico(u))} />
                     </td>
@@ -585,6 +683,9 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
         <h2>Notas</h2>
         <textarea rows={4} value={d.notas} onChange={(e) => poner({ notas: e.target.value })} placeholder="Definiciones pendientes, supuestos (¿qué hacemos en PB?, ¿a cuánto tomamos las terrazas?)…" />
       </section>
+
+      </>
+      )}
 
       <section className="card pf__seccion">
         <h2>Versiones</h2>
@@ -753,5 +854,178 @@ function Texto({ etiqueta, valor, poner }: { etiqueta: string; valor: string; po
       {etiqueta}
       <input value={valor} onChange={(e) => poner(e.target.value)} />
     </label>
+  );
+}
+
+/** "fx": muestra la cuenta de un número (de dónde sale, con los valores). */
+function Cuenta({ texto }: { texto: string }) {
+  const [abierta, setAbierta] = useState(false);
+  return (
+    <span className="cuenta">
+      <button type="button" className={`cuenta__boton${abierta ? " cuenta__boton--abierta" : ""}`} onClick={() => setAbierta((x) => !x)} aria-label="Ver la cuenta" title="Ver la cuenta">
+        fx
+      </button>
+      {abierta && (
+        <span className="cuenta__texto" role="note">
+          {texto}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** La pestaña Plusvalía: los datos, cada paso con su cuenta y la verificación contra el pago. */
+function Plusvalia({
+  d,
+  c,
+  uva,
+  uvaDelPago,
+  errorUva,
+  mep,
+  poner,
+  conExcel,
+  id,
+}: {
+  d: DatosPrefactibilidad;
+  c: ReturnType<typeof calcular>;
+  uva: { valor: number; fecha: string; fuente: string } | null;
+  uvaDelPago: { valor: number; fecha: string; fuente: string } | null;
+  errorUva: string | null;
+  mep: number | null;
+  poner: (pv: DatosPlusvalia) => void;
+  conExcel: boolean;
+  id: string;
+}) {
+  const pv = d.plusvalia;
+  const [uvaManual, setUvaManual] = useState<number | null>(null);
+  const [trayendo, setTrayendo] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const uvaUsado = uvaManual != null ? { valor: uvaManual, fecha: uva?.fecha ?? "", fuente: "Cargado a mano para probar (no se guarda)" } : uva;
+  const r = calcularPlusvalia(d, c, { uva: uvaUsado, mep, uvaDelPago: uvaDelPago?.valor ?? null });
+  const cambiar = (x: Partial<DatosPlusvalia>) => poner({ ...pv, ...x });
+  const pctNum = (v: number | null) => (v == null ? null : Math.round(v * 10000) / 100);
+
+  return (
+    <>
+      <section className="card pf__seccion">
+        <h2>Datos</h2>
+        <p className="crm-ficha__sub">
+          La incidencia del suelo y la alícuota salen de Ciudad 3D. La superficie que computa el Gobierno es la del plano o el permiso: si la dejás vacía, se usa la construible según GCBA de Superficies ({m2(c.construible.gcba)}).
+        </p>
+        <div className="pf__campos">
+          <Numero etiqueta="Superficie que computa el Gobierno (m²)" valor={pv.superficieComputable} poner={(v) => cambiar({ superficieComputable: v })} vacio />
+          <Numero etiqueta="Ajuste del Gobierno (%)" valor={pctNum(pv.ajuste)} poner={(v) => cambiar({ ajuste: Math.min(100, v ?? 80) / 100 })} />
+          <Numero etiqueta={`Superficie de la parcela (m²) · vacío: ${m2(c.superficieTerreno)}`} valor={pv.superficieParcela} poner={(v) => cambiar({ superficieParcela: v })} vacio />
+          <Numero etiqueta={`FOT · vacío: el de la normativa (${d.normativa.fot ?? "—"})`} valor={pv.fot} poner={(v) => cambiar({ fot: v })} vacio />
+          <Numero etiqueta="Incidencia del suelo (UVA/m²)" valor={pv.incidencia} poner={(v) => cambiar({ incidencia: v })} vacio />
+          <Numero etiqueta="Alícuota (%)" valor={pctNum(pv.alicuota)} poner={(v) => cambiar({ alicuota: v == null ? null : Math.min(100, v) / 100 })} vacio />
+          <label className="campo">
+            Zona
+            <input value={pv.zona} onChange={(e) => cambiar({ zona: e.target.value })} placeholder="Zona 3" />
+          </label>
+          <Numero etiqueta="Descuento de contado (%)" valor={pctNum(pv.descuentoContado)} poner={(v) => cambiar({ descuentoContado: Math.min(100, v ?? 0) / 100 })} />
+          <label className="campo">
+            Pago registrado: fecha
+            <input type="date" value={pv.pago?.fecha ?? ""} onChange={(e) => cambiar({ pago: e.target.value ? { fecha: e.target.value, monto: pv.pago?.monto ?? 0 } : null })} />
+          </label>
+          <Numero etiqueta="Pago registrado: monto ($)" valor={pv.pago?.monto ?? null} poner={(v) => cambiar({ pago: pv.pago?.fecha && v ? { fecha: pv.pago.fecha, monto: v } : pv.pago?.fecha ? { fecha: pv.pago.fecha, monto: 0 } : null })} vacio />
+        </div>
+        {conExcel && (
+          <div className="pf__acciones">
+            <button
+              type="button"
+              className="btn btn--borde btn--chico"
+              disabled={trayendo}
+              onClick={async () => {
+                setTrayendo(true);
+                setAviso(null);
+                try {
+                  const x = await leerJson<{ plusvalia: Partial<DatosPlusvalia>; pago: { fecha: string; monto: number; descripcion: string } | null }>(await fetch(`/api/prefactibilidad/${id}/plusvalia-excel`));
+                  poner({ ...pv, ...Object.fromEntries(Object.entries(x.plusvalia).filter(([, v]) => v !== null && v !== "")), pago: x.pago ? { fecha: x.pago.fecha, monto: x.pago.monto } : pv.pago });
+                  setAviso(`Traje los datos de EE.RR${x.pago ? ` y el pago del ${x.pago.fecha.split("-").reverse().join("/")} ("${x.pago.descripcion}")` : " (no encontré el pago en la caja)"}. Revisalos y tocá "Guardar cambios".`);
+                } catch (e) {
+                  setAviso(e instanceof Error ? e.message : String(e));
+                } finally {
+                  setTrayendo(false);
+                }
+              }}
+            >
+              {trayendo ? "Trayendo…" : "Traer del Excel madre (EE.RR) y el pago de la caja"}
+            </button>
+            {aviso && <span className="crm-ficha__aviso">{aviso}</span>}
+          </div>
+        )}
+      </section>
+
+      <section className="card pf__seccion">
+        <h2>La cuenta, paso a paso</h2>
+        {errorUva && <p className="alerta alerta--aviso">No pude traer el UVA ({errorUva}). Podés cargarlo a mano abajo para hacer la cuenta.</p>}
+        {r.avisos.map((a) => (
+          <p key={a} className="alerta alerta--aviso">
+            {a}
+          </p>
+        ))}
+        <table className="tabla pf__plusvalia">
+          <tbody>
+            {r.pasos.map((x) => (
+              <tr key={x.clave} className={x.total ? "pf__paso-total" : undefined}>
+                <th scope="row">{x.nombre}</th>
+                <td className="tabla__numero">{x.clave === "uva" && uvaManual == null && !uva ? "—" : formatear(x.valor, x.unidad)}</td>
+                <td className="pf__paso-cuenta">{x.cuenta}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="pf__acciones">
+          <span className="crm-ficha__sub">Probar con otro UVA (no se guarda):</span>
+          <CeldaNumero valor={uvaManual} poner={(v: number | null) => setUvaManual(v)} vacio placeholder={uva ? String(uva.valor) : "UVA"} />
+          {uvaManual != null && (
+            <button type="button" className="btn btn--texto btn--chico" onClick={() => setUvaManual(null)}>
+              Volver al UVA de hoy
+            </button>
+          )}
+          {uvaDelPago && (
+            <button type="button" className="btn btn--texto btn--chico" onClick={() => setUvaManual(uvaDelPago.valor)}>
+              Usar el UVA del día del pago ({uvaDelPago.valor.toLocaleString("es-AR")})
+            </button>
+          )}
+        </div>
+      </section>
+
+      {r.verificacion && (
+        <section className="card pf__seccion">
+          <h2>Verificación con lo pagado</h2>
+          <dl className="pf__totales">
+            <div>
+              <dt>Pagado el {pv.pago!.fecha.split("-").reverse().join("/")}</dt>
+              <dd>{formatear(pv.pago!.monto, "$")}</dd>
+            </div>
+            <div>
+              <dt>Plusvalía sin el descuento ({formatear(pv.descuentoContado, "%")})</dt>
+              <dd>
+                {formatear(r.verificacion.totalImplicito, "$")} <Cuenta texto={`$ ${pv.pago!.monto.toLocaleString("es-AR")} ÷ (1 − ${pv.descuentoContado.toLocaleString("es-AR")}) = $ ${Math.round(r.verificacion.totalImplicito).toLocaleString("es-AR")}`} />
+              </dd>
+            </div>
+            <div>
+              <dt>UVA que surge del pago</dt>
+              <dd>
+                {formatear(r.verificacion.uvaImplicito, "")} <Cuenta texto={`Plusvalía sin descuento ÷ base imponible (${formatear(r.pasos.find((x) => x.clave === "base")?.valor ?? null)} UVA)`} />
+              </dd>
+            </div>
+            <div>
+              <dt>UVA oficial de ese día</dt>
+              <dd>{uvaDelPago ? `${uvaDelPago.valor.toLocaleString("es-AR")} (${uvaDelPago.fuente})` : "—"}</dd>
+            </div>
+          </dl>
+          {r.verificacion.diferencia != null && (
+            <p className={`alerta ${Math.abs(r.verificacion.diferencia) <= 0.005 ? "alerta--ok" : "alerta--aviso"}`}>
+              {Math.abs(r.verificacion.diferencia) <= 0.005
+                ? `La cuenta cierra: el UVA del pago y el oficial difieren ${(r.verificacion.diferencia * 100).toLocaleString("es-AR", { maximumFractionDigits: 2 })}% (lo que se mueve el UVA entre que se emite el certificado y se paga).`
+                : `No cierra: el UVA del pago y el oficial difieren ${(r.verificacion.diferencia * 100).toLocaleString("es-AR", { maximumFractionDigits: 2 })}%. Revisá la superficie que computa el Gobierno, la incidencia y la alícuota.`}
+            </p>
+          )}
+        </section>
+      )}
+    </>
   );
 }
