@@ -213,6 +213,12 @@ const AREAS_DE_PROYECTO: { sub: string; nombre: string; descripcion: string; ico
         beta: true,
       },
       {
+        sub: "finanzas/cash-flow",
+        nombre: "Cash flow",
+        descripcion: "Proyectado (Excel madre), real (cobros y cajas) y real + proyectado, mes a mes: resumido o desglosado, en dólares o en pesos.",
+        beta: true,
+      },
+      {
         sub: "finanzas/egresos",
         nombre: "Egresos",
         descripcion: "Lo que se pagó en pesos y en dólares, por rubro, proyecto y blanco o negro: en qué se va la plata.",
