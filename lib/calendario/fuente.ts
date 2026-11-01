@@ -36,8 +36,8 @@ async function leerAgenda(proyecto: string): Promise<EventoAgenda[]> {
   return filas.filter((f) => f[0]).map(agendaDeFila).filter((e) => e.proyecto === proyecto);
 }
 
-export async function agregarAgenda(proyecto: string, datos: Pick<EventoAgenda, "fecha" | "categoria" | "titulo" | "detalle">, autor: string): Promise<EventoAgenda> {
-  const e: EventoAgenda = { id: nuevoId(), proyecto, autor, creado: new Date().toISOString(), ...datos };
+export async function agregarAgenda(proyecto: string, datos: Pick<EventoAgenda, "fecha" | "categoria" | "titulo" | "detalle" | "responsable" | "hora">, autor: string): Promise<EventoAgenda> {
+  const e: EventoAgenda = { id: nuevoId(), proyecto, autor, creado: new Date().toISOString(), ...datos, responsable: datos.responsable || autor };
   await pestania().agregar(filaDeAgenda(e));
   return e;
 }

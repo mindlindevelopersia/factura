@@ -6060,6 +6060,30 @@ h1 .etiqueta-beta {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+.calendario__quien {
+  margin-left: auto;
+  padding: 6px 8px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo);
+  font: inherit;
+  font-size: 13px;
+  background: var(--blanco);
+}
+.calendario__responsable {
+  justify-self: start;
+  margin-top: 2px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--negro);
+  color: var(--lima);
+  font-size: 11px;
+  font-weight: 700;
+}
+.calendario__hora {
+  margin-right: 6px;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto-suave);
+}
 .calendario__agregar {
   justify-self: start;
 }

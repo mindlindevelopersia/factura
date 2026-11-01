@@ -43,6 +43,10 @@ export interface Evento {
   vencido: boolean;
   /** Adónde ir en el hub (relativo al proyecto: "inversores/cobranzas"). */
   donde: string | null;
+  /** Quién se ocupa: el responsable del lead o de la tarea, quien hizo la propuesta, a quien se asignó en la agenda. "" si nadie en particular. */
+  responsable: string;
+  /** "11:30" si tiene hora. */
+  hora?: string;
 }
 
 const dosDigitos = (n: number) => String(n).padStart(2, "0");
@@ -64,6 +68,7 @@ export function eventosCobros(cuentas: { inversor: string; unidad: string; pendi
           monto: { moneda: p.moneda, valor: p.monto },
           vencido: fecha < hoy,
           donde: "inversores/cobranzas",
+          responsable: "",
         };
       });
   });
@@ -83,6 +88,7 @@ export function eventosPagos(egresos: Egreso[], nombreProyecto: string): Evento[
       monto: { moneda: e.moneda, valor: e.monto },
       vencido: false,
       donde: "finanzas/egresos",
+      responsable: "",
     }));
 }
 
@@ -98,10 +104,11 @@ export function eventosLeads(contactos: Contacto[], proyecto: string, hoy: strin
         fecha: c.proximaFecha.slice(0, 10),
         tipo: "lead",
         titulo: `Hablar con ${c.nombre}`,
-        detalle: [c.proximoPaso, c.etapa, c.responsable].filter(Boolean).join(" · "),
+        detalle: [c.proximoPaso, c.etapa].filter(Boolean).join(" · "),
         monto: null,
         vencido: c.proximaFecha.slice(0, 10) < hoy,
         donde: `comercial/crm?contacto=${c.id}`,
+        responsable: c.responsable,
       });
     }
     if (c.volverAContactar && !abierto) {
@@ -110,10 +117,11 @@ export function eventosLeads(contactos: Contacto[], proyecto: string, hoy: strin
         fecha: c.volverAContactar.slice(0, 10),
         tipo: "lead",
         titulo: `Volver a contactar a ${c.nombre}`,
-        detalle: [c.etapa, c.motivoPerdida, c.responsable].filter(Boolean).join(" · "),
+        detalle: [c.etapa, c.motivoPerdida].filter(Boolean).join(" · "),
         monto: null,
         vencido: false,
         donde: `comercial/crm?contacto=${c.id}`,
+        responsable: c.responsable,
       });
     }
   }
@@ -129,10 +137,11 @@ export function eventosPropuestas(propuestas: PropuestaGuardada[]): Evento[] {
       fecha: p.vence,
       tipo: "propuesta" as const,
       titulo: `Vence la propuesta UF ${p.unidad}${p.cliente ? ` · ${p.cliente}` : ""}`,
-      detalle: `La hizo ${p.autor || "—"}`,
+      detalle: p.autor ? `La hizo ${p.autor}` : "",
       monto: { moneda: "USD" as const, valor: p.precioUsd },
       vencido: false,
       donde: `comercial/propuesta?id=${p.id}&${p.parametros}${p.contactoId ? `&contacto=${p.contactoId}` : ""}`,
+      responsable: p.autor,
     }));
 }
 
@@ -145,10 +154,12 @@ export function eventosTareas(tareas: Tarea[], proyecto: string, hoy: string): E
       fecha: t.vence!,
       tipo: "tarea" as const,
       titulo: t.titulo,
-      detalle: [t.hora, t.responsable, t.con, t.estado].filter(Boolean).join(" · "),
+      detalle: [t.con, t.estado].filter(Boolean).join(" · "),
       monto: null,
       vencido: t.vence! < hoy,
       donde: `tareas?tarea=${t.id}`,
+      responsable: t.responsable,
+      hora: t.hora || undefined,
     }));
 }
 
@@ -163,13 +174,17 @@ export interface EventoAgenda {
   detalle: string;
   autor: string;
   creado: string;
+  /** A quién le toca (cualquier nombre: Mati, Tade, Eliana…). */
+  responsable: string;
+  /** "11:30" (opcional). */
+  hora: string;
 }
 
 export const CATEGORIAS_AGENDA = ["Pago", "Cobro", "Reunión", "Firma", "Obra", "Otro"] as const;
 
-export const COLUMNAS_AGENDA = ["ID", "Proyecto", "Fecha", "Categoría", "Título", "Detalle", "Cargó", "Creado"] as const;
+export const COLUMNAS_AGENDA = ["ID", "Proyecto", "Fecha", "Categoría", "Título", "Detalle", "Cargó", "Creado", "Responsable", "Hora"] as const;
 
-export const filaDeAgenda = (e: EventoAgenda): string[] => [e.id, e.proyecto, e.fecha, e.categoria, e.titulo, e.detalle, e.autor, e.creado];
+export const filaDeAgenda = (e: EventoAgenda): string[] => [e.id, e.proyecto, e.fecha, e.categoria, e.titulo, e.detalle, e.autor, e.creado, e.responsable, e.hora];
 
 export const agendaDeFila = (f: string[]): EventoAgenda => ({
   id: f[0] ?? "",
@@ -180,9 +195,11 @@ export const agendaDeFila = (f: string[]): EventoAgenda => ({
   detalle: f[5] ?? "",
   autor: f[6] ?? "",
   creado: f[7] ?? "",
+  responsable: f[8] ?? "",
+  hora: /^\d{1,2}:\d{2}$/.test(f[9] ?? "") ? f[9] : "",
 });
 
-export function validarAgenda(x: unknown): { error: string } | { datos: Pick<EventoAgenda, "fecha" | "categoria" | "titulo" | "detalle"> } {
+export function validarAgenda(x: unknown): { error: string } | { datos: Pick<EventoAgenda, "fecha" | "categoria" | "titulo" | "detalle" | "responsable" | "hora"> } {
   const o = (x ?? {}) as Record<string, unknown>;
   const texto = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
   const fecha = texto(o.fecha, 10);
@@ -190,7 +207,9 @@ export function validarAgenda(x: unknown): { error: string } | { datos: Pick<Eve
   const categoria = (CATEGORIAS_AGENDA as readonly string[]).includes(texto(o.categoria, 20)) ? texto(o.categoria, 20) : "Otro";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return { error: "Falta la fecha." };
   if (!titulo) return { error: "Falta qué es." };
-  return { datos: { fecha, categoria, titulo, detalle: texto(o.detalle, 500) } };
+  const hora = texto(o.hora, 5);
+  if (hora && !/^\d{1,2}:\d{2}$/.test(hora)) return { error: "La hora no es válida." };
+  return { datos: { fecha, categoria, titulo, detalle: texto(o.detalle, 500), responsable: texto(o.responsable, 60), hora } };
 }
 
 export function eventosAgenda(agenda: EventoAgenda[]): Evento[] {
@@ -203,6 +222,8 @@ export function eventosAgenda(agenda: EventoAgenda[]): Evento[] {
     monto: null,
     vencido: false,
     donde: null,
+    responsable: e.responsable,
+    hora: e.hora || undefined,
   }));
 }
 
