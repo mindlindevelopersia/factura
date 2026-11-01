@@ -8284,3 +8284,92 @@ html[data-privado-simple] dd {
     grid-template-columns: 1fr;
   }
 }
+
+/* Management · Desarrolladores: honorarios (15% de lo que ingresa) y canje a costo */
+.honorarios {
+  display: grid;
+  gap: 16px;
+  margin: 8px 0 16px;
+}
+.honorarios__cabeza h2 {
+  margin: 0 0 6px;
+}
+.honorarios__m2 {
+  font-size: 12px;
+  color: var(--texto);
+  line-height: 1.5;
+}
+.honorarios__valores small {
+  color: var(--texto-suave);
+  font-size: 11px;
+  font-weight: 400;
+}
+.honorarios__comparar {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.honorarios .ingresos__seccion {
+  padding: 18px 20px;
+}
+.honorarios__comparar svg {
+  flex: none;
+  margin-top: 3px;
+}
+.honorarios__dos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+.honorarios__dos h3,
+.honorarios h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+.honorarios__control {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+.honorarios__control dt {
+  font-weight: 700;
+  color: var(--negro);
+}
+.honorarios__control dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.honorarios--mal {
+  color: var(--rojo);
+}
+.honorarios--bien {
+  color: var(--verde);
+}
+.honorarios__elegida {
+  background: #f4f7d9;
+}
+.honorarios__resumen {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--gris-claro);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.honorarios__detalle summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+.tabla--compacta td {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+.tabla__total td {
+  border-top: 1px solid var(--borde);
+  font-weight: 700;
+  color: var(--negro);
+}
