@@ -103,6 +103,15 @@ describe("bot de Telegram", () => {
     expect(leerTurnos("no es json")).toEqual([]);
   });
 
+  it("la charla se guarda cifrada", async () => {
+    const { cifrar, descifrar } = await import("../tfa/cifrado");
+    const turnos = [{ rol: "user", texto: "saqué 500 mil de la caja" }];
+    const c = cifrar(JSON.stringify(turnos), "s:bot-telegram");
+    expect(c).not.toContain("caja");
+    expect(leerTurnos(descifrar(c, "s:bot-telegram") ?? "[]")).toEqual(turnos);
+    expect(leerTurnos(descifrar(c, "otro") ?? "[]")).toEqual([]);
+  });
+
   it("el contexto dice el día, quién escribe y el equipo", () => {
     const c = contextoBot({ hoy: "2026-11-01", nombre: "Matías", usuario: "Mati", equipo: ["Mati", "Eliana"], appUrl: "https://hub", factura: null });
     expect(c).toContain("Hoy es domingo 2026-11-01");

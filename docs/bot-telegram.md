@@ -30,7 +30,17 @@ link para ajustarlas y bajar el PDF.
 **Avisos:** cuando le asigna algo a otra persona, le llega a esa persona por la campanita.
 
 `/nuevo` empieza una charla de cero. La charla se recuerda dos horas, en la pestaña "Bot Telegram"
-de la planilla del CRM.
+de la planilla del CRM, **cifrada**: quien abra la planilla no puede leer lo que cada uno habló.
+
+## Privacidad
+
+- **Chats separados:** cada persona habla con el bot en su propio chat privado; nadie ve el chat de
+  otro, y el bot no contesta en grupos.
+- **Memoria por chat:** cada charla se recuerda aparte, cifrada con AES-256-GCM y una llave que sale
+  de `AUTH_SECRET` (`lib/tfa/cifrado.ts`).
+- **Permisos de la web:** cada herramienta usa los permisos de quien escribe, los mismos de la web.
+- **Lo que se carga sí se ve:** las tareas, los leads y las propuestas quedan en el hub y las ven
+  los que tienen permiso para ese módulo.
 
 ## Cómo está hecho
 
