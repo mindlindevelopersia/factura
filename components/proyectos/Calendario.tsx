@@ -13,6 +13,8 @@ interface Datos {
   eventos: Evento[];
   faltan: { tipo: TipoEvento; error: string }[];
   hoy: string;
+  usuario: string;
+  equipo: string[];
 }
 
 const DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -41,6 +43,7 @@ export function Calendario() {
   const [mes, setMes] = useState<string | null>(null);
   const [dia, setDia] = useState<string | null>(null);
   const [ver, setVer] = useState<Set<TipoEvento>>(new Set(TIPOS_EVENTO.map((t) => t.tipo)));
+  const [quien, setQuien] = useState("");
 
   const cargar = useCallback(
     async (fresco = false) => {
@@ -63,7 +66,9 @@ export function Calendario() {
     void cargar();
   }, [cargar]);
 
-  const visibles = useMemo(() => (datos?.eventos ?? []).filter((e) => ver.has(e.tipo)), [datos, ver]);
+  const visibles = useMemo(() => (datos?.eventos ?? []).filter((e) => ver.has(e.tipo) && (!quien || e.responsable === quien)), [datos, ver, quien]);
+  // Las personas: el equipo y cualquiera que figure como responsable (por ejemplo, alguien asignado en la agenda).
+  const personas = useMemo(() => [...new Set([...(datos?.equipo ?? []), ...(datos?.eventos ?? []).map((e) => e.responsable).filter(Boolean)])].sort(), [datos]);
   const porDia = useMemo(() => {
     const m = new Map<string, Evento[]>();
     for (const e of visibles) m.set(e.fecha, [...(m.get(e.fecha) ?? []), e]);
@@ -97,6 +102,14 @@ export function Calendario() {
               Hoy
             </button>
           </div>
+          <select className="calendario__quien" value={quien} onChange={(e) => setQuien(e.target.value)} aria-label="De quién">
+            <option value="">De todos</option>
+            {personas.map((p) => (
+              <option key={p} value={p}>
+                {p === datos.usuario ? `Míos (${p})` : `De ${p}`}
+              </option>
+            ))}
+          </select>
           <button type="button" className="btn btn--texto btn--chico" onClick={() => void cargar(true)} disabled={cargando}>
             <Icono nombre="recargar" size={14} /> {cargando ? "Actualizando…" : "Actualizar"}
           </button>
@@ -177,8 +190,12 @@ export function Calendario() {
                 {lista.map((e) => (
                   <li key={e.id} className={e.vencido ? "calendario__evento calendario__evento--vencido" : "calendario__evento"}>
                     <div>
-                      <strong>{e.titulo}</strong>
+                      <strong>
+                        {e.hora && <span className="calendario__hora">{e.hora}</span>}
+                        {e.titulo}
+                      </strong>
                       {e.detalle && <small>{e.detalle}</small>}
+                      {e.responsable && <span className="calendario__responsable">{e.responsable}</span>}
                       {e.vencido && <small className="ingresos__vencido">{e.tipo === "cobro" ? "Vencido sin cobrar" : "Atrasado"}</small>}
                     </div>
                     <div className="calendario__evento-lado">
@@ -196,7 +213,7 @@ export function Calendario() {
             </section>
           );
         })}
-        <NuevoEvento proyecto={id} fecha={dia} listo={() => void cargar()} />
+        <NuevoEvento proyecto={id} fecha={dia} usuario={datos.usuario} personas={personas} listo={() => void cargar()} />
         {atrasados.length > 0 && (
           <section className="calendario__grupo">
             <h4 className="calendario__titulo-grupo calendario__titulo-grupo--vencido">
@@ -220,9 +237,10 @@ export function Calendario() {
   );
 }
 
-function NuevoEvento({ proyecto, fecha, listo }: { proyecto: string; fecha: string; listo: () => void }) {
+function NuevoEvento({ proyecto, fecha, usuario, personas, listo }: { proyecto: string; fecha: string; usuario: string; personas: string[]; listo: () => void }) {
   const [abierto, setAbierto] = useState(false);
-  const [f, setF] = useState({ fecha, categoria: "Pago", titulo: "", detalle: "" });
+  const vacio = { fecha, hora: "", categoria: "Pago", titulo: "", detalle: "", responsable: usuario };
+  const [f, setF] = useState(vacio);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   if (!abierto)
@@ -241,7 +259,7 @@ function NuevoEvento({ proyecto, fecha, listo }: { proyecto: string; fecha: stri
         try {
           await leerJson(await fetch(`/api/proyectos/${proyecto}/calendario`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(f) }));
           setAbierto(false);
-          setF({ fecha, categoria: "Pago", titulo: "", detalle: "" });
+          setF(vacio);
           listo();
         } catch (x) {
           setError(x instanceof Error ? x.message : String(x));
@@ -264,9 +282,24 @@ function NuevoEvento({ proyecto, fecha, listo }: { proyecto: string; fecha: stri
           </select>
         </label>
       </div>
+      <div className="calendario__form-fila">
+        <label className="campo">
+          Hora (opcional)
+          <input type="time" value={f.hora} onChange={(e) => setF({ ...f, hora: e.target.value })} />
+        </label>
+        <label className="campo">
+          Responsable
+          <input list="calendario-personas" value={f.responsable} onChange={(e) => setF({ ...f, responsable: e.target.value })} placeholder="Ej.: Eliana" />
+          <datalist id="calendario-personas">
+            {personas.map((p) => (
+              <option key={p} value={p} />
+            ))}
+          </datalist>
+        </label>
+      </div>
       <label className="campo">
         Título
-        <input value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} placeholder="Ej.: pagar el certificado de la constructora" required />
+        <input value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} placeholder="Ej.: llevar la constancia de ARCA a Lerma" required />
       </label>
       <label className="campo">
         Detalle (opcional)

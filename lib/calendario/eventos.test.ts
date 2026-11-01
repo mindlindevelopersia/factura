@@ -52,6 +52,22 @@ describe("calendario", () => {
 
   it("valida lo que se carga a mano", () => {
     expect(validarAgenda({ fecha: "", titulo: "x" })).toEqual({ error: "Falta la fecha." });
-    expect(validarAgenda({ fecha: "2026-11-03", titulo: "Pagar certificado", categoria: "Cualquiera" })).toEqual({ datos: { fecha: "2026-11-03", categoria: "Otro", titulo: "Pagar certificado", detalle: "" } });
+    expect(validarAgenda({ fecha: "2026-11-03", titulo: "Pagar certificado", categoria: "Cualquiera" })).toEqual({ datos: { fecha: "2026-11-03", categoria: "Otro", titulo: "Pagar certificado", detalle: "", responsable: "", hora: "" } });
+  });
+});
+
+describe("responsables en el calendario", () => {
+  it("el lead lleva el responsable del lead y la agenda a quien se asignó", async () => {
+    const { eventosLeads, eventosAgenda, agendaDeFila, filaDeAgenda, validarAgenda } = await import("./eventos");
+    const { contactoDeFila } = await import("../crm/modelo");
+    const [ev] = eventosLeads([{ ...contactoDeFila(["c1", "", "Lead Inventado"]), etapa: "Interesado", proximaFecha: "2026-11-05", responsable: "Mati" }], "lerma-439", "2026-11-01");
+    expect(ev.responsable).toBe("Mati");
+    const v = validarAgenda({ fecha: "2026-11-04", titulo: "Llevar constancia de ARCA a Lerma", responsable: "Persona Inventada", hora: "10:00" });
+    expect(v).toMatchObject({ datos: { responsable: "Persona Inventada", hora: "10:00" } });
+    const fila = filaDeAgenda({ id: "a1", proyecto: "lerma-439", fecha: "2026-11-04", categoria: "Otro", titulo: "x", detalle: "", autor: "Mati", creado: "", responsable: "Persona Inventada", hora: "10:00" });
+    expect(eventosAgenda([agendaDeFila(fila)])[0]).toMatchObject({ responsable: "Persona Inventada", hora: "10:00" });
+    // Las filas viejas (sin las columnas nuevas) siguen andando.
+    expect(agendaDeFila(fila.slice(0, 8))).toMatchObject({ responsable: "", hora: "" });
+    expect(validarAgenda({ fecha: "2026-11-04", titulo: "x", hora: "las diez" })).toEqual({ error: "La hora no es válida." });
   });
 });
