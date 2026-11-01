@@ -95,7 +95,7 @@ export function CrmDashboard() {
   const [abierta, setAbierta] = useState<string | null>(null);
   const d = crm.datos;
   const t = useMemo(() => (d ? tablero(crm.contactos, d.actividad, d.ahora, crm.precioMinimo) : null), [crm.contactos, d, crm.precioMinimo]);
-  const alarmas = useMemo(() => (d ? todasLasAlarmas(crm.contactos, d.ahora, crm.precioMinimo) : []), [crm.contactos, d, crm.precioMinimo]);
+  const alarmas = useMemo(() => (d ? todasLasAlarmas(crm.contactos, d.ahora, crm.precioMinimo, crm.estados) : []), [crm.contactos, d, crm.precioMinimo, crm.estados]);
   const hoy = d ? hoyBA(new Date(d.ahora)) : "";
   const semana = crm.contactos
     .filter((c) => abierto(c) && c.proximaFecha && c.proximaFecha > hoy && dias(hoy, c.proximaFecha) <= 7)
@@ -230,7 +230,7 @@ function Tarjeta({ c, crm, abrir }: { c: Contacto; crm: Crm; abrir: (id: string)
   const d = crm.datos!;
   const hoy = hoyBA(new Date(d.ahora));
   const t = temperatura(c, hoy, crm.precioMinimo);
-  const alarmas = alarmasDe(c, d.ahora, crm.precioMinimo).filter((a) => a.nivel !== "atencion");
+  const alarmas = alarmasDe(c, d.ahora, crm.precioMinimo, crm.estados).filter((a) => a.nivel !== "atencion");
   const sinHablar = dias(ultimoTrato(c), hoy);
   return (
     <button
@@ -267,6 +267,7 @@ export function CrmEmbudo() {
   const crm = useCrm();
   const [abierta, setAbierta] = useState<string | null>(null);
   const [verCerrados, setVerCerrados] = useState(false);
+  const [nuevo, setNuevo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const columnas: Etapa[] = verCerrados ? [...ETAPAS] : ETAPAS_ABIERTAS;
   const hoy = crm.datos ? hoyBA(new Date(crm.datos.ahora)) : "";
@@ -287,14 +288,22 @@ export function CrmEmbudo() {
   };
   return (
     <Marco crm={crm} actual="/embudo" abrir={setAbierta} abierta={abierta}>
-      {crm.contactos.length > 0 && (
+      {crm.datos && (
         <>
           <div className="crm__opciones">
+            <button type="button" className="btn btn--primario btn--chico" onClick={() => setNuevo((v) => !v)}>
+              {nuevo ? "Cancelar" : "+ Nuevo lead"}
+            </button>
             <p className="crm-ficha__sub">Arrastrá una tarjeta a otra columna para cambiarla de etapa. Para Vendido o Perdido se abre la ficha.</p>
             <label className="crm__check">
               <input type="checkbox" checked={verCerrados} onChange={(e) => setVerCerrados(e.target.checked)} /> Ver vendidos, perdidos y dormidos
             </label>
           </div>
+          {nuevo && (
+            <section className="card crm__alta-embudo">
+              <Alta crm={crm} conEtapa listo={(id) => (setNuevo(false), setAbierta(id))} />
+            </section>
+          )}
           {error && (
             <p role="alert" className="alerta alerta--error">
               {error}
@@ -431,8 +440,8 @@ export function CrmContactos() {
   );
 }
 
-function Alta({ crm, listo }: { crm: Crm; listo: (id: string) => void }) {
-  const [f, setF] = useState({ nombre: "", telefono: "", mail: "", origen: "", referido: "", nota: "" });
+function Alta({ crm, listo, conEtapa }: { crm: Crm; listo: (id: string) => void; conEtapa?: boolean }) {
+  const [f, setF] = useState({ nombre: "", telefono: "", mail: "", origen: "", referido: "", nota: "", etapa: "Nuevo" });
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const poner = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
@@ -444,7 +453,7 @@ function Alta({ crm, listo }: { crm: Crm; listo: (id: string) => void }) {
         setGuardando(true);
         setError(null);
         try {
-          const c = await crm.crear({ nombre: f.nombre, telefono: f.telefono, mail: f.mail, origen: f.origen, referido: f.referido }, f.nota);
+          const c = await crm.crear({ nombre: f.nombre, telefono: f.telefono, mail: f.mail, origen: f.origen, referido: f.referido, etapa: f.etapa as Etapa }, f.nota);
           listo(c.id);
         } catch (err) {
           setError(err instanceof Error ? err.message : String(err));
@@ -478,6 +487,16 @@ function Alta({ crm, listo }: { crm: Crm; listo: (id: string) => void }) {
         Referido por
         <input value={f.referido} onChange={poner("referido")} />
       </label>
+      {conEtapa && (
+        <label className="campo">
+          Etapa
+          <select value={f.etapa} onChange={poner("etapa")}>
+            {ETAPAS_ABIERTAS.map((e) => (
+              <option key={e}>{e}</option>
+            ))}
+          </select>
+        </label>
+      )}
       <label className="campo crm-alta__nota">
         Nota
         <input value={f.nota} onChange={poner("nota")} placeholder="Qué busca, cómo llegó…" />

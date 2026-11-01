@@ -3,7 +3,7 @@
 El CRM de ventas: contactos de toda la empresa, cada uno con el proyecto que le interesa. Tres vistas dentro de Comercial → CRM:
 
 - **Dashboard**: "Hablale a…" (las alarmas, de la más urgente a la menos), lo que vence esta semana, los números (para hablar hoy, abiertos por temperatura, nuevos, pronóstico), por etapa, de dónde vienen y por qué se pierden.
-- **Embudo**: una columna por etapa; se arrastra una tarjeta para cambiarla de etapa (a Vendido o Perdido se pasa desde la ficha, con el motivo).
+- **Embudo**: "+ Nuevo lead" (con la etapa en la que entra) y una columna por etapa; se arrastra una tarjeta para cambiarla de etapa (a Vendido o Perdido se pasa desde la ficha, con el motivo).
 - **Base de datos**: todos los contactos con búsqueda y filtros, y el alta de uno nuevo.
 
 Cada contacto abre una **ficha**: escribirle (WhatsApp con el mensaje armado; mail: se abre Zoho Mail y el mail queda copiado para pegar; llamar), el mensaje sugerido por etapa o pedido a Oliver (IA, con su historial), registrar qué pasó con el próximo paso, sus datos, las unidades que le sirven y el historial.
@@ -16,6 +16,12 @@ Cada contacto abre una **ficha**: escribirle (WhatsApp con el mensaje armado; ma
 - **Temperatura** (no es etapa): hot si está evaluando o negociando (o decide en menos de 2 meses) y hablamos en la última semana; frío si hace más de 14 días que no hablamos, decide en más de 6 meses o el presupuesto no alcanza (menos del 90% de la unidad más barata); tibio el resto. Se puede poner a mano y manda la manual. Cadencia: hot cada 2 días, tibio 7, frío 30.
 - Alarmas: nuevo sin contactar en 2 h; seguimiento vencido o de hoy; sin próximo paso; hot sin hablar hace más de 3 días; propuesta por vencer (día 5) o vencida (día 7); estancado; perdido para recontactar; dormido sin novedades hace 45 días; y la cadencia de su temperatura.
 - Pronóstico: presupuesto de cada abierto × probabilidad de su etapa (Contactado 5%, Interesado 10%, Evaluando 40%, Negociando 60%).
+
+## Cuando se vende
+
+- En el CRM, al pasar un contacto a **Vendido** hay que decir **qué unidad compró y a cuánto**. La ficha muestra lo que hay que cargar en las planillas (Lista de precios, Ventas, Pagos por Inversor, Flujo).
+- El hub **lee** las planillas, no las escribe. Cuando la "Lista de precios" dice Vendido, se actualiza solo en todo el hub: Unidades, Lista de precios, Tablero, Management, las unidades que el CRM sugiere y Oliver. Cuando están el bloque en "Pagos por Inversor" y la fila en el Flujo, aparece en Cuentas corrientes, Cobranzas e Ingresos.
+- Cruces con alarma: vendida en el CRM pero libre en la Lista de precios ("Actualizá la planilla…"); y a quien le interesaba una unidad que se vendió ("La 5B se vendió: ofrecele otra a…"). Las unidades en reventa se siguen ofreciendo.
 
 ## Dónde se guarda
 

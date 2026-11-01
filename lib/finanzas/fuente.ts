@@ -23,7 +23,7 @@ import { PestaniaSimple } from "../google/pestania";
 import { proyecto as buscarProyecto, PROYECTO_PRINCIPAL } from "../modulos";
 import { armarComercial, leerVentas, type Comercial } from "../proyectos/comercial";
 import { leerFichasVentas } from "../proyectos/fichas";
-import type { UnidadDisponible } from "../crm/alarmas";
+import type { EstadoUnidadCrm, UnidadDisponible } from "../crm/alarmas";
 import { analizarHq, desarrolladores, m2DesarrolladoresEnPlanilla, type Desarrolladores, type GastoHq } from "../proyectos/management";
 import { leerCaja, unir, type CajaEgresos } from "./egresos";
 import { colorDe, leerFlujo, mesDeHoy, type Celda, type FlujoIngresos } from "./ingresos";
@@ -398,6 +398,16 @@ export async function unidadesDisponibles(id: string): Promise<UnidadDisponible[
         precioUsd: u.estado === "libre" ? u.precioLista : u.reventa!,
         tipo: u.estado === "libre" ? ("libre" as const) : ("reventa" as const),
       }));
+  } catch {
+    return [];
+  }
+}
+
+/** El estado de cada unidad según la Lista de precios, para cruzarlo con el CRM. Vacío si no se puede leer. */
+export async function estadosDeUnidades(id: string): Promise<EstadoUnidadCrm[]> {
+  try {
+    const { comercial } = await datosComercial(id);
+    return comercial.unidades.filter((u) => !u.esCochera).map((u) => ({ codigo: u.codigo, estado: u.estado, inversor: u.inversor, reventa: !!u.reventa }));
   } catch {
     return [];
   }

@@ -49,7 +49,7 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
   const proyecto = buscarProyecto(c.proyecto || crm.proyecto)?.nombre ?? "el proyecto";
   const temp = temperatura(c, hoy, crm.precioMinimo);
   const sirven = useMemo(() => unidadesPara(c, datos.unidades), [c, datos.unidades]);
-  const alarmas = alarmasDe(c, datos.ahora, crm.precioMinimo);
+  const alarmas = alarmasDe(c, datos.ahora, crm.precioMinimo, crm.estados);
   const historial = datos.actividad.filter((a) => a.contactoId === c.id);
 
   // Mensaje
@@ -72,6 +72,9 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
   const [fecha, setFecha] = useState(c.proximaFecha ?? "");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [vendida, setVendida] = useState(c.unidadVendida || c.unidades[0] || "");
+  const precioDe = (cod: string) => datos.unidades.find((u) => u.codigo === cod)?.precioUsd ?? null;
+  const [precioVenta, setPrecioVenta] = useState(c.precioVentaUsd != null ? String(c.precioVentaUsd) : String(precioDe(c.unidadVendida || c.unidades[0] || "") ?? ""));
 
   // Datos
   const [perfil, setPerfil] = useState<CambiosContacto>({});
@@ -94,6 +97,10 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
       setError("Elegí el motivo de pérdida.");
       return;
     }
+    if (etapa === "Vendido" && (!vendida || !Number(precioVenta.replace(/\D/g, "")))) {
+      setError("Decí qué unidad compró y a cuánto, para cruzarlo con la Lista de precios.");
+      return;
+    }
     setGuardando(true);
     setError(null);
     try {
@@ -104,6 +111,7 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
           proximoPaso: sigueAbierto ? paso.trim() : "",
           proximaFecha: sigueAbierto ? fecha : null,
           ...(etapa === "Perdido" ? { motivoPerdida: motivo, volverAContactar: volver || null } : {}),
+          ...(etapa === "Vendido" ? { unidadVendida: vendida, precioVentaUsd: Number(precioVenta.replace(/\D/g, "")) } : {}),
         },
         { tipo, detalle },
       );
@@ -185,6 +193,24 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
                 </li>
               ))}
             </ul>
+          )}
+          {c.etapa === "Vendido" && (
+            <section className="crm-ficha__seccion crm-ficha__venta">
+              <h3>
+                Vendida{c.unidadVendida ? ` la ${c.unidadVendida}` : ""}
+                {c.precioVentaUsd ? ` en ${usd(c.precioVentaUsd)}` : ""}
+              </h3>
+              <p className="crm-ficha__sub">Para que figure en todo el hub, Tadeo tiene que cargarla en las planillas (el hub las lee, no las escribe):</p>
+              <ul>
+                <li className={crm.estados.find((u) => u.codigo === c.unidadVendida)?.estado === "vendida" ? "crm-hecho" : undefined}>
+                  &quot;Lista de precios&quot; del Excel madre: Estado <strong>Vendido</strong> e inversor
+                  {crm.estados.find((u) => u.codigo === c.unidadVendida)?.estado === "vendida" ? " ✓" : " (todavía figura libre)"}
+                </li>
+                <li>&quot;Ventas&quot;: la fila del machete y la ficha de la operación (costo, blanco y negro, base CAC)</li>
+                <li>&quot;Pagos por Inversor&quot;: su bloque, con el costo estimado y los pagos</li>
+                <li>Flujo de fondos: su fila con anticipo, cuotas y refuerzos</li>
+              </ul>
+            </section>
           )}
           <p className="crm-ficha__estado">
             {c.proximaFecha ? (
@@ -303,6 +329,32 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
                 <label className="campo">
                   Volver a contactar
                   <input type="date" value={volver} onChange={(e) => setVolver(e.target.value)} />
+                </label>
+              </div>
+            )}
+            {etapa === "Vendido" && (
+              <div className="crm-ficha__fila">
+                <label className="campo">
+                  Unidad que compró
+                  <select
+                    value={vendida}
+                    onChange={(e) => {
+                      setVendida(e.target.value);
+                      const p = precioDe(e.target.value);
+                      if (p) setPrecioVenta(String(Math.round(p)));
+                    }}
+                  >
+                    <option value="">Elegí…</option>
+                    {crm.estados.map((u) => (
+                      <option key={u.codigo} value={u.codigo}>
+                        {u.codigo} · {u.estado === "libre" ? "libre" : u.reventa ? "reventa" : `vendida${u.inversor ? ` a ${u.inversor}` : ""}`}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="campo">
+                  Precio de venta (US$)
+                  <input inputMode="numeric" value={precioVenta} onChange={(e) => setPrecioVenta(e.target.value)} />
                 </label>
               </div>
             )}

@@ -46,14 +46,23 @@ export interface Alarma {
   nivel: NivelAlarma;
   /** "Hablale a Juan: …". */
   texto: string;
-  tipo: "nuevo" | "vencido" | "hoy" | "sin-paso" | "hot" | "propuesta" | "estancado" | "recontactar" | "novedades" | "cadencia";
+  tipo: "nuevo" | "vencido" | "hoy" | "sin-paso" | "hot" | "propuesta" | "estancado" | "recontactar" | "novedades" | "cadencia" | "planilla" | "vendida";
+}
+
+/** Cómo está cada unidad del proyecto según la Lista de precios (para cruzarla con el CRM). */
+export interface EstadoUnidadCrm {
+  codigo: string;
+  estado: "vendida" | "libre" | "otro";
+  inversor: string;
+  /** Vendida, pero el dueño la revende: se puede seguir ofreciendo. */
+  reventa: boolean;
 }
 
 const primerNombre = (n: string) => n.trim().split(/\s+/)[0] || n;
 const fechaCorta = (f: string) => `${f.slice(8, 10)}/${f.slice(5, 7)}`;
 
 /** Las alarmas de un contacto, de la más urgente a la menos. */
-export function alarmasDe(c: Contacto, ahora: string, precioMinimo: number | null = null): Alarma[] {
+export function alarmasDe(c: Contacto, ahora: string, precioMinimo: number | null = null, estados: EstadoUnidadCrm[] = []): Alarma[] {
   const hoy = hoyBA(new Date(ahora));
   const a: Alarma[] = [];
   const quien = primerNombre(c.nombre);
@@ -65,7 +74,19 @@ export function alarmasDe(c: Contacto, ahora: string, precioMinimo: number | nul
     if (c.volverAContactar && c.volverAContactar <= hoy) poner("hoy", "recontactar", `Volvé a contactar a ${quien}: lo dejamos para el ${fechaCorta(c.volverAContactar)} (se perdió por: ${c.motivoPerdida || "sin motivo"}).`);
     return a;
   }
-  if (c.etapa === "Vendido") return a;
+  if (c.etapa === "Vendido") {
+    // Vendida en el CRM, pero la Lista de precios todavía no lo dice: hay que actualizar la planilla.
+    const u = estados.find((x) => x.codigo === c.unidadVendida);
+    if (u && u.estado === "libre") {
+      poner("atencion", "planilla", `Actualizá la planilla: en el CRM la ${u.codigo} está vendida a ${c.nombre}, pero en la Lista de precios sigue libre.`);
+    }
+    return a;
+  }
+  // Le interesaba una unidad que ya se vendió (y no está en reventa): hay que ofrecerle otra.
+  for (const cod of c.unidades) {
+    const u = estados.find((x) => x.codigo === cod);
+    if (u && u.estado === "vendida" && !u.reventa) poner("hoy", "vendida", `La ${cod} se vendió${u.inversor ? ` (a ${u.inversor})` : ""}: ofrecele otra a ${quien}.`);
+  }
   if (c.etapa === "Dormido") {
     if (sinHablar >= 45) poner("atencion", "novedades", `Mandale novedades a ${quien}: hace ${sinHablar} días que no sabe nada de nosotros.`);
     if (c.proximaFecha && c.proximaFecha <= hoy) poner("hoy", "hoy", `Hablale a ${quien}: ${c.proximoPaso || "quedó para hoy"}.`);
@@ -102,8 +123,8 @@ export function alarmasDe(c: Contacto, ahora: string, precioMinimo: number | nul
 
 const ORDEN_NIVEL: Record<NivelAlarma, number> = { urgente: 0, hoy: 1, atencion: 2 };
 
-export function todasLasAlarmas(contactos: Contacto[], ahora: string, precioMinimo: number | null = null): Alarma[] {
-  return contactos.flatMap((c) => alarmasDe(c, ahora, precioMinimo)).sort((x, y) => ORDEN_NIVEL[x.nivel] - ORDEN_NIVEL[y.nivel]);
+export function todasLasAlarmas(contactos: Contacto[], ahora: string, precioMinimo: number | null = null, estados: EstadoUnidadCrm[] = []): Alarma[] {
+  return contactos.flatMap((c) => alarmasDe(c, ahora, precioMinimo, estados)).sort((x, y) => ORDEN_NIVEL[x.nivel] - ORDEN_NIVEL[y.nivel]);
 }
 
 export interface Tablero {

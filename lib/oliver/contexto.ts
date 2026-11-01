@@ -16,7 +16,7 @@ import { PROYECTOS, proyecto as buscarProyecto } from "../modulos";
 import { resumen } from "../proyectos/comercial";
 import { hoyBA, tablero, temperatura, todasLasAlarmas, unidadesPara } from "../crm/alarmas";
 import { leerCrm } from "../crm/fuente";
-import { unidadesDisponibles } from "../finanzas/fuente";
+import { estadosDeUnidades, unidadesDisponibles } from "../finanzas/fuente";
 
 /**
  * Lo que Oliver sabe de la sección en la que está la persona: un nombre, de qué es especialista y
@@ -309,7 +309,7 @@ async function contextoInicio(): Promise<Contexto> {
 }
 
 async function contextoCrm(id: string): Promise<Contexto> {
-  const [{ contactos: todos, actividad }, unidades] = await Promise.all([leerCrm(), unidadesDisponibles(id)]);
+  const [{ contactos: todos, actividad }, unidades, estados] = await Promise.all([leerCrm(), unidadesDisponibles(id), estadosDeUnidades(id)]);
   const contactos = todos.filter((c) => !c.proyecto || c.proyecto === id);
   const ahora = new Date().toISOString();
   const hoy = hoyBA();
@@ -323,7 +323,7 @@ async function contextoCrm(id: string): Promise<Contexto> {
       reglas:
         "Ningún contacto abierto queda sin próximo paso con fecha. Temperatura: hot si está evaluando o negociando (o decide en menos de 2 meses) y hablamos en la última semana; frío si hace más de 14 días que no hablamos, decide en más de 6 meses o no le alcanza; tibio el resto. Hablarle cada 2 días si es hot, 7 si es tibio, 30 si es frío. La propuesta vence a los 7 días en Evaluando.",
       tablero: tablero(contactos, actividad, ahora, minimo),
-      alarmas: todasLasAlarmas(contactos, ahora, minimo).map((a) => `[${a.nivel}] ${a.texto}`),
+      alarmas: todasLasAlarmas(contactos, ahora, minimo, estados).map((a) => `[${a.nivel}] ${a.texto}`),
       contactos: contactos.map((c) => ({
         nombre: c.nombre,
         etapa: c.etapa,
@@ -341,6 +341,8 @@ async function contextoCrm(id: string): Promise<Contexto> {
         proximaFecha: c.proximaFecha,
         ultimoContacto: c.ultimoContacto?.slice(0, 10) ?? null,
         motivoPerdida: c.motivoPerdida || null,
+        unidadVendida: c.unidadVendida || null,
+        precioVentaUsd: c.precioVentaUsd,
         notas: c.notas || null,
       })),
       actividadReciente: actividad.slice(0, 150).map((a) => `${a.fecha.slice(0, 10)} ${a.usuario} · ${a.contacto} · ${a.tipo}: ${a.detalle}`),

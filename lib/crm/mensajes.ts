@@ -42,6 +42,10 @@ export function mensajeSugerido(c: Contacto, unidades: UnidadDisponible[], proye
       asunto = `${proyecto}: cerramos`;
       cuerpo = `Hola ${nombre}! Ya tenemos casi todo. Si te parece, avanzamos con el boleto esta semana para mantenerte el precio. ¿Qué día te queda bien?`;
       break;
+    case "Vendido":
+      asunto = `${proyecto}: gracias por confiar`;
+      cuerpo = `Hola ${nombre}! ¿Cómo va todo? Te escribo para agradecerte otra vez por sumarte a ${proyecto}. Si conocés a alguien que esté buscando invertir o comprar en pozo, me encantaría que me pases su contacto: quedan pocas unidades.`;
+      break;
     case "Dormido":
     case "Perdido":
       asunto = `Novedades de ${proyecto}`;

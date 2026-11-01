@@ -99,6 +99,8 @@ export function importarCrm(filas: Celda[][], existentes: Pick<Contacto, "nombre
       actualizado: ahora,
       entroEtapa: ultimo ? `${ultimo}T12:00:00.000Z` : SIN_FECHA,
       ultimoContacto: ultimo ? `${ultimo}T12:00:00.000Z` : null,
+      unidadVendida: "",
+      precioVentaUsd: null,
     });
   }
   return nuevos;

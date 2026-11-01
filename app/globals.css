@@ -5193,3 +5193,20 @@ h1 .etiqueta-beta {
 .crm-ficha__encabezado h2 {
   color: white;
 }
+
+.crm__alta-embudo .crm-alta {
+  margin: 0;
+}
+.crm__alta-embudo {
+  padding: 12px;
+}
+.crm-ficha__venta ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.crm-hecho {
+  color: #3d6b1f;
+}
