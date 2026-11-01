@@ -6,6 +6,7 @@
  * - Pagos: lo que se pagó, del día de cada egreso de las cajas.
  * - Leads: el próximo paso de cada contacto del CRM y cuándo volver a contactar.
  * - Propuestas: cuándo vence cada propuesta comercial guardada.
+ * - Tareas: las abiertas con fecha (del proyecto y las generales).
  * - Agenda: lo que se carga a mano (un pago a un proveedor, una reunión, una firma).
  *
  * Todo puro (sin red).
@@ -17,14 +18,16 @@ import type { Egreso } from "../finanzas/egresos";
 import type { Moneda, Pago } from "../finanzas/ingresos";
 import { diaVencimiento } from "../inversores/cobranzas";
 import type { PropuestaGuardada } from "../proyectos/propuestasGuardadas";
+import { abierta, type Tarea } from "../tareas/modelo";
 
-export type TipoEvento = "cobro" | "pago" | "lead" | "propuesta" | "agenda";
+export type TipoEvento = "cobro" | "pago" | "lead" | "propuesta" | "tarea" | "agenda";
 
 export const TIPOS_EVENTO: { tipo: TipoEvento; nombre: string }[] = [
   { tipo: "cobro", nombre: "Cobros" },
   { tipo: "pago", nombre: "Pagos" },
   { tipo: "lead", nombre: "Leads" },
   { tipo: "propuesta", nombre: "Propuestas" },
+  { tipo: "tarea", nombre: "Tareas" },
   { tipo: "agenda", nombre: "Agenda" },
 ];
 
@@ -130,6 +133,22 @@ export function eventosPropuestas(propuestas: PropuestaGuardada[]): Evento[] {
       monto: { moneda: "USD" as const, valor: p.precioUsd },
       vencido: false,
       donde: `comercial/propuesta?id=${p.id}&${p.parametros}${p.contactoId ? `&contacto=${p.contactoId}` : ""}`,
+    }));
+}
+
+/** Las tareas abiertas con fecha, del proyecto y las generales. Las atrasadas quedan marcadas. */
+export function eventosTareas(tareas: Tarea[], proyecto: string, hoy: string): Evento[] {
+  return tareas
+    .filter((t) => abierta(t) && t.vence && (!t.proyecto || t.proyecto === proyecto))
+    .map((t) => ({
+      id: `tarea-${t.id}`,
+      fecha: t.vence!,
+      tipo: "tarea" as const,
+      titulo: t.titulo,
+      detalle: [t.hora, t.responsable, t.con, t.estado].filter(Boolean).join(" · "),
+      monto: null,
+      vencido: t.vence! < hoy,
+      donde: `tareas?tarea=${t.id}`,
     }));
 }
 

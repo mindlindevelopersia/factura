@@ -7,6 +7,7 @@ import { PestaniaSimple } from "../google/pestania";
 import { hoyBuenosAires } from "../inversores/cobranzas";
 import { PROYECTO_PRINCIPAL, proyecto as buscarProyecto } from "../modulos";
 import { leerPropuestas } from "../proyectos/propuestasFuente";
+import { leerTareas } from "../tareas/fuente";
 import {
   agendaDeFila,
   COLUMNAS_AGENDA,
@@ -15,6 +16,7 @@ import {
   eventosLeads,
   eventosPagos,
   eventosPropuestas,
+  eventosTareas,
   filaDeAgenda,
   type Evento,
   type EventoAgenda,
@@ -64,6 +66,7 @@ export async function calendario(proyectoId: string, opciones?: { fresco?: boole
     ["pago", async () => (principal ? eventosPagos((await cajaEgresos(opciones)).caja.egresos, p.nombre) : [])],
     ["lead", async () => eventosLeads((await leerCrm()).contactos, proyectoId, hoy)],
     ["propuesta", async () => eventosPropuestas(await leerPropuestas(proyectoId))],
+    ["tarea", async () => eventosTareas((await leerTareas()).tareas, proyectoId, hoy)],
     ["agenda", async () => eventosAgenda(await leerAgenda(proyectoId))],
   ];
   const leidos = await Promise.allSettled(fuentes.map(([, leer]) => leer()));

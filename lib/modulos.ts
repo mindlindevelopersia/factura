@@ -9,7 +9,7 @@
 
 import type { AjusteUnidad, OpcionesComercial } from "./proyectos/comercial";
 
-export type IconoArea = "calendario" | "administracion" | "finanzas" | "inversores" | "indicadores" | "comercial" | "management" | "proyecto";
+export type IconoArea = "calendario" | "tareas" | "administracion" | "finanzas" | "inversores" | "indicadores" | "comercial" | "management" | "proyecto";
 
 export interface Modulo {
   nombre: string;
@@ -146,6 +146,13 @@ const AREAS_DE_PROYECTO: { sub: string; nombre: string; descripcion: string; ico
     nombre: "Calendario",
     descripcion: "Todo lo que tiene fecha: cobros, pagos, leads, propuestas que vencen y la agenda.",
     icono: "calendario",
+    modulos: [],
+  },
+  {
+    sub: "tareas",
+    nombre: "Tareas",
+    descripcion: "El tablero de tareas puntuales: responsable, fecha, subtareas, comentarios y bloqueos.",
+    icono: "tareas",
     modulos: [],
   },
   {
