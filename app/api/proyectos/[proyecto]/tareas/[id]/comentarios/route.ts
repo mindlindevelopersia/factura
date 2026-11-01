@@ -8,7 +8,7 @@ import { comentar, leerTareas } from "@/lib/tareas/fuente";
 /** Un comentario en una tarea (lo puede dejar cualquiera del equipo). */
 export async function POST(req: Request, { params }: { params: Promise<{ proyecto: string; id: string }> }) {
   const { proyecto, id } = await params;
-  const ctx = await preparar(proyecto);
+  const ctx = await preparar(proyecto, "tareas");
   if (ctx instanceof NextResponse) return ctx;
   const body = (await req.json().catch(() => ({}))) as { texto?: unknown };
   const texto = typeof body.texto === "string" ? body.texto.trim().slice(0, 3000) : "";
@@ -19,7 +19,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ proyect
     const tarea = (await leerTareas().catch(() => ({ tareas: [] }))).tareas.find((t) => t.id === id);
     if (tarea) {
       const link = `${rutaProyecto(tarea.proyecto || ctx.proyecto.id, "tareas")}?tarea=${tarea.id}`;
-      const usuarios = usuariosDelSistema();
+      const usuarios = await usuariosDelSistema();
       const mencionados = new Set(menciones(texto, usuarios).map((u) => u.email));
       const interesados = [tarea.responsable, tarea.creo].map((a) => usuarioPorApodo(a, usuarios)).filter((u): u is Usuario => !!u && !mencionados.has(u.email));
       await Promise.all([

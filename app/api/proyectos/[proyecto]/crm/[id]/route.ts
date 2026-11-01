@@ -8,7 +8,7 @@ import { avisarAsignacion, avisarMenciones } from "@/lib/notificaciones/fuente";
 /** Cambia un contacto y, si viene, registra lo que se hizo (llamada, WhatsApp, nota…). */
 export async function PATCH(req: Request, { params }: { params: Promise<{ proyecto: string; id: string }> }) {
   const { proyecto, id } = await params;
-  const ctx = await preparar(proyecto);
+  const ctx = await preparar(proyecto, "comercial/crm", "comercial/propuesta");
   if (ctx instanceof NextResponse) return ctx;
   const body = (await req.json().catch(() => ({}))) as { cambios?: CambiosContacto; actividad?: { tipo?: string; detalle?: string } };
   const cambios = body.cambios ?? {};

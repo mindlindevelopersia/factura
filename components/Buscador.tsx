@@ -1,10 +1,11 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { buscar, paginas, type Resultado } from "@/lib/buscador/indice";
 import { leerJson } from "./formato";
 import { Icono } from "./Icono";
+import { usePuedeRuta } from "./Permisos";
 
 const EVENTO = "abrir-buscador";
 const VIGENCIA = 5 * 60 * 1000;
@@ -80,7 +81,8 @@ export function Buscador() {
       .finally(() => setCargando(false));
   }, [abierto]);
 
-  const todas = useMemo(() => paginas(), []);
+  const ve = usePuedeRuta();
+  const todas = paginas().filter((r) => ve(r.href));
   const resultados = q.trim() ? buscar([...todas, ...(cache?.resultados ?? [])], q, proyecto) : [];
   // Sin escribir nada: las áreas del proyecto en el que estás (o las de la empresa).
   const sugeridos = q.trim() ? [] : todas.filter((r) => r.tipo === "Página" && (proyecto ? r.proyecto === proyecto && !r.etiqueta.includes(" · ") : r.proyecto === "" || r.etiqueta === "Proyecto"));

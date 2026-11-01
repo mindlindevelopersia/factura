@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/auth/session";
+import { exigir } from "@/lib/permisos/api";
+import { PROYECTO_PRINCIPAL, rutaProyecto } from "@/lib/modulos";
 import { cobranzas, FlujoSinConfigurar } from "@/lib/finanzas/fuente";
 
 /** Lo vencido y por vencer de cada inversor, actualizado por CAC. ?fresco=1 vuelve a leer las planillas. */
 export async function GET(req: Request) {
-  if (!(await getUser())) return NextResponse.json({ error: "Sesión vencida. Volvé a ingresar." }, { status: 401 });
+  const permiso = await exigir(rutaProyecto(PROYECTO_PRINCIPAL.id, "inversores/cobranzas"));
+  if (permiso instanceof NextResponse) return permiso;
   try {
     const fresco = new URL(req.url).searchParams.get("fresco") === "1";
     return NextResponse.json(await cobranzas({ fresco }));

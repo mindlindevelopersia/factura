@@ -5,7 +5,7 @@ import { validarPropuesta } from "@/lib/proyectos/propuestasGuardadas";
 
 /** Las propuestas guardadas del proyecto. */
 export async function GET(_req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
-  const ctx = await preparar((await params).proyecto);
+  const ctx = await preparar((await params).proyecto, "comercial/propuesta");
   if (ctx instanceof NextResponse) return ctx;
   try {
     return NextResponse.json({ propuestas: await leerPropuestas(ctx.proyecto.id) });
@@ -16,7 +16,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ proyect
 
 /** Guarda una propuesta nueva. */
 export async function POST(req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
-  const ctx = await preparar((await params).proyecto);
+  const ctx = await preparar((await params).proyecto, "comercial/propuesta");
   if (ctx instanceof NextResponse) return ctx;
   const v = validarPropuesta(await req.json().catch(() => null));
   if ("error" in v) return NextResponse.json({ error: v.error }, { status: 400 });

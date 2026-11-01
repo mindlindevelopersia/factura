@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { AvisoBeta, EtiquetaBeta } from "@/components/Beta";
 import { CashFlow } from "@/components/finanzas/CashFlow";
-import { requireUser } from "@/lib/auth/session";
+import { requireRuta } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Cash flow" };
 
-export default async function PaginaCashFlow() {
-  await requireUser();
+export default async function PaginaCashFlow({ params }: { params: Promise<{ proyecto: string }> }) {
+  await requireRuta(`/proyectos/${(await params).proyecto}/finanzas/cash-flow`);
   return (
     <main className="app-main" id="contenido">
       <AvisoBeta />

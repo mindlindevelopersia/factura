@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth/session";
 import { persona } from "@/lib/equipo";
 import { contextoDe } from "@/lib/oliver/contexto";
+import { accesoDeEmail } from "@/lib/permisos/fuente";
+import { puedeRuta } from "@/lib/permisos/modelo";
 import { INSTRUCCIONES } from "@/lib/oliver/instrucciones";
 
 /** El modelo más económico: alcanza para leer datos y explicarlos. */
@@ -31,6 +33,9 @@ export async function POST(req: Request) {
 
   const pedido = (await req.json().catch(() => ({}))) as Pedido;
   const ruta = typeof pedido.ruta === "string" && pedido.ruta.startsWith("/") ? pedido.ruta.slice(0, 200) : "/";
+  // Oliver solo lee los datos de una sección que la persona puede ver.
+  const acceso = await accesoDeEmail(user.email).catch(() => null);
+  if (!acceso || !puedeRuta(acceso, ruta)) return NextResponse.json({ error: "No tenés permiso para esta sección." }, { status: 403 });
   const mensajes: Anthropic.MessageParam[] = (Array.isArray(pedido.mensajes) ? pedido.mensajes : [])
     .filter((m): m is { role: "user" | "assistant"; content: string } => !!m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim() !== "")
     .slice(-MAX_MENSAJES)

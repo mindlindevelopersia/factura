@@ -26,7 +26,7 @@ MAIL:
 
 /** Oliver propone un mensaje para un contacto, con su ficha, su historial y las unidades que le sirven. */
 export async function POST(req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
-  const ctx = await preparar((await params).proyecto);
+  const ctx = await preparar((await params).proyecto, "comercial/crm");
   if (ctx instanceof NextResponse) return ctx;
   if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: "Falta la variable ANTHROPIC_API_KEY en Vercel para los mensajes con IA." }, { status: 503 });
   const { id, indicacion } = (await req.json().catch(() => ({}))) as { id?: string; indicacion?: string };

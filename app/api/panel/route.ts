@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/auth/session";
+import { exigir } from "@/lib/permisos/api";
+import { RUTA_FACTURAS } from "@/lib/modulos";
 import { respuestaDeError, serviciosDesdeEnv } from "@/lib/cola/env";
 import { listar } from "@/lib/cola/servicio";
 import { enlaces } from "@/lib/enlaces";
@@ -7,7 +8,8 @@ import { resumirPanel } from "@/lib/panel";
 
 /** El panel de inicio: números del mes, los últimos 12 meses, la cola y los accesos. */
 export async function GET(req: Request) {
-  if (!(await getUser())) return NextResponse.json({ error: "Sesión vencida. Volvé a ingresar." }, { status: 401 });
+  const permiso = await exigir(RUTA_FACTURAS);
+  if (permiso instanceof NextResponse) return permiso;
   try {
     const s = serviciosDesdeEnv(new URL(req.url).origin);
     const [cola, registros, accesos] = await Promise.all([

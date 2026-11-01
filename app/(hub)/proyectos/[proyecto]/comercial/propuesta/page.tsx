@@ -3,14 +3,14 @@ import { Suspense } from "react";
 import { EtiquetaBeta } from "@/components/Beta";
 import { Propuesta } from "@/components/proyectos/Propuesta";
 import { Propuestas } from "@/components/proyectos/Propuestas";
-import { requireUser } from "@/lib/auth/session";
+import { requireRuta } from "@/lib/auth/session";
 import { proyecto as buscar } from "@/lib/modulos";
 
 export const metadata: Metadata = { title: "Propuestas comerciales" };
 
 /** Sin nada en la URL, la lista de propuestas; con datos (una nueva, una guardada o un link viejo), el editor. */
 export default async function Pagina({ params, searchParams }: { params: Promise<{ proyecto: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  await requireUser();
+  await requireRuta(`/proyectos/${(await params).proyecto}/comercial/propuesta`);
   const { proyecto } = await params;
   const editar = Object.keys(await searchParams).length > 0;
   const p = buscar(proyecto)!;

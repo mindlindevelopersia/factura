@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/auth/session";
+import { exigir } from "@/lib/permisos/api";
+import { RUTA_FACTURAS } from "@/lib/modulos";
 import { respuestaDeError, serviciosDesdeEnv } from "@/lib/cola/env";
 import { aprobar, descartar, ErrorCola, reintentar } from "@/lib/cola/servicio";
 import { FacturaParaGuardarSchema } from "@/lib/invoice/schema";
@@ -16,11 +17,8 @@ const RESPUESTA_MAXIMA = 4_000_000;
  * GET /api/cola/<id>/nota?n=<índice>: un comentario en audio.
  */
 export async function GET(req: Request, { params }: Contexto) {
-  if (!(await getUser()))
-    return NextResponse.json(
-      { error: "Sesión vencida. Volvé a ingresar." },
-      { status: 401 },
-    );
+  const permiso = await exigir(RUTA_FACTURAS);
+  if (permiso instanceof NextResponse) return permiso;
   const { id, accion } = await params;
   if (accion !== "archivo" && accion !== "nota")
     return NextResponse.json({ error: "No existe." }, { status: 404 });
@@ -54,12 +52,9 @@ export async function GET(req: Request, { params }: Contexto) {
 
 /** POST /api/cola/<id>/aprobar (con la factura revisada), /descartar o /reintentar. */
 export async function POST(req: Request, { params }: Contexto) {
-  const user = await getUser();
-  if (!user)
-    return NextResponse.json(
-      { error: "Sesión vencida. Volvé a ingresar." },
-      { status: 401 },
-    );
+  const permiso = await exigir(RUTA_FACTURAS);
+  if (permiso instanceof NextResponse) return permiso;
+  const user = permiso.user;
   const { id, accion } = await params;
   try {
     const s = serviciosDesdeEnv(new URL(req.url).origin);

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { AvisoBeta, EtiquetaBeta } from "@/components/Beta";
 import { Cuentas } from "@/components/inversores/Cuentas";
-import { requireUser } from "@/lib/auth/session";
+import { requireRuta } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Cuentas corrientes" };
 
-export default async function PaginaCuentas() {
-  await requireUser();
+export default async function PaginaCuentas({ params }: { params: Promise<{ proyecto: string }> }) {
+  await requireRuta(`/proyectos/${(await params).proyecto}/inversores/cuentas-corrientes`);
 
   return (
     <main className="app-main" id="contenido">

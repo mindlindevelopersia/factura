@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { EtiquetaBeta } from "@/components/Beta";
 import { Tareas } from "@/components/tareas/Tareas";
-import { requireUser } from "@/lib/auth/session";
+import { requireRuta } from "@/lib/auth/session";
 import { proyecto as buscar } from "@/lib/modulos";
 
 export const metadata: Metadata = { title: "Tareas" };
 
 export default async function Pagina({ params }: { params: Promise<{ proyecto: string }> }) {
-  await requireUser();
+  await requireRuta(`/proyectos/${(await params).proyecto}/tareas`);
   const { proyecto } = await params;
   const p = buscar(proyecto)!;
   return (

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AvisoBeta, EtiquetaBeta } from "@/components/Beta";
 import { Panorama } from "@/components/indicadores/Panorama";
 import { TarjetasModulos } from "@/components/TarjetasModulos";
-import { requireUser } from "@/lib/auth/session";
+import { requireRuta } from "@/lib/auth/session";
 import { AREAS_EMPRESA } from "@/lib/modulos";
 
 export const metadata: Metadata = { title: "Indicadores" };
@@ -11,7 +11,7 @@ const area = AREAS_EMPRESA.find((a) => a.href === "/indicadores")!;
 
 /** El inicio de Indicadores: el Panorama y los módulos del área. */
 export default async function Indicadores() {
-  await requireUser();
+  await requireRuta("/indicadores");
 
   return (
     <main className="app-main" id="contenido">

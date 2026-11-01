@@ -9,7 +9,7 @@ import { validarCambios } from "@/lib/tareas/modelo";
 
 /** Todas las tareas con sus comentarios (la pantalla filtra por proyecto), el equipo y los leads para vincular. */
 export async function GET(_req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
-  const ctx = await preparar((await params).proyecto);
+  const ctx = await preparar((await params).proyecto, "tareas");
   if (ctx instanceof NextResponse) return ctx;
   try {
     const [t, crm] = await Promise.all([leerTareas(), leerCrm().catch(() => ({ contactos: [] }))]);
@@ -22,7 +22,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ proyect
 
 /** Una tarea nueva. */
 export async function POST(req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
-  const ctx = await preparar((await params).proyecto);
+  const ctx = await preparar((await params).proyecto, "tareas");
   if (ctx instanceof NextResponse) return ctx;
   const v = validarCambios(await req.json().catch(() => null), true);
   if ("error" in v) return NextResponse.json({ error: v.error }, { status: 400 });

@@ -1,15 +1,17 @@
 import { AppHeader } from "@/components/AppHeader";
 import { Hub } from "@/components/Hub";
 import { requireUser } from "@/lib/auth/session";
+import { accesoDeEmail } from "@/lib/permisos/fuente";
 
 /** El marco del hub: encabezado arriba, menú de áreas a la izquierda (se puede esconder) y la página a la derecha. */
 export default async function HubLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  const acceso = await accesoDeEmail(user.email).catch(() => null);
 
   return (
     <>
       <AppHeader email={user.email} />
-      <Hub>{children}</Hub>
+      <Hub acceso={acceso}>{children}</Hub>
     </>
   );
 }

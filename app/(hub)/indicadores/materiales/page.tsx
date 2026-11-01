@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { AvisoBeta, EtiquetaBeta } from "@/components/Beta";
 import { Materiales } from "@/components/indicadores/Materiales";
-import { requireUser } from "@/lib/auth/session";
+import { requireRuta } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Materiales" };
 
 export default async function PaginaMateriales() {
-  await requireUser();
+  await requireRuta("/indicadores/materiales");
 
   return (
     <main className="app-main" id="contenido">

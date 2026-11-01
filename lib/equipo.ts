@@ -18,6 +18,9 @@ const EQUIPO: Record<string, Persona> = {
 /** Los apodos del equipo, para elegir responsable. */
 export const EQUIPO_APODOS = Object.values(EQUIPO).map((p) => p.apodo);
 
+/** ¿Es del equipo de siempre? (Sin configurar en Ajustes, entra como Administrador.) */
+export const esDelEquipo = (email: string) => !!EQUIPO[email.trim().toLowerCase()];
+
 export function persona(email: string, nombreCuenta?: string | null): Persona {
   const p = EQUIPO[email.trim().toLowerCase()];
   if (p) return p;

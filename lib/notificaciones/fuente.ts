@@ -1,5 +1,4 @@
 import "server-only";
-import { allowedEmails } from "../auth/allowed";
 import { leerAgenda } from "../calendario/fuente";
 import { CrmSinConfigurar, leerCrm } from "../crm/fuente";
 import { nuevoId } from "../crm/modelo";
@@ -8,6 +7,7 @@ import { googleClient } from "../google/auth";
 import { PestaniaSimple } from "../google/pestania";
 import { hoyBuenosAires } from "../inversores/cobranzas";
 import { PROYECTOS } from "../modulos";
+import { usuariosConfigurados } from "../permisos/fuente";
 import { leerPropuestas } from "../proyectos/propuestasFuente";
 import { leerTareas } from "../tareas/fuente";
 import {
@@ -25,12 +25,9 @@ import {
   type Usuario,
 } from "./modelo";
 
-/** Los usuarios del sistema: los mails habilitados, con su apodo (Mati, Tade…). */
-export function usuariosDelSistema(): Usuario[] {
-  return [...allowedEmails()].map((email) => {
-    const p = persona(email);
-    return { email, apodo: p.apodo, nombre: p.nombre };
-  });
+/** Los usuarios del sistema: los mails habilitados, con su @usuario de Ajustes (o el apodo de siempre: Mati, Tade…). */
+export async function usuariosDelSistema(): Promise<Usuario[]> {
+  return (await usuariosConfigurados()).map((u) => ({ email: u.email, apodo: u.apodo, nombre: u.nombre, alias: [persona(u.email).apodo] }));
 }
 
 function pestania() {
@@ -60,7 +57,7 @@ async function vencimientos(usuario: Usuario): Promise<Notificacion[]> {
 
 /** Las notificaciones de un usuario (las últimas 60). */
 export async function notificacionesDe(email: string): Promise<Notificacion[]> {
-  const yo = usuariosDelSistema().find((u) => u.email === email.toLowerCase()) ?? { email, apodo: persona(email).apodo, nombre: email };
+  const yo = (await usuariosDelSistema()).find((u) => u.email === email.toLowerCase()) ?? { email, apodo: persona(email).apodo, nombre: email };
   const [filas, calculadas] = await Promise.all([pestania().filas(), vencimientos(yo)]);
   const { guardadas, leidas } = leerFilas(filas, email);
   return combinar(guardadas, calculadas, leidas).slice(0, 60);
@@ -86,13 +83,13 @@ export async function notificar(lista: { para: Usuario; tipo: TipoNotificacion; 
 
 /** Avisa a los mencionados con @ en un texto (solo las menciones nuevas si se editó). */
 export async function avisarMenciones(o: { antes?: string; texto: string; titulo: string; link: string; de: string; deEmail: string }): Promise<void> {
-  const usuarios = usuariosDelSistema();
+  const usuarios = await usuariosDelSistema();
   const nuevos = mencionesNuevas(o.antes ?? "", o.texto, usuarios);
   await notificar(nuevos.map((u) => ({ para: u, tipo: "mencion" as const, titulo: `${o.de} te mencionó · ${o.titulo}`, texto: extracto(o.texto), link: o.link, de: o.de, deEmail: o.deEmail })));
 }
 
 /** Avisa a quien le asignaron algo (si no se lo asignó solo). */
 export async function avisarAsignacion(o: { apodo: string; titulo: string; texto: string; link: string; de: string; deEmail: string }): Promise<void> {
-  const u = usuarioPorApodo(o.apodo, usuariosDelSistema());
+  const u = usuarioPorApodo(o.apodo, await usuariosDelSistema());
   if (u) await notificar([{ para: u, tipo: "asignacion", titulo: `${o.de} te asignó: ${o.titulo}`, texto: o.texto, link: o.link, de: o.de, deEmail: o.deEmail }]);
 }

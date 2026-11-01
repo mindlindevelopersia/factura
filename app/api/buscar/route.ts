@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/auth/session";
 import { indiceDeDatos } from "@/lib/buscador/fuente";
+import { exigir } from "@/lib/permisos/api";
+import { puedeRuta } from "@/lib/permisos/modelo";
 
-/** Todo lo buscable de los datos (leads, propuestas, unidades, inversores, cobros, tareas). La pantalla filtra mientras escribís. */
+/** Todo lo buscable de los datos (leads, propuestas, unidades, inversores, cobros, tareas), solo de lo que la persona puede ver. */
 export async function GET() {
-  if (!(await getUser())) return NextResponse.json({ error: "Sesión vencida. Volvé a ingresar." }, { status: 401 });
-  return NextResponse.json(await indiceDeDatos());
+  const permiso = await exigir();
+  if (permiso instanceof NextResponse) return permiso;
+  const { resultados, faltan } = await indiceDeDatos();
+  return NextResponse.json({ resultados: resultados.filter((r) => puedeRuta(permiso.acceso, r.href)), faltan });
 }

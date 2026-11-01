@@ -8,7 +8,7 @@ import { avisarAsignacion, avisarMenciones } from "@/lib/notificaciones/fuente";
 
 /** Todos los eventos del proyecto (cobros, pagos, leads, propuestas y agenda). ?fresco=1 vuelve a leer las planillas. */
 export async function GET(req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
-  const ctx = await preparar((await params).proyecto);
+  const ctx = await preparar((await params).proyecto, "calendario");
   if (ctx instanceof NextResponse) return ctx;
   const fresco = new URL(req.url).searchParams.get("fresco") === "1";
   return NextResponse.json({ ...(await calendario(ctx.proyecto.id, { fresco })), usuario: ctx.usuario, equipo: [...new Set([...EQUIPO_APODOS, ctx.usuario])] });
@@ -16,7 +16,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ proyecto
 
 /** Un evento cargado a mano. */
 export async function POST(req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
-  const ctx = await preparar((await params).proyecto);
+  const ctx = await preparar((await params).proyecto, "calendario");
   if (ctx instanceof NextResponse) return ctx;
   const v = validarAgenda(await req.json().catch(() => null));
   if ("error" in v) return NextResponse.json({ error: v.error }, { status: 400 });

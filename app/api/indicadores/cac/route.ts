@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/auth/session";
+import { exigir } from "@/lib/permisos/api";
 import { FlujoSinConfigurar, serieCac } from "@/lib/finanzas/fuente";
 
 /** La serie del índice CAC. ?fresco=1 vuelve a leer la planilla. */
 export async function GET(req: Request) {
-  if (!(await getUser())) return NextResponse.json({ error: "Sesión vencida. Volvé a ingresar." }, { status: 401 });
+  const permiso = await exigir("/indicadores/cac");
+  if (permiso instanceof NextResponse) return permiso;
   try {
     const fresco = new URL(req.url).searchParams.get("fresco") === "1";
     return NextResponse.json(await serieCac({ fresco }));

@@ -12,7 +12,7 @@ export const maxDuration = 60;
  * que tengan una columna de nombre.
  */
 export async function POST(req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
-  const ctx = await preparar((await params).proyecto);
+  const ctx = await preparar((await params).proyecto, "comercial/crm");
   if (ctx instanceof NextResponse) return ctx;
   const { planilla, confirmar } = (await req.json().catch(() => ({}))) as { planilla?: string; confirmar?: boolean };
   const id = idDePlanilla(planilla ?? "");
