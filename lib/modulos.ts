@@ -161,8 +161,8 @@ const AREAS_DE_PROYECTO: { sub: string; nombre: string; descripcion: string; ico
       },
       {
         sub: "comercial/propuesta",
-        nombre: "Propuesta comercial",
-        descripcion: "Armá la propuesta de una unidad (anticipos, cuotas y refuerzos al MEP de hoy) con el plano, lista para mandar en PDF.",
+        nombre: "Propuestas comerciales",
+        descripcion: "Las propuestas guardadas (quién, para quién, hasta cuándo vale) y una nueva: anticipos, cuotas y refuerzos al MEP de hoy, con el plano, en PDF o por WhatsApp.",
         beta: true,
       },
       {
