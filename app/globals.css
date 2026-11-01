@@ -7894,3 +7894,37 @@ h1 .etiqueta-beta {
 .idea-mk__primer-paso strong {
   color: var(--lima);
 }
+
+/* Modo privado (el ojito de arriba): números, mails y teléfonos desenfocados; nombres y campos marcados también. */
+::highlight(privado) {
+  color: transparent;
+  text-shadow: 0 0 7px rgb(40 44 38 / 0.85);
+}
+html[data-privado] [data-sensible],
+html[data-privado] input[inputmode="decimal"],
+html[data-privado] input[inputmode="numeric"],
+html[data-privado] input[inputmode="tel"],
+html[data-privado] input[type="email"],
+html[data-privado] svg text,
+html[data-privado-simple] td,
+html[data-privado-simple] dd {
+  filter: blur(6px);
+}
+.privado__boton--activo {
+  border-color: var(--lima);
+  background: var(--lima);
+  color: var(--negro);
+}
+.privado__boton--activo:hover {
+  color: var(--negro);
+}
+/* Al imprimir (el PDF de la propuesta) se ve todo. */
+@media print {
+  ::highlight(privado) {
+    color: inherit;
+    text-shadow: none;
+  }
+  html[data-privado] * {
+    filter: none !important;
+  }
+}

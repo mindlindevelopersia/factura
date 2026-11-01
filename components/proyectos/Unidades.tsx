@@ -145,7 +145,7 @@ export function Unidades() {
                       </td>
                       <td data-etiqueta="Estado">
                         {x.estado === "vendida" ? "Vendida" : x.estado === "libre" ? "Libre" : x.estadoTexto}
-                        {x.inversor && <span className="tabla__sub">{x.inversor}</span>}
+                        {x.inversor && <span className="tabla__sub" data-sensible="">{x.inversor}</span>}
                         {(x.modalidad || x.contrato || x.reventa) && (
                           <span className="tabla__sub">{[modalidad(x), x.contrato && x.modalidad !== "canje" && "Pagada con contrato", x.reventa && "En reventa"].filter(Boolean).join(" · ")}</span>
                         )}
@@ -192,7 +192,15 @@ function Detalle({ u, base }: { u: Unidad | null; base: string }) {
         {u.codigo} {!u.esCochera && <span className="unidad__tipo">{u.tipologia}</span>}
       </h2>
       <p className={`unidad__estado unidad__estado--${u.estado}`}>
-        {u.estado === "vendida" ? `Vendida · ${u.inversor}` : u.estado === "libre" ? "Libre" : u.estadoTexto}
+        {u.estado === "vendida" ? (
+          <>
+            Vendida · <span data-sensible="">{u.inversor}</span>
+          </>
+        ) : u.estado === "libre" ? (
+          "Libre"
+        ) : (
+          u.estadoTexto
+        )}
         {u.contrato && " · pagada con contrato"}
       </p>
       {u.modalidad && (

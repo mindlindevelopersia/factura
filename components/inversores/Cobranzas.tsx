@@ -243,7 +243,7 @@ function TarjetaCobranza({
       <header className="cobranza__cabecera">
         <div>
           <h2>
-            <Link href={`${base}/inversores/cuentas-corrientes/${c.id}`} className="ingresos__enlace">
+            <Link href={`${base}/inversores/cuentas-corrientes/${c.id}`} className="ingresos__enlace" data-sensible="">
               {c.inversor}
             </Link>
           </h2>
@@ -449,7 +449,7 @@ function Seguimiento({ avisos }: { avisos: AvisoCobranza[] | null }) {
               {filtrados.map((a, i) => (
                 <tr key={`${a.fecha}-${i}`}>
                   <td data-etiqueta="Inversor">
-                    {a.inversor}
+                    <span data-sensible="">{a.inversor}</span>
                     <span className="tabla__sub">UF {a.unidad}</span>
                   </td>
                   <td data-etiqueta="Fecha">{fechaHora(a.fecha)}</td>

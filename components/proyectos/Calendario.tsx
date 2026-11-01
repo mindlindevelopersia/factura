@@ -19,6 +19,8 @@ interface Datos {
 }
 
 const DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+/** Los cobros, los leads y las propuestas llevan el nombre de una persona: en modo privado se ocultan. */
+const conNombre = (e: Evento) => e.tipo === "cobro" || e.tipo === "lead" || e.tipo === "propuesta";
 const monto = (e: Evento) => (e.monto ? `${e.monto.moneda === "USD" ? "US$" : "$"} ${Math.round(e.monto.valor).toLocaleString("es-AR")}` : "");
 const nombreTipo = (t: TipoEvento) => TIPOS_EVENTO.find((x) => x.tipo === t)!.nombre;
 const fechaLarga = (f: string) => {
@@ -193,7 +195,7 @@ export function Calendario() {
                     <div>
                       <strong>
                         {e.hora && <span className="calendario__hora">{e.hora}</span>}
-                        {e.titulo}
+                        <span data-sensible={conNombre(e) ? "" : undefined}>{e.titulo}</span>
                       </strong>
                       {e.detalle && <small>{e.detalle}</small>}
                       {e.responsable && <span className="calendario__responsable">{e.responsable}</span>}
@@ -224,7 +226,7 @@ export function Calendario() {
               {atrasados.slice(0, 8).map((e) => (
                 <li key={e.id} className="calendario__evento">
                   <button type="button" className="ingresos__enlace" onClick={() => (setMes(e.fecha.slice(0, 7)), setDia(e.fecha))}>
-                    {e.fecha.split("-").reverse().join("/")} · {e.titulo}
+                    {e.fecha.split("-").reverse().join("/")} · <span data-sensible={conNombre(e) ? "" : undefined}>{e.titulo}</span>
                   </button>
                   {e.monto && <span>{monto(e)}</span>}
                 </li>

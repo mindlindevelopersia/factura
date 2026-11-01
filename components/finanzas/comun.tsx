@@ -131,7 +131,7 @@ export interface AvisoVista {
   titulo: string;
   detalle: string;
   /** Dónde está: inversor, unidad, pestaña, fila. */
-  donde: string;
+  donde: React.ReactNode;
   monto: number | null;
   moneda: Moneda | null;
 }

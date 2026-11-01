@@ -179,7 +179,7 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
       <aside className="crm-ficha" aria-label={`Ficha de ${c.nombre}`} onClick={(e) => e.stopPropagation()}>
         <header className="crm-ficha__encabezado">
           <div>
-            <h2>{c.nombre}</h2>
+            <h2 data-sensible="">{c.nombre}</h2>
             <span>
               <span className={`crm-etapa crm-etapa--${claseEtapa(c.etapa)}`}>{c.etapa}</span> <ChipTemperatura t={temp} manual={!!c.temperaturaManual} />
               {c.origen && <span className="crm-ficha__sub"> · {c.origen}{c.referido ? ` (${c.referido})` : ""}</span>}

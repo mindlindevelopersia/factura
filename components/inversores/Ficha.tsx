@@ -75,7 +75,7 @@ function Contenido({
       <section className="card ficha__datos">
         <div>
           <span className="eyebrow">{c.emprendimiento || "MIND Lerma 439"}</span>
-          <h2 className="ficha__nombre">{c.inversor}</h2>
+          <h2 className="ficha__nombre" data-sensible="">{c.inversor}</h2>
         </div>
         <dl>
           <div>

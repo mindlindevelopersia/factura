@@ -372,7 +372,7 @@ export function Propuesta() {
           <div className="propuesta-doc__portada" style={{ backgroundImage: `url(${img.render})` }}>
             <div>
               <span>Propuesta comercial</span>
-              <h1>{p.cliente ? `Para ${p.cliente}` : proyecto?.nombre}</h1>
+              <h1 data-sensible="">{p.cliente ? `Para ${p.cliente}` : proyecto?.nombre}</h1>
               <p>
                 {proyecto?.nombre} · {img.frase}
               </p>
