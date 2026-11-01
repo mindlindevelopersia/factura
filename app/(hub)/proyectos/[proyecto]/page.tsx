@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AvisoBeta } from "@/components/Beta";
+import { CajaBuscar } from "@/components/Buscador";
 import { Tablero } from "@/components/proyectos/Tablero";
 import { TarjetasModulos } from "@/components/TarjetasModulos";
 import { requireUser } from "@/lib/auth/session";
@@ -22,6 +23,7 @@ export default async function PaginaProyecto({ params }: { params: Promise<{ pro
           <p>{p.descripcion}</p>
         </div>
       </div>
+      <CajaBuscar placeholder={`Buscar en ${p.nombre}: leads, unidades, inversores, tareas…`} />
       {p.planillaMadre && <Tablero />}
       <h2 className="cac__titulo-seccion indicadores__modulos">Áreas del proyecto</h2>
       <TarjetasModulos items={areasDeProyecto(p.id)} />
