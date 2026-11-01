@@ -318,11 +318,11 @@ async function contextoCrm(id: string): Promise<Contexto> {
   return {
     seccion: `${buscarProyecto(id)?.nombre ?? id} · CRM`,
     especialidad:
-      "el CRM de ventas: a quién hablarle y cuándo, en qué etapa está cada interesado (Nuevo, Contactado, Interesado, Evaluando, Negociando, Vendido, Perdido, Dormido), su temperatura (hot, tibio, frío) y qué mensaje mandarle",
+      "el CRM de ventas: a quién hablarle y cuándo, en qué etapa está cada interesado (Nuevo, Contactado, Interesado, Propuesta enviada, Vendido, Perdido, Dormido), su temperatura (hot, tibio, frío) y qué mensaje mandarle",
     datos: {
       hoy,
       reglas:
-        "Ningún contacto abierto queda sin próximo paso con fecha. Temperatura: hot si está evaluando o negociando (o decide en menos de 2 meses) y hablamos en la última semana; frío si hace más de 14 días que no hablamos, decide en más de 6 meses o no le alcanza; tibio el resto. Hablarle cada 2 días si es hot, 7 si es tibio, 30 si es frío. La propuesta vence a los 7 días en Evaluando.",
+        "Ningún contacto abierto queda sin próximo paso con fecha. Temperatura: hot si tiene una propuesta enviada (o decide en menos de 2 meses) y hablamos en la última semana; frío si hace más de 14 días que no hablamos, decide en más de 6 meses o no le alcanza; tibio el resto. Hablarle cada 2 días si es hot, 7 si es tibio, 30 si es frío. La propuesta vence a los 7 días.",
       tablero: tablero(contactos, actividad, ahora, minimo),
       alarmas: todasLasAlarmas(contactos, ahora, minimo, estados).map((a) => `[${a.nivel}] ${a.texto}`),
       contactos: contactos.map((c) => ({

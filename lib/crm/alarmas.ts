@@ -23,7 +23,7 @@ export const ultimoTrato = (c: Contacto) => c.ultimoContacto || c.creado;
 
 /**
  * La temperatura que sugiere el hub (la manual manda):
- * - Hot: está evaluando o negociando, o quiere decidir en menos de 2 meses, y hablamos en la última semana.
+ * - Hot: tiene una propuesta enviada, o quiere decidir en menos de 2 meses, y hablamos en la última semana.
  * - Frío: hace más de 14 días que no hablamos, decide en más de 6 meses, o el presupuesto no alcanza.
  * - Tibio: el resto.
  */
@@ -32,7 +32,7 @@ export function temperaturaSugerida(c: Contacto, hoy: string, precioMinimo: numb
   if (c.etapa === "Dormido") return "frio";
   const sinHablar = dias(ultimoTrato(c), hoy);
   if (sinHablar > 14 || c.plazo === "Más de 6 meses" || (precioMinimo != null && c.presupuestoUsd != null && c.presupuestoUsd < precioMinimo * 0.9)) return "frio";
-  if (sinHablar <= 7 && (c.etapa === "Evaluando" || c.etapa === "Negociando" || c.plazo === "Menos de 2 meses")) return "hot";
+  if (sinHablar <= 7 && (c.etapa === "Propuesta enviada" || c.plazo === "Menos de 2 meses")) return "hot";
   return "tibio";
 }
 
@@ -106,13 +106,13 @@ export function alarmasDe(c: Contacto, ahora: string, precioMinimo: number | nul
     poner("atencion", "sin-paso", `${quien} no tiene próximo paso: definí qué sigue y cuándo.`);
   }
   if (temp === "hot" && sinHablar > 3) poner("urgente", "hot", `${quien} está hot y hace ${sinHablar} días que no hablamos: llamá hoy.`);
-  if (c.etapa === "Evaluando") {
+  if (c.etapa === "Propuesta enviada") {
     const enEtapa = dias(c.entroEtapa, hoy);
     if (enEtapa >= 7) poner("urgente", "propuesta", `La propuesta de ${quien} venció (la tiene hace ${enEtapa} días): cerrá o renovala.`);
     else if (enEtapa >= 5) poner("hoy", "propuesta", `La propuesta de ${quien} vence en ${7 - enEtapa} ${7 - enEtapa === 1 ? "día" : "días"}: llamá para cerrar.`);
   }
   const plazo = PLAZO_ETAPA[c.etapa];
-  if (plazo != null && c.etapa !== "Evaluando" && dias(c.entroEtapa, hoy) > plazo) {
+  if (plazo != null && c.etapa !== "Propuesta enviada" && dias(c.entroEtapa, hoy) > plazo) {
     poner("atencion", "estancado", `${quien} lleva ${dias(c.entroEtapa, hoy)} días en "${c.etapa}" (lo normal es ${plazo}): cambiá la etapa o cerrá el contacto.`);
   }
   if (temp && !c.proximaFecha && sinHablar > CADENCIA[temp] && !a.some((x) => x.tipo === "hot")) {
@@ -145,7 +145,7 @@ export interface Tablero {
 }
 
 /** Probabilidad de venta por etapa, para el pronóstico. */
-export const PROBABILIDAD: Partial<Record<Etapa, number>> = { Contactado: 0.05, Interesado: 0.1, Evaluando: 0.4, Negociando: 0.6 };
+export const PROBABILIDAD: Partial<Record<Etapa, number>> = { Contactado: 0.05, Interesado: 0.1, "Propuesta enviada": 0.45 };
 
 export function tablero(contactos: Contacto[], actividad: Actividad[], ahora: string, precioMinimo: number | null = null): Tablero {
   const hoy = hoyBA(new Date(ahora));
@@ -181,7 +181,8 @@ export function tablero(contactos: Contacto[], actividad: Actividad[], ahora: st
     abiertos: contactos.filter(abierto).length,
     porEtapa,
     porTemperatura,
-    nuevosSemana: contactos.filter((c) => c.creado && dias(c.creado, hoy) <= 7).length,
+    // Los importados como Dormido (una base para nutrir) no cuentan como nuevos.
+    nuevosSemana: contactos.filter((c) => c.etapa !== "Dormido" && c.creado && dias(c.creado, hoy) <= 7).length,
     vendidos30: contactos.filter((c) => c.etapa === "Vendido" && dias(c.entroEtapa, hoy) <= 30).length,
     seguimientos: { vencidos, hoy: deHoy, semana },
     conversion: vendidos + porEtapa.Perdido ? vendidos / (vendidos + porEtapa.Perdido) : null,

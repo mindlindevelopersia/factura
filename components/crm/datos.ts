@@ -68,6 +68,13 @@ export function useCrm() {
     return r.importados;
   };
 
+  /** Importar una planilla de contactos: sin confirmar devuelve qué haría; confirmando, lo hace y recarga. */
+  const importarBase = async (planilla: string, confirmar: boolean) => {
+    const r = await leerJson<ResultadoImportarBase>(await fetch(`${base}/importar-base`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ planilla, confirmar }) }));
+    if (confirmar) await cargar();
+    return r;
+  };
+
   const mensajeIa = async (contactoId: string, indicacion: string) =>
     leerJson<MensajeSugerido>(await fetch(`${base}/mensaje`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: contactoId, indicacion }) }));
 
@@ -80,10 +87,21 @@ export function useCrm() {
   // Toda la base de la empresa (para la Base de datos con "toda la empresa").
   const todos = useMemo(() => datos?.contactos ?? [], [datos]);
 
-  return { datos, contactos, todos, precioMinimo, estados, error, cargando, recargar: cargar, crear, actualizar, importar, mensajeIa, proyecto: id };
+  return { datos, contactos, todos, precioMinimo, estados, error, cargando, recargar: cargar, crear, actualizar, importar, importarBase, mensajeIa, proyecto: id };
 }
 
 export type Crm = ReturnType<typeof useCrm>;
+
+export interface ResultadoImportarBase {
+  confirmado: boolean;
+  pestanias: { pestania: string; columnas: string[]; nuevos: number; yaEstaban: number; repetidos: number; sinNombre: number }[];
+  nuevos: number;
+  ejemplos: { nombre: string; mail: string; telefono: string }[];
+  yaEstaban: { nombre: string; existente: string; por: string }[];
+  totalYaEstaban: number;
+  repetidos: number;
+  completar: number;
+}
 
 export const usd = (n: number | null | undefined) => (n == null ? "—" : `US$ ${Math.round(n).toLocaleString("es-AR")}`);
 export const fechaCorta = (f: string | null | undefined) => (f ? `${f.slice(8, 10)}/${f.slice(5, 7)}${f.slice(0, 4) !== new Date().getFullYear().toString() ? `/${f.slice(2, 4)}` : ""}` : "—");

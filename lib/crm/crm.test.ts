@@ -47,6 +47,14 @@ const UNIDADES: UnidadDisponible[] = [
 ];
 
 describe("CRM: modelo", () => {
+  it("las etapas viejas (Evaluando, Negociando) pasan a Propuesta enviada", () => {
+    for (const vieja of ["Evaluando", "Negociando"]) {
+      const f = filaDeContacto(contacto());
+      f[8] = vieja;
+      expect(contactoDeFila(f).etapa).toBe("Propuesta enviada");
+    }
+  });
+
   it("una fila de la planilla y un contacto van y vuelven iguales", () => {
     const c = contacto({ unidades: ["2C", "1A"], temperaturaManual: "hot" });
     expect(contactoDeFila(filaDeContacto(c))).toEqual(c);
@@ -55,7 +63,7 @@ describe("CRM: modelo", () => {
   it("valida y al cambiar de etapa guarda cuándo entró; cerrar borra el próximo paso", () => {
     expect(validarContacto({ nombre: "" }, true)).toBe("Falta el nombre.");
     expect(validarContacto({ proximaFecha: "10/11" }, false)).toBe("Fecha inválida.");
-    const c = aplicarCambios(contacto(), { etapa: "Evaluando" }, AHORA);
+    const c = aplicarCambios(contacto(), { etapa: "Propuesta enviada" }, AHORA);
     expect(c.entroEtapa).toBe(AHORA);
     const v = aplicarCambios(contacto(), { etapa: "Vendido" }, AHORA);
     expect(v).toMatchObject({ proximoPaso: "", proximaFecha: null });
@@ -63,8 +71,8 @@ describe("CRM: modelo", () => {
 });
 
 describe("CRM: temperatura y alarmas", () => {
-  it("hot si evalúa y hablamos hace poco; frío si hace más de 14 días o no le alcanza", () => {
-    expect(temperaturaSugerida(contacto({ etapa: "Evaluando" }), HOY)).toBe("hot");
+  it("hot si tiene propuesta y hablamos hace poco; frío si hace más de 14 días o no le alcanza", () => {
+    expect(temperaturaSugerida(contacto({ etapa: "Propuesta enviada" }), HOY)).toBe("hot");
     expect(temperaturaSugerida(contacto({ ultimoContacto: "2026-10-20T12:00:00.000Z" }), HOY)).toBe("frio");
     expect(temperaturaSugerida(contacto({ presupuestoUsd: 60000 }), HOY, 91528)).toBe("frio");
     expect(temperaturaSugerida(contacto(), HOY)).toBe("tibio");
@@ -76,7 +84,7 @@ describe("CRM: temperatura y alarmas", () => {
     expect(tipos(contacto({ etapa: "Nuevo", ultimoContacto: null, proximaFecha: null, creado: "2026-11-10T10:00:00.000Z" }))).toEqual(["nuevo"]);
     expect(alarmasDe(contacto({ proximaFecha: "2026-11-07" }), AHORA)[0].texto).toBe("Hablale a Juana: Mandarle la propuesta era el 07/11 (hace 3 días).");
     expect(tipos(contacto({ proximaFecha: HOY }))).toEqual(["hoy"]);
-    expect(tipos(contacto({ etapa: "Evaluando", entroEtapa: "2026-11-04T12:00:00.000Z" }))).toContain("propuesta");
+    expect(tipos(contacto({ etapa: "Propuesta enviada", entroEtapa: "2026-11-04T12:00:00.000Z" }))).toContain("propuesta");
     expect(tipos(contacto({ proximaFecha: null }))).toContain("sin-paso");
     expect(tipos(contacto({ etapa: "Perdido", volverAContactar: "2026-11-01", motivoPerdida: "Precio" }))).toEqual(["recontactar"]);
     expect(tipos(contacto({ temperaturaManual: "hot", ultimoContacto: "2026-11-05T12:00:00.000Z" }))).toContain("hot");
@@ -145,5 +153,35 @@ describe("CRM: importar del Excel madre", () => {
     expect(r[0]).toMatchObject({ proximaFecha: "2026-11-04", ultimoContacto: "2026-10-20T12:00:00.000Z", notas: "Quiere 2 amb" });
     expect(r[1].notas).toMatch(/Importado como dormido/);
     expect(r[2].notas).toBe("");
+  });
+});
+
+import { claveTelefono, detectarColumnas, importarBase } from "./importarBase";
+describe("CRM: importar una base de contactos", () => {
+  const f = (...v: Celda["valor"][]): Celda[] => v.map((valor) => ({ valor, color: null }));
+  const FILAS = [
+    f("Base de inversores 2026"),
+    f("Nombre", "Apellido", "E-mail", "Celular", "Empresa", "Comentarios"),
+    f("Ana", "Gómez", "ANA@x.com", "+54 9 11 5555-1111", "Gómez SA", "Le interesa invertir"),
+    f("Ana", "Gómez", "ana@x.com", "", "", ""),
+    f("Juana", "Pérez", "", "011 15 5555-1234", "", ""),
+    f("Pedro", "Ríos", "pedro@x.com", "", "", ""),
+    f("", "", "sin@nombre.com", "", "", ""),
+  ];
+  it("reconoce las columnas por el título", () => {
+    expect(detectarColumnas(FILAS)?.campos).toEqual({ nombre: 0, apellido: 1, mail: 2, telefono: 3, empresa: 4, notas: 5 });
+    expect(claveTelefono("+54 9 11 5555-1234")).toBe(claveTelefono("011 15 5555-1234"));
+  });
+  it("saca duplicados (en la planilla y contra el CRM) y completa lo que falta", () => {
+    const existentes = [{ ...contacto(), telefono: "", mail: "" }, { ...contacto({ id: "c2", nombre: "Otra", mail: "pedro@x.com", telefono: "" }) }];
+    const r = importarBase(FILAS, existentes, AHORA);
+    expect(r.nuevos.map((c) => [c.nombre, c.etapa, c.origen, c.notas])).toEqual([["Ana Gómez", "Dormido", "Base de inversores", "Empresa: Gómez SA. Le interesa invertir"]]);
+    expect(r.repetidosEnPlanilla).toBe(1);
+    expect(r.yaEstaban).toEqual([
+      { nombre: "Juana Pérez", existente: "Juana Pérez", por: "nombre" },
+      { nombre: "Pedro Ríos", existente: "Otra", por: "mail" },
+    ]);
+    expect(r.completar).toEqual([{ id: "c1", nombre: "Juana Pérez", telefono: "011 15 5555-1234" }]);
+    expect(r.sinNombre).toBe(1);
   });
 });

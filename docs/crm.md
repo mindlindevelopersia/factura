@@ -11,11 +11,11 @@ Cada contacto abre una **ficha**: escribirle (WhatsApp con el mensaje armado; ma
 ## Reglas
 
 - **Ningún contacto abierto queda sin próximo paso con fecha** (al registrar, el hub lo pide).
-- Etapas: Nuevo → Contactado → Interesado → Evaluando (tiene propuesta; vence a los 7 días) → Negociando → Vendido; aparte, Perdido (con motivo y fecha para volver a contactar) y Dormido (novedades cada tanto). Sin "Visitó" ni "Reservado": Lerma es de pozo y no se suele reservar.
-- Plazos para la alarma de "estancado": Contactado 7 días, Interesado 14, Negociando 14.
-- **Temperatura** (no es etapa): hot si está evaluando o negociando (o decide en menos de 2 meses) y hablamos en la última semana; frío si hace más de 14 días que no hablamos, decide en más de 6 meses o el presupuesto no alcanza (menos del 90% de la unidad más barata); tibio el resto. Se puede poner a mano y manda la manual. Cadencia: hot cada 2 días, tibio 7, frío 30.
+- Etapas: Nuevo → Contactado → Interesado → Propuesta enviada (tiene una propuesta concreta; vence a los 7 días) → Vendido; aparte, Perdido (con motivo y fecha para volver a contactar) y Dormido (novedades cada tanto). Sin "Visitó" ni "Reservado": Lerma es de pozo y no se suele reservar.
+- Plazos para la alarma de "estancado": Contactado 7 días, Interesado 14 (Propuesta enviada tiene su propia alarma de vencimiento).
+- **Temperatura** (no es etapa): hot si tiene una propuesta enviada (o decide en menos de 2 meses) y hablamos en la última semana; frío si hace más de 14 días que no hablamos, decide en más de 6 meses o el presupuesto no alcanza (menos del 90% de la unidad más barata); tibio el resto. Se puede poner a mano y manda la manual. Cadencia: hot cada 2 días, tibio 7, frío 30.
 - Alarmas: nuevo sin contactar en 2 h; seguimiento vencido o de hoy; sin próximo paso; hot sin hablar hace más de 3 días; propuesta por vencer (día 5) o vencida (día 7); estancado; perdido para recontactar; dormido sin novedades hace 45 días; y la cadencia de su temperatura.
-- Pronóstico: presupuesto de cada abierto × probabilidad de su etapa (Contactado 5%, Interesado 10%, Evaluando 40%, Negociando 60%).
+- Pronóstico: presupuesto de cada abierto × probabilidad de su etapa (Contactado 5%, Interesado 10%, Propuesta enviada 45%).
 
 ## Cuando se vende
 
@@ -28,6 +28,14 @@ Cada contacto abre una **ficha**: escribirle (WhatsApp con el mensaje armado; ma
 En dos pestañas que el hub crea solo: "CRM Contactos" (una fila por contacto, se reescribe al cambiar) y "CRM Actividad" (una fila por llamada, mensaje, nota o cambio de etapa; solo se agregan). Van en la planilla de `CRM_SHEET_ID` o, si no está, en la de la cola (`COLA_SHEET_ID`), que la cuenta de servicio ya puede editar. Se pueden ver y editar en Sheets.
 
 La primera vez, el CRM ofrece **importar la pestaña "CRM" del Excel madre** (174 contactos): Sold → Vendido, Churn → Perdido (motivo "Sin dato"), Follow up → Interesado, Contactado → Contactado, Hot → Interesado hot (si se habló en el último mes), Cold y sin etapa → Dormido; los seguimientos abiertos sin contacto hace más de 4 meses entran como Dormido. Source: "Mati Mindlin" → Base propia; LinkedIn, Pauta; otro nombre → Referido por esa persona.
+
+## Importar una base de contactos
+
+En Base de datos, "Importar planilla": se pega el link de una planilla de Google (compartida como Lector con la cuenta de la app). Lee todas las pestañas que tengan una columna de nombre en las primeras filas y reconoce las columnas por el título (nombre, apellido, mail, teléfono/celular/WhatsApp, empresa, origen, referido, notas/comentarios, tipo, presupuesto). Primero muestra qué va a hacer; después importa:
+
+- Saca los duplicados dentro de la planilla y contra los contactos que ya están: por mail (cualquiera de los que tenga la celda), por teléfono (los últimos 8 dígitos, así "+54 9 11…" y "011 15…" son el mismo) o por nombre.
+- A los que ya estaban les completa el mail o el teléfono si les faltaba (sin pisar nada).
+- Los nuevos entran como **Dormido** (una base para nutrir, sin alarmas de "nuevo") y sin proyecto (se ven en todos). Lógica en `lib/crm/importarBase.ts`.
 
 ## Código
 
