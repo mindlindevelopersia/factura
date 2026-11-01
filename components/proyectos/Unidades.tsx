@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MODALIDADES, precioDepto, type Unidad } from "@/lib/proyectos/comercial";
 import { Icono } from "../Icono";
 import { BarraLectura } from "../finanzas/comun";
@@ -17,6 +17,11 @@ export function Unidades() {
   const id = useProyectoId();
   const [elegida, setElegida] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<Filtro>("todas");
+  // Desde el buscador (o un link): ?unidad=2C la abre.
+  useEffect(() => {
+    const u = new URLSearchParams(window.location.search).get("unidad");
+    if (u) setElegida(u);
+  }, []);
   const c = datos?.comercial;
   const conConflicto = useMemo(() => new Set((c?.supuestos ?? []).filter((s) => s.tipo !== "confirmado").map((s) => s.titulo.split(":")[0].trim())), [c]);
   const pisos = useMemo(() => {

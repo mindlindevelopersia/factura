@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { EtiquetaBeta } from "@/components/Beta";
 import { Icono } from "@/components/Icono";
+import { CajaBuscar } from "@/components/Buscador";
 import { DolarHoy } from "@/components/indicadores/Dolar";
 import { TarjetasModulos } from "@/components/TarjetasModulos";
 import { requireUser } from "@/lib/auth/session";
@@ -33,6 +34,7 @@ export default async function Inicio({
           <p>El dólar del día, cada proyecto con su administración, sus finanzas, su comercial y sus inversores, y lo que es de toda la empresa.</p>
         </div>
       </div>
+      <CajaBuscar />
       <DolarHoy />
       <h2 className="cac__titulo-seccion">Proyectos</h2>
       <ul className="tarjetas-modulos">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { Buscador } from "./Buscador";
 import { Icono } from "./Icono";
 import { Migas } from "./Migas";
 import { Navegacion } from "./Navegacion";
@@ -45,6 +46,7 @@ export function Hub({ children }: { children: ReactNode }) {
         {children}
       </div>
       <Oliver />
+      <Buscador />
     </div>
   );
 }
