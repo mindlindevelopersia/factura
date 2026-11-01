@@ -9,7 +9,7 @@
 
 import type { AjusteUnidad, OpcionesComercial } from "./proyectos/comercial";
 
-export type IconoArea = "producto" | "calendario" | "tareas" | "administracion" | "finanzas" | "inversores" | "indicadores" | "comercial" | "management" | "proyecto";
+export type IconoArea = "prefactibilidad" | "producto" | "calendario" | "tareas" | "administracion" | "finanzas" | "inversores" | "indicadores" | "comercial" | "management" | "proyecto";
 
 export interface Modulo {
   nombre: string;
@@ -146,6 +146,13 @@ const AREAS_DE_PROYECTO: { sub: string; nombre: string; descripcion: string; ico
     nombre: "Calendario",
     descripcion: "Todo lo que tiene fecha: cobros, pagos, leads, propuestas que vencen y la agenda.",
     icono: "calendario",
+    modulos: [],
+  },
+  {
+    sub: "prefactibilidad",
+    nombre: "Prefactibilidad",
+    descripcion: "La prefactibilidad del proyecto: lote, normativa y superficies construibles y vendibles (la misma que en HQ).",
+    icono: "prefactibilidad",
     modulos: [],
   },
   {
@@ -306,6 +313,14 @@ export const AREAS_EMPRESA: Area[] = [
     ],
   },
 ];
+
+AREAS_EMPRESA.push({
+  nombre: "Prefactibilidad",
+  descripcion: "El análisis de cada lote: normativa, superficies construibles (con el castigo de cada descubierta) y vendibles, con versiones. Cuando se compra, se asigna al proyecto.",
+  href: "/prefactibilidad",
+  icono: "prefactibilidad",
+  modulos: [],
+});
 
 AREAS_EMPRESA.push({
   nombre: "Producto",
