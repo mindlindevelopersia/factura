@@ -188,6 +188,13 @@ export function propuestaDeUrl(q: URLSearchParams, base: ParametrosPropuesta): P
   };
 }
 
+/** El nombre con que se guarda el PDF: "UF 2C - LERMA 439 - Virginia Alegre by Mindlin Developers". */
+export function nombreDelPdf(p: Pick<ParametrosPropuesta, "unidad" | "cliente">, proyecto: string): string {
+  // Sin caracteres que los sistemas no aceptan en un nombre de archivo.
+  const limpio = (t: string) => t.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+  return `${[p.unidad ? `UF ${limpio(p.unidad)}` : "", limpio(proyecto).toUpperCase(), limpio(p.cliente)].filter(Boolean).join(" - ")} by Mindlin Developers`;
+}
+
 /** Un resumen en una línea, para el historial del CRM. */
 export function resumenPropuesta(p: ParametrosPropuesta, r: Propuesta): string {
   const usd = (x: number) => `US$ ${Math.round(x).toLocaleString("es-AR")}`;

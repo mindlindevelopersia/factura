@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { nombreMes, sumarMeses } from "@/lib/finanzas/ingresos";
 import { IMAGENES, planoDe } from "@/lib/proyectos/planos";
-import { calcularPropuesta, parametrosIniciales, propuestaAUrl, propuestaDeUrl, resumenPropuesta, type ParametrosPropuesta, type Propuesta as CalculoPropuesta } from "@/lib/proyectos/propuesta";
+import { calcularPropuesta, nombreDelPdf, parametrosIniciales, propuestaAUrl, propuestaDeUrl, resumenPropuesta, type ParametrosPropuesta, type Propuesta as CalculoPropuesta } from "@/lib/proyectos/propuesta";
 import { proyecto as buscarProyecto } from "@/lib/modulos";
 import { Icono } from "../Icono";
 import { useDolarHoy } from "../indicadores/Dolar";
@@ -153,6 +153,17 @@ export function Propuesta() {
   const plano = u ? planoDe(id, u) : null;
   const poner = <K extends keyof ParametrosPropuesta>(k: K, v: ParametrosPropuesta[K]) => setP((x) => (x ? { ...x, [k]: v } : x));
   const link = p ? `${typeof window !== "undefined" ? window.location.origin : ""}${window.location.pathname}?${propuestaAUrl(p)}${contactoId ? `&contacto=${contactoId}` : ""}` : "";
+
+  // El nombre del PDF sale del título de la página: "UF 2C - LERMA 439 - Virginia Alegre by Mindlin Developers".
+  const titulo = p ? nombreDelPdf(p, proyecto?.nombre ?? id) : null;
+  useEffect(() => {
+    if (!titulo) return;
+    const antes = document.title;
+    document.title = titulo;
+    return () => {
+      document.title = antes;
+    };
+  }, [titulo]);
 
   async function registrar() {
     if (!p || !r || !contacto) return;
