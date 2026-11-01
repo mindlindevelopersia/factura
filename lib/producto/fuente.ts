@@ -3,6 +3,8 @@ import { CrmSinConfigurar } from "../crm/fuente";
 import { nuevoId } from "../crm/modelo";
 import { googleClient } from "../google/auth";
 import { PestaniaSimple } from "../google/pestania";
+import { actualizarTarea, leerTareas } from "../tareas/fuente";
+import { PROYECTO_PRODUCTO } from "../tareas/modelo";
 import { COLUMNAS_COMENTARIOS_IDEAS, COLUMNAS_IDEAS, comentarioIdeaDeFila, filaDeComentarioIdea, filaDeIdea, ideaDeFila, type ComentarioIdea, type Idea } from "./ideas";
 
 function pestanias() {
@@ -44,4 +46,27 @@ export async function comentarIdea(ideaId: string, usuario: string, texto: strin
   const c: ComentarioIdea = { ideaId, fecha: new Date().toISOString(), usuario, texto };
   await pestanias().comentarios.agregar(filaDeComentarioIdea(c));
   return c;
+}
+
+/**
+ * Un feature vuelve a Ideas: si salió de una idea, esa idea se reabre (sin feature); si se creó
+ * directo en Features, se arma una idea nueva con su título y descripción. El feature queda
+ * "Cancelado" (sale del tablero, pero no se borra: conserva sus comentarios). Deja un comentario
+ * en la idea con quién la volvió. null si el feature no existe o no es de Producto.
+ */
+export async function volverAIdeas(featureId: string, usuario: string): Promise<{ idea: Idea } | null> {
+  const feature = (await leerTareas()).tareas.find((t) => t.id === featureId && t.proyecto === PROYECTO_PRODUCTO);
+  if (!feature) return null;
+  const vinculada = (await leerIdeas()).ideas.find((i) => i.featureId === featureId);
+  let idea: Idea;
+  if (vinculada) {
+    const r = await actualizarIdea(vinculada.id, { estado: "Abierta", featureId: "" });
+    idea = r!.idea;
+  } else {
+    const texto = feature.descripcion.replace(/\n*\(De la idea de [^)]*\)\s*$/, "").trim();
+    idea = await crearIdea(feature.titulo, texto, feature.creo || usuario);
+  }
+  await actualizarTarea(featureId, { estado: "Cancelada" });
+  await comentarIdea(idea.id, usuario, `Volvió de Features (el feature "${feature.titulo}" quedó cancelado).`);
+  return { idea };
 }
