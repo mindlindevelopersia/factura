@@ -165,6 +165,20 @@ function FichaIdea({ idea, comentarios, usuario, cerrar, cambio }: { idea: Idea;
       setOcupado(false);
     }
   };
+  // Saca la idea de Features: se reabre y el feature queda cancelado (no se borra).
+  const volver = async () => {
+    if (!window.confirm("¿Volver esta idea a Ideas? El feature se cancela (sale del tablero, pero no se borra).")) return;
+    setOcupado(true);
+    setError(null);
+    try {
+      await leerJson(await fetch(`/api/producto/features/${idea.featureId}/a-ideas`, { method: "POST" }));
+      await cambio();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setOcupado(false);
+    }
+  };
   return (
     <div className="crm-ficha__fondo" onClick={cerrar}>
       <aside className="crm-ficha tarea-ficha" aria-label={`Idea: ${idea.titulo}`} onClick={(e) => e.stopPropagation()}>
@@ -217,6 +231,11 @@ function FichaIdea({ idea, comentarios, usuario, cerrar, cambio }: { idea: Idea;
                     <Link className="btn btn--borde btn--chico" href={`/producto/features?tarea=${idea.featureId}`}>
                       Ver el feature
                     </Link>
+                  )}
+                  {idea.featureId && (
+                    <button type="button" className="btn btn--texto btn--chico" disabled={ocupado} onClick={() => void volver()}>
+                      <Icono nombre="volver" size={14} /> Volver a Ideas
+                    </button>
                   )}
                   {(
                     <button type="button" className="btn btn--borde btn--chico" onClick={() => setEditando(true)}>

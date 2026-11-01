@@ -319,6 +319,20 @@ function FichaTarea({ h, tarea, cerrar, creada }: { h: Hook; tarea: Tarea | null
 
   const sinGuardar = tarea ? (["titulo", "descripcion", "tipo", "prioridad", "responsable", "vence", "hora", "relacion", "con", "contactoId", "motivoBloqueo", "proyecto"] as const).some((k) => (f[k] ?? "") !== (tarea[k] ?? "")) : true;
 
+  // Producto: el feature vuelve a Ideas (reabre la idea de la que salió, o crea una) y se cancela.
+  async function volverAIdeas() {
+    if (!tarea || !window.confirm("¿Volver este feature a Ideas? Sale del tablero (queda cancelado, no se borra) y la idea se reabre para seguir charlándola.")) return;
+    setGuardando(true);
+    setError(null);
+    try {
+      const { idea } = await leerJson<{ idea: { id: string } }>(await fetch(`/api/producto/features/${tarea.id}/a-ideas`, { method: "POST" }));
+      window.location.href = `/producto/ideas?idea=${idea.id}`;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setGuardando(false);
+    }
+  }
+
   async function guardar() {
     setGuardando(true);
     setError(null);
@@ -468,6 +482,11 @@ function FichaTarea({ h, tarea, cerrar, creada }: { h: Hook; tarea: Tarea | null
               {tarea && abierta(tarea) && (
                 <button type="button" className="btn btn--borde btn--chico" onClick={() => void guardarYa({ estado: "Hecha" })}>
                   <Icono nombre="check" size={14} /> Marcar hecha
+                </button>
+              )}
+              {tarea && h.modo === "producto" && tarea.estado !== "Cancelada" && (
+                <button type="button" className="btn btn--texto btn--chico" disabled={guardando} onClick={() => void volverAIdeas()}>
+                  <Icono nombre="volver" size={14} /> Volver a Ideas
                 </button>
               )}
             </div>
