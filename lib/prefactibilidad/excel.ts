@@ -43,7 +43,8 @@ export async function exportarPrefactibilidad(p: Prefactibilidad, extra: { uva: 
   const nv = d.normativa;
   const datosLote: [string, Celda][] = [
     ["Dirección", d.direccion],
-    ["Ciudad", d.ciudad],
+    ["Municipio", d.ciudad],
+    ["Barrio", d.barrio],
     ["Fecha", d.fecha],
     ["Distrito", nv.distrito],
     ["Tipología edilicia", nv.tipologia],

@@ -17,6 +17,7 @@ import {
   type Version,
 } from "@/lib/prefactibilidad/modelo";
 import { calcularPlusvalia, formatear, type DatosPlusvalia } from "@/lib/prefactibilidad/plusvalia";
+import { BARRIOS_PRINCIPALES, MUNICIPIOS, OTROS_BARRIOS } from "@/lib/prefactibilidad/barrios";
 import { useDolarHoy } from "../indicadores/Dolar";
 import { leerJson } from "../formato";
 import { Icono } from "../Icono";
@@ -371,6 +372,12 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
         ))}
       </nav>
 
+      {pestania === "plusvalia" && d.ciudad !== "CABA" && (
+        <section className="card pf__vacia">
+          <h2>Plusvalía en {d.ciudad}</h2>
+          <p>La cuenta de abajo es la de CABA (volumétrica, Ley 6062). En {d.ciudad} la lógica es otra (por FOS y densidad): se arma cuando pases el Excel de {d.ciudad}.</p>
+        </section>
+      )}
       {pestania === "plusvalia" && (
         <Plusvalia
           d={d}
@@ -444,7 +451,17 @@ function Editor({ id, volver, enProyecto }: { id: string; volver?: () => void; e
         <h2>Lote y normativa</h2>
         <div className="pf__campos">
           <Texto etiqueta="Dirección" valor={d.direccion} poner={(v) => poner({ direccion: v })} />
-          <Texto etiqueta="Ciudad" valor={d.ciudad} poner={(v) => poner({ ciudad: v })} />
+          <label className="campo">
+            Municipio
+            <select value={d.ciudad} onChange={(e) => poner({ ciudad: e.target.value })}>
+              {[...new Set([...MUNICIPIOS, d.ciudad].filter(Boolean))].map((m) => (
+                <option key={m} value={m}>
+                  {m === "CABA" ? "CABA (Ciudad de Buenos Aires)" : m}
+                </option>
+              ))}
+            </select>
+          </label>
+          {d.ciudad === "CABA" && <Barrio valor={d.barrio} poner={(v) => poner({ barrio: v })} />}
           <label className="campo">
             Fecha
             <input type="date" value={d.fecha} onChange={(e) => poner({ fecha: e.target.value })} />
@@ -1027,5 +1044,39 @@ function Plusvalia({
         </section>
       )}
     </>
+  );
+}
+
+/** El barrio: los principales arriba y, con "Ver más barrios", el resto de CABA en orden alfabético. */
+function Barrio({ valor, poner }: { valor: string; poner: (v: string) => void }) {
+  const [todos, setTodos] = useState(!!valor && !BARRIOS_PRINCIPALES.includes(valor));
+  return (
+    <label className="campo">
+      Barrio
+      <select
+        value={valor}
+        onChange={(e) => {
+          if (e.target.value === "__mas") return setTodos(true);
+          poner(e.target.value);
+        }}
+      >
+        <option value="">Elegí el barrio</option>
+        <optgroup label="Principales">
+          {BARRIOS_PRINCIPALES.map((b) => (
+            <option key={b}>{b}</option>
+          ))}
+        </optgroup>
+        {todos ? (
+          <optgroup label="Otros barrios">
+            {OTROS_BARRIOS.map((b) => (
+              <option key={b}>{b}</option>
+            ))}
+          </optgroup>
+        ) : (
+          <option value="__mas">Ver más barrios…</option>
+        )}
+        {valor && !BARRIOS_PRINCIPALES.includes(valor) && !OTROS_BARRIOS.includes(valor) && <option>{valor}</option>}
+      </select>
+    </label>
   );
 }

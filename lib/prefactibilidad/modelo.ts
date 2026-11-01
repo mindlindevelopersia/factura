@@ -63,7 +63,9 @@ export interface Normativa {
 
 export interface DatosPrefactibilidad {
   direccion: string;
+  /** El municipio ("CABA", "La Plata"): de él depende la lógica de las fórmulas. */
   ciudad: string;
+  barrio: string;
   fecha: string;
   normativa: Normativa;
   terrenos: Terreno[];
@@ -122,6 +124,7 @@ export const NORMATIVA_VACIA: Normativa = {
 export const datosVacios = (hoy: string): DatosPrefactibilidad => ({
   direccion: "",
   ciudad: "CABA",
+  barrio: "",
   fecha: hoy,
   normativa: { ...NORMATIVA_VACIA },
   terrenos: [{ nombre: "Terreno 1", frente: 0, fondo: 0 }],
@@ -153,6 +156,7 @@ export function limpiarDatos(x: unknown, hoy: string): DatosPrefactibilidad {
   return {
     direccion: t(o.direccion),
     ciudad: t(o.ciudad, 80) || base.ciudad,
+    barrio: t(o.barrio, 80),
     fecha: /^\d{4}-\d{2}-\d{2}$/.test(String(o.fecha)) ? String(o.fecha) : hoy,
     normativa: {
       distrito: t(nv.distrito, 80),
