@@ -69,3 +69,7 @@ Las cuentas se cruzan con el machete de "Ventas" del Excel madre y con el Flujo 
 - **Avisa** lo que no coincide: costo estimado (sumando las cuentas de la unidad, como la 4D), nombre, anticipo al boleto contra los anticipos cargados, mes base CAC, y en Ventas, blanco + negro contra el monto al boleto.
 - Lo que ya explica una corrección del proyecto (`ajustes` en `lib/modulos.ts`, por ejemplo el mutuo de la 4C) no se avisa.
 - Si el Excel madre no se puede leer, las cuentas salen igual, sin el cruce.
+
+### Las fichas de cada operación (debajo de la tabla de Ventas)
+
+Debajo de la tabla de "Ventas" hay una ficha por operación (nombre, "Base cac MAYO 2025", unidad funcional y el cuadro "Concepto | USD | ARS" con valor estimado y aportes blanco y negro). Se leen en `lib/proyectos/fichas.ts` (hasta "CAIDOS:") y se cruzan con cada cuenta: misma unidad y nombre o costo; si no, nombre y costo en otra unidad; si no, el mismo costo exacto. Completan costo en dólares y en pesos, formal, informal y mes base cuando faltan, y avisan lo que no coincide y las fichas con la unidad mal puesta (por ejemplo, la de la PB dice 1A).

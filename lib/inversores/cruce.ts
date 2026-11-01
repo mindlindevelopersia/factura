@@ -11,6 +11,7 @@
  */
 
 import { codigoDeVentas, type VentaMachete } from "../proyectos/comercial";
+import type { FichaVenta } from "../proyectos/fichas";
 import { parecido, type AvisoCuenta, type Cuenta, type CuentasCorrientes } from "./cuentas";
 
 const usd = (n: number) => `US$ ${Math.round(n).toLocaleString("es-AR")}`;
@@ -20,7 +21,25 @@ const nombreMesBase = (m: string) => {
   return `${mm}/${a}`;
 };
 
-export function cruzarCuentas(cc: CuentasCorrientes, ventas: VentaMachete[] | null, explicadas: Set<string> = new Set()): CuentasCorrientes {
+/**
+ * La ficha de Ventas de una unidad. Algunas fichas tienen mal la unidad (una copiada de otra), así que:
+ * 1. Misma unidad y (nombre parecido o mismo costo).
+ * 2. Nombre parecido y mismo costo, en otra unidad (o sin unidad).
+ * 3. Mismo costo exacto, si hay una sola.
+ */
+function fichaDe(unidad: string, grupo: Cuenta[], fichas: FichaVenta[]): FichaVenta | null {
+  const costo = grupo.reduce((s, c) => s + (c.precioUsd ?? 0), 0) || null;
+  const nombre = (f: FichaVenta) => grupo.some((c) => parecido(f.nombre, c.inversor) > 0 || parecido(c.inversor, f.nombre) > 0);
+  const mismoCosto = (f: FichaVenta) => costo != null && f.costoUsd != null && !distinto(f.costoUsd, costo);
+  const misma = fichas.find((f) => f.unidad === unidad && (nombre(f) || mismoCosto(f)));
+  if (misma) return misma;
+  const otra = fichas.find((f) => nombre(f) && mismoCosto(f));
+  if (otra) return otra;
+  const exactas = costo != null ? fichas.filter((f) => f.costoUsd != null && Math.abs(f.costoUsd - costo) < 1) : [];
+  return exactas.length === 1 ? exactas[0] : null;
+}
+
+export function cruzarCuentas(cc: CuentasCorrientes, ventas: VentaMachete[] | null, explicadas: Set<string> = new Set(), fichas: FichaVenta[] | null = null): CuentasCorrientes {
   const porCodigo = new Map<string, VentaMachete>();
   for (const v of ventas ?? []) {
     const cod = codigoDeVentas(v.unidad);
@@ -34,6 +53,66 @@ export function cruzarCuentas(cc: CuentasCorrientes, ventas: VentaMachete[] | nu
     const v = porCodigo.get(unidad);
     const fila = v ? `Ventas, fila ${v.fila}` : "";
     const avisar = (c: Cuenta, a: Omit<AvisoCuenta, "filas">) => c.avisos.push({ ...a, filas: [] });
+
+    // La ficha de la operación (debajo de la tabla de Ventas): completa y valida costo, pesos, formal,
+    // informal y mes base.
+    const ficha = fichas ? fichaDe(unidad, grupo, fichas) : null;
+    if (ficha) {
+      const enFicha = `ficha de Ventas, fila ${ficha.fila}`;
+      if (ficha.unidad && ficha.unidad !== unidad) {
+        for (const c of grupo)
+          avisar(c, {
+            tipo: "cruce",
+            titulo: "La ficha de Ventas tiene otra unidad",
+            detalle: `La ficha "${ficha.nombre}" (${enFicha}) dice unidad ${ficha.unidad}, pero por ${
+              grupo.some((c) => parecido(ficha.nombre, c.inversor) > 0) ? "el nombre y el costo" : "el costo"
+            } (${usd(ficha.costoUsd ?? 0)}) es de la ${unidad}.`,
+          });
+      }
+      const sola = grupo.length === 1 ? grupo[0] : null;
+      const completados: string[] = [];
+      if (sola) {
+        if (sola.precioUsd == null && ficha.costoUsd != null) {
+          sola.precioUsd = ficha.costoUsd;
+          completados.push(`costo ${usd(ficha.costoUsd)}`);
+        }
+        if (sola.precioArs == null && ficha.costoArs != null) {
+          sola.precioArs = ficha.costoArs;
+          completados.push(`costo en pesos $ ${Math.round(ficha.costoArs).toLocaleString("es-AR")}`);
+        }
+        if (sola.formalUsd == null && ficha.formalUsd != null) {
+          sola.formalUsd = ficha.formalUsd;
+          completados.push(`formal ${usd(ficha.formalUsd)}`);
+        }
+        if (sola.informalUsd == null && ficha.informalUsd != null) {
+          sola.informalUsd = ficha.informalUsd;
+          completados.push(`informal ${usd(ficha.informalUsd)}`);
+        }
+        if (!sola.mesBaseCac && ficha.mesBase) {
+          sola.mesBaseCac = ficha.mesBase;
+          completados.push(`mes base CAC ${nombreMesBase(ficha.mesBase)}`);
+        }
+        if (completados.length) {
+          avisar(sola, { tipo: "completado", titulo: "Datos tomados de la ficha de Ventas", detalle: `No están en "Pagos por Inversor": ${completados.join(", ")} (${enFicha}).` });
+        }
+      }
+      if (!explicadas.has(unidad)) {
+        const diferencias: string[] = [];
+        const suma = grupo.reduce((s, c) => s + (c.precioUsd ?? 0), 0);
+        if (ficha.costoUsd != null && suma && distinto(suma, ficha.costoUsd)) diferencias.push(`costo ${usd(ficha.costoUsd)} en la ficha y ${usd(suma)} en "Pagos por Inversor"`);
+        if (sola && ficha.costoArs != null && sola.precioArs != null && distinto(sola.precioArs, ficha.costoArs)) {
+          diferencias.push(`costo en pesos $ ${Math.round(ficha.costoArs).toLocaleString("es-AR")} en la ficha y $ ${Math.round(sola.precioArs).toLocaleString("es-AR")} en "Pagos por Inversor"`);
+        }
+        if (sola && ficha.formalUsd != null && sola.formalUsd != null && distinto(sola.formalUsd, ficha.formalUsd)) diferencias.push(`formal ${usd(ficha.formalUsd)} y ${usd(sola.formalUsd)}`);
+        if (sola && ficha.informalUsd != null && sola.informalUsd != null && distinto(sola.informalUsd, ficha.informalUsd)) diferencias.push(`informal ${usd(ficha.informalUsd)} y ${usd(sola.informalUsd)}`);
+        for (const c of grupo)
+          if (ficha.mesBase && c.mesBaseCac && c.mesBaseCac !== ficha.mesBase && !completados.length)
+            diferencias.push(`mes base CAC ${nombreMesBase(ficha.mesBase)} en la ficha y ${nombreMesBase(c.mesBaseCac)} en "Pagos por Inversor"${grupo.length > 1 ? ` (${c.inversor})` : ""}`);
+        if (diferencias.length) {
+          for (const c of grupo) avisar(c, { tipo: "cruce", titulo: "No coincide con la ficha de Ventas", detalle: `${[...new Set(diferencias)].join("; ")} (${enFicha}).` });
+        }
+      }
+    }
 
     // Mes base CAC: si falta en "Pagos por Inversor", del Flujo; si están los dos y no coinciden, aviso.
     for (const c of grupo) {
@@ -74,8 +153,9 @@ export function cruzarCuentas(cc: CuentasCorrientes, ventas: VentaMachete[] | nu
       }
     }
 
-    // Nombre: que alguna palabra coincida.
-    if (!grupo.some((c) => parecido(v.nombre, c.inversor) > 0 || parecido(c.inversor, v.nombre) > 0)) {
+    // Nombre: que alguna palabra coincida (con el machete o con la ficha de la operación).
+    const nombres = [v.nombre, ficha?.nombre].filter((x): x is string => !!x);
+    if (!grupo.some((c) => nombres.some((n) => parecido(n, c.inversor) > 0 || parecido(c.inversor, n) > 0))) {
       for (const c of grupo)
         avisar(c, {
           tipo: "cruce",
