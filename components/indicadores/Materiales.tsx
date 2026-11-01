@@ -130,7 +130,7 @@ function FilaMaterial({ m, abierto, alternar }: { m: AnalisisMaterial; abierto: 
             <p className="alarma__motivo">{m.motivo}</p>
             <div className="material__graficos">
               {m.usd && <Historia titulo="En dólares blue" medida={m.usd} formato={(v) => `US$ ${v.toLocaleString("es-AR", { maximumFractionDigits: 2 })}`} color="#1baf7a" />}
-              {m.real && <Historia titulo={`A valores de hoy (por CAC)`} medida={m.real} formato={(v) => `$ ${Math.round(v).toLocaleString("es-AR")}`} color="#2a78d6" />}
+              {m.real && <Historia titulo={`A valores de hoy (por CAC)`} medida={m.real} formato={(v) => `$ ${Math.round(v).toLocaleString("es-AR")}`} color="#006dbb" />}
             </div>
           </td>
         </tr>

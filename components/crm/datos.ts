@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { EstadoUnidadCrm, UnidadDisponible } from "@/lib/crm/alarmas";
-import type { Actividad, CambiosContacto, Contacto } from "@/lib/crm/modelo";
+import { esDelProyecto, type Actividad, type CambiosContacto, type Contacto } from "@/lib/crm/modelo";
 import type { MensajeSugerido } from "@/lib/crm/mensajes";
 import { leerJson } from "../formato";
 import { useProyectoId } from "../proyectos/datos";
@@ -72,12 +72,15 @@ export function useCrm() {
     leerJson<MensajeSugerido>(await fetch(`${base}/mensaje`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: contactoId, indicacion }) }));
 
   // Los contactos de este proyecto (los que no tienen proyecto, también).
-  const contactos = useMemo(() => (datos?.contactos ?? []).filter((c) => !c.proyecto || c.proyecto === id), [datos, id]);
+  const contactos = useMemo(() => (datos?.contactos ?? []).filter((c) => esDelProyecto(c, id)), [datos, id]);
   const precioMinimo = useMemo(() => (datos?.unidades.length ? Math.min(...datos.unidades.map((u) => u.precioUsd)) : null), [datos]);
 
   const estados = useMemo(() => datos?.estados ?? [], [datos]);
 
-  return { datos, contactos, precioMinimo, estados, error, cargando, recargar: cargar, crear, actualizar, importar, mensajeIa, proyecto: id };
+  // Toda la base de la empresa (para la Base de datos con "toda la empresa").
+  const todos = useMemo(() => datos?.contactos ?? [], [datos]);
+
+  return { datos, contactos, todos, precioMinimo, estados, error, cargando, recargar: cargar, crear, actualizar, importar, mensajeIa, proyecto: id };
 }
 
 export type Crm = ReturnType<typeof useCrm>;

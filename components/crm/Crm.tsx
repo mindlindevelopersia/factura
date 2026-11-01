@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 import { alarmasDe, dias, hoyBA, tablero, temperatura, todasLasAlarmas, ultimoTrato, type Alarma } from "@/lib/crm/alarmas";
 import { abierto, DESCRIPCION_ETAPA, ETAPAS, ETAPAS_ABIERTAS, NOMBRE_TEMPERATURA, ORIGENES, TEMPERATURAS, type Contacto, type Etapa } from "@/lib/crm/modelo";
+import { proyecto as buscarProyecto } from "@/lib/modulos";
 import { Icono } from "../Icono";
+
+const proyectoNombre = (id: string) => buscarProyecto(id)?.nombre ?? id;
 import { useBaseProyecto } from "../proyecto";
 import { ChipTemperatura, Ficha } from "./Ficha";
 import { fechaCorta, useCrm, usd, type Crm } from "./datos";
@@ -357,9 +360,10 @@ export function CrmContactos() {
   const [temp, setTemp] = useState("");
   const [origen, setOrigen] = useState("");
   const [nuevo, setNuevo] = useState(false);
+  const [empresa, setEmpresa] = useState(false);
   const hoy = crm.datos ? hoyBA(new Date(crm.datos.ahora)) : "";
   const q = buscar.trim().toLowerCase();
-  const lista = crm.contactos
+  const lista = (empresa ? crm.todos : crm.contactos)
     .filter((c) => !q || [c.nombre, c.mail, c.telefono, c.referido, c.notas].some((x) => x.toLowerCase().includes(q)))
     .filter((c) => !etapa || c.etapa === etapa)
     .filter((c) => !temp || temperatura(c, hoy, crm.precioMinimo) === temp)
@@ -391,6 +395,9 @@ export function CrmContactos() {
               </option>
             ))}
           </select>
+          <label className="crm__check">
+            <input type="checkbox" checked={empresa} onChange={(e) => setEmpresa(e.target.checked)} /> Toda la empresa ({crm.todos.length})
+          </label>
           <select value={origen} onChange={(e) => setOrigen(e.target.value)} aria-label="Origen">
             <option value="">Todos los orígenes</option>
             {[...new Set([...ORIGENES, ...crm.contactos.map((c) => c.origen).filter(Boolean)])].map((o) => (
@@ -420,7 +427,7 @@ export function CrmContactos() {
                   </td>
                   <td data-etiqueta="Etapa">
                     <span className={`crm-etapa crm-etapa--${c.etapa.toLowerCase()}`}>{c.etapa}</span> <ChipTemperatura t={temperatura(c, hoy, crm.precioMinimo)} manual={!!c.temperaturaManual} />
-                    <span className="tabla__sub">{[c.origen, c.referido].filter(Boolean).join(" · ")}</span>
+                    <span className="tabla__sub">{[c.origen, c.referido, empresa && c.proyectos.length ? c.proyectos.map((p) => proyectoNombre(p)).join(", ") : null].filter(Boolean).join(" · ")}</span>
                   </td>
                   <td data-etiqueta="Próximo paso">
                     {c.proximaFecha ? <span className={c.proximaFecha < hoy ? "ingresos__vencido" : undefined}>{fechaCorta(c.proximaFecha)}</span> : "—"}

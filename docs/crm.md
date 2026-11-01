@@ -1,6 +1,6 @@
 # CRM (Comercial)
 
-El CRM de ventas: contactos de toda la empresa, cada uno con el proyecto que le interesa. Tres vistas dentro de Comercial → CRM:
+El CRM de ventas: una base de contactos de toda la empresa; cada contacto puede estar en uno o varios proyectos (se marcan en su ficha). En el CRM de un proyecto se ven los de ese proyecto y los que no tienen ninguno; en Base de datos, "Toda la empresa" muestra todos. Tres vistas dentro de Comercial → CRM:
 
 - **Dashboard**: "Hablale a…" (las alarmas, de la más urgente a la menos), lo que vence esta semana, los números (para hablar hoy, abiertos por temperatura, nuevos, pronóstico), por etapa, de dónde vienen y por qué se pierden.
 - **Embudo**: "+ Nuevo lead" (con la etapa en la que entra) y una columna por etapa; se arrastra una tarjeta para cambiarla de etapa (a Vendido o Perdido se pasa desde la ficha, con el motivo).

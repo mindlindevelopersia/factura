@@ -42,8 +42,8 @@ export type TipoActividad = (typeof TIPOS_ACTIVIDAD)[number];
 
 export interface Contacto {
   id: string;
-  /** "lerma-439": el proyecto que le interesa. */
-  proyecto: string;
+  /** Los proyectos que le interesan ("lerma-439", "guemes-4676"): un contacto puede estar en varios. Vacío: de la empresa, sin proyecto. */
+  proyectos: string[];
   nombre: string;
   telefono: string;
   mail: string;
@@ -91,7 +91,7 @@ export interface Actividad {
 
 export const COLUMNAS_CONTACTOS = [
   "ID",
-  "Proyecto",
+  "Proyectos",
   "Nombre",
   "Teléfono",
   "Mail",
@@ -133,7 +133,10 @@ export function contactoDeFila(f: string[]): Contacto {
   const v = (i: number) => (f[i] ?? "").trim();
   return {
     id: v(0),
-    proyecto: v(1),
+    proyectos: v(1)
+      .split(/[,;]+/)
+      .map((x) => x.trim())
+      .filter(Boolean),
     nombre: v(2),
     telefono: v(3),
     mail: v(4),
@@ -169,7 +172,7 @@ export function contactoDeFila(f: string[]): Contacto {
 export function filaDeContacto(c: Contacto): string[] {
   return [
     c.id,
-    c.proyecto,
+    c.proyectos.join(", "),
     c.nombre,
     c.telefono,
     c.mail,
@@ -241,5 +244,8 @@ export function aplicarCambios(c: Contacto, cambios: CambiosContacto, ahora: str
 export function nuevoId(): string {
   return `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }
+
+/** Si el contacto es de ese proyecto (los que no tienen proyecto se ven en todos). */
+export const esDelProyecto = (c: Pick<Contacto, "proyectos">, id: string) => !c.proyectos.length || c.proyectos.includes(id);
 
 export const abierto = (c: Pick<Contacto, "etapa">) => ETAPAS_ABIERTAS.includes(c.etapa);

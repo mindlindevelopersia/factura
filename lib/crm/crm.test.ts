@@ -9,7 +9,7 @@ const AHORA = "2026-11-10T15:00:00.000Z"; // 12 h en Buenos Aires
 const HOY = "2026-11-10";
 const contacto = (x: Partial<Contacto> = {}): Contacto => ({
   id: "c1",
-  proyecto: "lerma-439",
+  proyectos: ["lerma-439"],
   nombre: "Juana Pérez",
   telefono: "11 5555-1234",
   mail: "juana@x.com",

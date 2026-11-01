@@ -31,7 +31,7 @@ export function usePanorama() {
 
 /** Un color fijo por serie: el color sigue a la serie, no a su posición. */
 export const COLOR_SERIE: Record<string, string> = {
-  cac: "#2a78d6",
+  cac: "#006dbb",
   ipc: "#eb6834",
   blue: "#1baf7a",
   oficial: "#eda100",

@@ -73,7 +73,7 @@ export function importarCrm(filas: Celda[][], existentes: Pick<Contacto, "nombre
     const situacion = String(f[7]?.valor ?? "").trim();
     nuevos.push({
       id: nuevoId() + r.toString(36),
-      proyecto,
+      proyectos: [proyecto],
       nombre,
       telefono: "",
       mail: String(f[1]?.valor ?? "").trim(),

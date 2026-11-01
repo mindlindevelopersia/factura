@@ -51,7 +51,7 @@ export default async function Inicio({
                 <Icono nombre="flecha" size={18} className="tarjeta-modulo__flecha" />
               </Link>
             ) : (
-              <div className="tarjeta-modulo tarjeta-modulo--bloqueada" aria-disabled="true">
+              <Link href={rutaProyecto(p.id)} className="tarjeta-modulo tarjeta-modulo--bloqueada">
                 <span className="tarjeta-modulo__icono">
                   <Icono nombre="proyecto" size={22} />
                 </span>
@@ -59,10 +59,11 @@ export default async function Inicio({
                   <strong>
                     {p.nombre} <EtiquetaBeta />
                   </strong>
-                  <span>{p.descripcion}: todavía no se puede entrar.</span>
+                  <span>{p.descripcion}: mirá qué falta para abrirlo.</span>
                   <span className="tarjeta-modulo__lista">{p.vehiculo}</span>
                 </span>
-              </div>
+                <Icono nombre="flecha" size={18} className="tarjeta-modulo__flecha" />
+              </Link>
             )}
           </li>
         ))}
