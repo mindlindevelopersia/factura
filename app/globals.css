@@ -4427,3 +4427,74 @@ h1 .etiqueta-beta {
   font-weight: 400;
   color: var(--texto-suave);
 }
+
+/* Migas: volver un nivel y el camino hasta la página. */
+.migas {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 1600px;
+  margin: auto;
+  padding: 22px 32px 0;
+  font-size: 13px;
+}
+.migas + .app-main {
+  padding-top: 16px;
+}
+.migas__volver {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--blanco);
+  color: var(--texto);
+}
+.migas__volver:hover {
+  border-color: var(--negro);
+}
+.migas ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.migas li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--texto-suave);
+}
+.migas li + li::before {
+  content: "›";
+  color: var(--texto-suave);
+}
+.migas a {
+  color: var(--texto-suave);
+  text-decoration: none;
+}
+.migas a:hover {
+  color: var(--negro);
+  text-decoration: underline;
+}
+.migas [aria-current="page"] {
+  color: var(--texto);
+  font-weight: 700;
+}
+@media (max-width: 1100px) {
+  .migas {
+    padding: 18px 20px 0;
+  }
+}
+@media (max-width: 650px) {
+  .migas {
+    padding: 14px 16px 0;
+  }
+}
+.migas + .app-main > .aviso-beta:first-child {
+  margin-top: 0;
+}

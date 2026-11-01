@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { Icono } from "./Icono";
+import { Migas } from "./Migas";
 import { Navegacion } from "./Navegacion";
 
 const CLAVE = "hub-menu-cerrado";
@@ -38,7 +39,10 @@ export function Hub({ children }: { children: ReactNode }) {
           }
         />
       )}
-      <div className="hub__contenido">{children}</div>
+      <div className="hub__contenido">
+        <Migas />
+        {children}
+      </div>
     </div>
   );
 }
