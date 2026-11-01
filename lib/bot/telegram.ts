@@ -33,9 +33,19 @@ export async function atenderConAsistente(o: { s: Servicios; chat: number; email
 }
 
 /** Lo que se le dice a la persona cuando algo falla (el detalle técnico queda en el log). */
-export function motivoAmable(e: unknown): string {
-  if (e instanceof Anthropic.RateLimitError) return "la IA está con mucha demanda. Probá de nuevo en un minuto.";
-  if (e instanceof Anthropic.AuthenticationError) return "la clave de la IA no anda (revisá ANTHROPIC_API_KEY en Vercel).";
-  if (e instanceof Anthropic.APIError) return "la IA no respondió bien. Probá de nuevo en un rato; si sigue, avisale a quien mantiene el hub.";
-  return e instanceof Error && e.message.length < 200 ? e.message : "algo falló. Probá de nuevo en un rato.";
+export function motivoAmable(e: unknown, conDetalle = false): string {
+  const detalle = conDetalle ? `\n\nDetalle (solo lo ve el super admin): ${detalleTecnico(e)}` : "";
+  if (e instanceof Anthropic.RateLimitError) return `la IA está con mucha demanda. Probá de nuevo en un minuto.${detalle}`;
+  if (e instanceof Anthropic.AuthenticationError) return `la clave de la IA no anda (revisá ANTHROPIC_API_KEY en Vercel).${detalle}`;
+  if (e instanceof Anthropic.APIError) return `la IA no respondió bien. Probá de nuevo en un rato; si sigue, avisale a quien mantiene el hub.${detalle}`;
+  return e instanceof Error && e.message.length < 200 ? e.message : `algo falló. Probá de nuevo en un rato.${detalle}`;
+}
+
+/** El motivo técnico en una línea (el mensaje de la API, sin el JSON entero). */
+export function detalleTecnico(e: unknown): string {
+  if (e instanceof Anthropic.APIError) {
+    const cuerpo = e.error as { error?: { message?: string; type?: string } } | undefined;
+    return `${e.status ?? ""} ${cuerpo?.error?.type ?? ""}: ${cuerpo?.error?.message ?? e.message}`.trim().slice(0, 400);
+  }
+  return (e instanceof Error ? e.message : String(e)).slice(0, 400);
 }
