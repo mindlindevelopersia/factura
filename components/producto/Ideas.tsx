@@ -6,6 +6,7 @@ import type { ComentarioIdea, EstadoIdea, Idea } from "@/lib/producto/ideas";
 import { IDEAS_SUGERIDAS, type IdeaSugerida } from "@/lib/producto/sugeridas";
 import { areaDeTag, esDelArea, GRUPOS_TAGS, SEP_TAG } from "@/lib/producto/tags";
 import { leerJson } from "../formato";
+import { ConDictado } from "../Dictado";
 import { Icono } from "../Icono";
 import { CampoMenciones, ConMenciones } from "../Menciones";
 
@@ -150,7 +151,9 @@ function NuevaIdea({ listo }: { listo: (i: Idea) => void }) {
     >
       <label className="campo">
         Título
-        <input value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ej.: módulo de compras y presupuestos" autoFocus />
+        <ConDictado linea valor={titulo} onCambio={setTitulo}>
+          <input value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ej.: módulo de compras y presupuestos" autoFocus />
+        </ConDictado>
       </label>
       <label className="campo">
         Descripción

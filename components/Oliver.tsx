@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { BotonDictar } from "./Dictado";
 import { Icono } from "./Icono";
 import { camino } from "./Migas";
 
@@ -189,6 +190,7 @@ export function Oliver() {
             }
           }}
         />
+        <BotonDictar valor={texto} onCambio={setTexto} className="dictar--oliver" />
         <button type="submit" className="btn btn--primario btn--chico" disabled={pensando || !texto.trim()} aria-label="Enviar">
           <Icono nombre="flecha" size={16} />
         </button>

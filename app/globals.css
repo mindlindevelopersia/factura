@@ -8005,3 +8005,119 @@ html[data-privado-simple] dd {
 .ajustes__codigo--si {
   color: var(--verde);
 }
+
+/* Dictado por voz: el micrófono adentro de los campos (components/Dictado.tsx). */
+.con-dictado {
+  position: relative;
+  display: block;
+}
+.con-dictado > textarea,
+.con-dictado > input {
+  width: 100%;
+  padding-right: 40px;
+}
+.dictar--en-campo {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+}
+.con-dictado--linea .dictar--en-campo {
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+.dictar {
+  display: inline-flex;
+}
+.dictar__boton {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+.dictar__boton:hover {
+  background: var(--gris-claro);
+  color: var(--negro);
+}
+.dictar__boton--escuchando,
+.dictar__boton--escuchando:hover {
+  background: var(--rojo);
+  color: #fff;
+  animation: dictar-pulso 1.4s ease-in-out infinite;
+}
+@keyframes dictar-pulso {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(174 48 45 / 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgb(174 48 45 / 0);
+  }
+}
+.dictar__aviso {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 5;
+  max-width: min(320px, 80vw);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--negro);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: normal;
+  pointer-events: none;
+}
+.dictar__aviso--error {
+  background: var(--rojo);
+}
+.dictar--oliver {
+  position: relative;
+  align-self: center;
+}
+.dictar-tarea {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 18px;
+  border: 1px dashed var(--lima-oscuro);
+}
+.dictar-tarea__cabeza {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.dictar-tarea__cabeza p {
+  margin: 2px 0 0;
+}
+.dictar-tarea__mic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lima);
+  color: var(--negro);
+  cursor: pointer;
+}
+.dictar-tarea__mic--escuchando {
+  background: var(--rojo);
+  color: #fff;
+  animation: dictar-pulso 1.4s ease-in-out infinite;
+}
+.dictar-tarea__mic:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.dictar-tarea textarea {
+  width: 100%;
+  font: inherit;
+}

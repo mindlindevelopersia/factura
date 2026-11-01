@@ -24,6 +24,7 @@ import {
 import { telefonoWhatsapp } from "@/lib/inversores/cobranzas";
 import { PROYECTOS, proyecto as buscarProyecto } from "@/lib/modulos";
 import Link from "next/link";
+import { ConDictado } from "../Dictado";
 import { Icono } from "../Icono";
 import { CampoMenciones } from "../Menciones";
 import { useBaseProyecto } from "../proyecto";
@@ -247,11 +248,15 @@ function Contenido({ crm, c, cerrar }: { crm: Crm; c: Contacto; cerrar: () => vo
               </Link>
             </div>
             {canal === "whatsapp" ? (
-              <textarea className="crm-ficha__mensaje" rows={5} value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+              <ConDictado valor={whatsapp} onCambio={setWhatsapp}>
+                <textarea className="crm-ficha__mensaje" rows={5} value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+              </ConDictado>
             ) : (
               <>
                 <input className="crm-ficha__asunto" value={asunto} onChange={(e) => setAsunto(e.target.value)} aria-label="Asunto" />
-                <textarea className="crm-ficha__mensaje" rows={7} value={mail} onChange={(e) => setMail(e.target.value)} />
+                <ConDictado valor={mail} onCambio={setMail}>
+                  <textarea className="crm-ficha__mensaje" rows={7} value={mail} onChange={(e) => setMail(e.target.value)} />
+                </ConDictado>
               </>
             )}
             <div className="crm-ficha__ia">
