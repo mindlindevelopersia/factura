@@ -3,7 +3,6 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  egresosACsv,
   egresosPorMes,
   filtrarEgresos,
   filtrosEgresosAUrl,
@@ -24,7 +23,8 @@ import {
 import type { Moneda } from "@/lib/finanzas/ingresos";
 import { leerJson } from "../formato";
 import { Icono } from "../Icono";
-import { Atajos, BarraLectura, descargar, GraficoMeses, MONEDAS, monto, nombreMoneda, opcionesDeMeses, redondo, Revisar, Selector } from "./comun";
+import { ExportarExcel } from "../ExportarExcel";
+import { Atajos, BarraLectura, GraficoMeses, MONEDAS, monto, nombreMoneda, opcionesDeMeses, redondo, Revisar, Selector } from "./comun";
 
 interface Respuesta {
   caja: CajaEgresos;
@@ -338,10 +338,29 @@ function Detalle({ egresos }: { egresos: Egreso[] }) {
     <section className="card ingresos__seccion">
       <div className="ingresos__titulo">
         <h2>Detalle de egresos ({egresos.length})</h2>
-        <button type="button" className="btn btn--borde btn--chico" onClick={() => descargar("egresos.csv", egresosACsv(ordenados))}>
-          <Icono nombre="archivo" size={16} />
-          Descargar CSV
-        </button>
+        <ExportarExcel
+          nombre="Egresos"
+          hojas={() => [
+            {
+              nombre: "Egresos",
+              titulo: `Egresos (${ordenados.length})`,
+              columnas: [
+                { titulo: "Fecha", formato: "fecha", ancho: 12 },
+                { titulo: "Descripción", ancho: 40 },
+                { titulo: "Categoría (planilla)", ancho: 22 },
+                { titulo: "Rubro", ancho: 22 },
+                { titulo: "Proyecto", ancho: 14 },
+                { titulo: "B/N", ancho: 8 },
+                { titulo: "Monto en $", formato: "pesos", total: true },
+                { titulo: "Monto en US$", formato: "usd", total: true },
+                { titulo: "Forma", ancho: 14 },
+                { titulo: "Banco", ancho: 14 },
+                { titulo: "Pestaña y fila", ancho: 26 },
+              ],
+              filas: ordenados.map((e) => [e.fecha, e.descripcion, e.categoria, nombreRubro(e.rubro), e.proyecto, e.bn === "blanco" ? "Blanco" : e.bn === "negro" ? "Negro" : "", e.moneda === "ARS" ? e.monto : null, e.moneda === "USD" ? e.monto : null, e.forma, e.banco, `${e.pestania} ${e.fila}`]),
+            },
+          ]}
+        />
       </div>
       <div className="tabla-contenedor">
         <table className="tabla">

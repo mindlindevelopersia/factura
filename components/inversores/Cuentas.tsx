@@ -7,6 +7,7 @@ import { resumenCuenta, totalesCuentas, type Cuenta, type ResumenCuenta } from "
 import { Icono } from "../Icono";
 import { useBaseProyecto } from "../proyecto";
 import { BarraLectura, monto, redondo, Revisar } from "../finanzas/comun";
+import { ExportarExcel } from "../ExportarExcel";
 import { fechaCorta, pct, usd, useCuentas } from "./datos";
 import { aDolares } from "@/lib/indicadores/dolar";
 import { useDolarHoy } from "../indicadores/Dolar";
@@ -47,7 +48,54 @@ export function Cuentas() {
 
   return (
     <div className="ingresos">
-      <BarraLectura leido={datos?.leido ?? null} cargando={cargando} actualizar={actualizar} />
+      <BarraLectura
+        leido={datos?.leido ?? null}
+        cargando={cargando}
+        actualizar={actualizar}
+        extra={
+          cc && (
+            <ExportarExcel
+              nombre="Cuentas corrientes"
+              hojas={() => [
+                {
+                  nombre: "Cuentas",
+                  titulo: "Cuentas corrientes",
+                  columnas: [
+                    { titulo: "Unidad", ancho: 9 },
+                    { titulo: "Inversor", ancho: 30 },
+                    { titulo: "Precio (US$)", formato: "usd", total: true },
+                    { titulo: "Pagado (US$)", formato: "usd", total: true },
+                    { titulo: "Saldo (US$)", formato: "usd", total: true },
+                    { titulo: "Avance", formato: "pct" },
+                    { titulo: "Último pago", formato: "fecha", ancho: 12 },
+                    { titulo: "Pagos vencidos", formato: "numero", total: true },
+                    { titulo: "Pendiente en $ (Flujo)", formato: "pesos", total: true },
+                    { titulo: "Pendiente en US$ (Flujo)", formato: "usd", total: true },
+                    { titulo: "Termina de pagar", ancho: 12 },
+                  ],
+                  filas: filas.map(({ c, r }) => [c.unidad, c.inversor, r.baseUsd, Math.round(r.pagadoUsd), r.saldoUsd, r.avance, r.ultimoPago?.fecha ?? null, r.vencidos.length, r.pendienteFlujo.ARS, r.pendienteFlujo.USD, r.ultimoMes ?? ""]),
+                },
+                {
+                  nombre: "Pagos",
+                  titulo: "Todos los pagos registrados",
+                  columnas: [
+                    { titulo: "Unidad", ancho: 9 },
+                    { titulo: "Inversor", ancho: 30 },
+                    { titulo: "Fecha", formato: "fecha", ancho: 12 },
+                    { titulo: "Concepto", ancho: 24 },
+                    { titulo: "Formal", ancho: 8 },
+                    { titulo: "Monto en $", formato: "pesos", total: true },
+                    { titulo: "Monto en US$", formato: "usd", total: true },
+                    { titulo: "Tipo de cambio", formato: "numero" },
+                    { titulo: "Equivalente en US$", formato: "usd", total: true },
+                  ],
+                  filas: filas.flatMap(({ c }) => c.pagos.map((p) => [c.unidad, c.inversor, p.fecha, p.concepto, p.formal === true ? "Sí" : p.formal === false ? "No" : "", p.moneda === "ARS" ? p.monto : null, p.moneda === "USD" ? p.monto : null, p.tipoCambio, p.usd])),
+                },
+              ]}
+            />
+          )
+        }
+      />
       {error && (
         <p role="alert" className="alerta alerta--error">
           <Icono nombre="alerta" size={18} />
