@@ -22,3 +22,13 @@ Franja negra con el logo de Mindlin y "LERMA 439" escrito, render de portada, pa
 Sacados de "Propuestas comerciales" del Excel madre: 2 ambientes frente (A) y contrafrente (C), monoambiente frente (B) y contrafrente (D), 3 ambientes frente (A+B) y contrafrente (C+D), PB, planta tipo y renders. No están en `public/`: los sirve `/api/proyectos/<id>/imagenes/<archivo>` solo con sesión. Pisos 8 y 9: sin plano propio (va la planta tipo).
 
 Al guardar el PDF, el nombre sale del título de la página: `UF 2C - LERMA 439 - Virginia Alegre by Mindlin Developers` (unidad, proyecto y cliente; `nombreDelPdf` en `lib/proyectos/propuesta.ts`).
+
+## Propuestas guardadas
+
+En **Comercial → Propuestas comerciales** está la lista de las propuestas guardadas: fecha, cliente, unidad, valor, hasta cuándo vale (las vencidas en rojo) y quién la hizo (y quién la cambió). Arriba, **+ Nueva propuesta** abre el editor. Desde cada fila:
+
+- **Abrir**: la propuesta en el editor, para cambiarla y "Guardar cambios".
+- **PDF**: la abre y la manda a imprimir sola ("Guardar como PDF").
+- **WhatsApp**: abre el chat con el contacto del CRM (si tiene teléfono; si no, WhatsApp pregunta a quién) con un mensaje armado: valor, anticipo, cuotas, refuerzos y vigencia. El PDF se adjunta a mano (WhatsApp no deja adjuntarlo desde un link).
+
+Se guardan en la pestaña **"Propuestas"** de la planilla del CRM (se crea sola): una fila por propuesta con los parámetros (los mismos del link) y, para leerla en la planilla, unidad, cliente y montos. "Registrar en el CRM" la guarda antes de anotarla. Los links viejos (con los datos en la URL) siguen abriendo el editor. Código: `lib/proyectos/propuestasGuardadas.ts` (puro), `lib/proyectos/propuestasFuente.ts` y `app/api/proyectos/[proyecto]/propuestas/`.

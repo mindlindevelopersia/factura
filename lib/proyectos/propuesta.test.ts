@@ -60,6 +60,7 @@ describe("planos", () => {
     expect(planoDe("lerma-439", { nivel: 4, tipologia: "3 ambientes", orientacion: "Frente" })).toBe("/api/proyectos/lerma-439/imagenes/plano-3amb-frente.png");
     expect(planoDe("lerma-439", { nivel: 0, tipologia: "3 ambientes + jardín", orientacion: "Contrafrente" })).toBe("/api/proyectos/lerma-439/imagenes/plano-pb.png");
     expect(planoDe("lerma-439", { nivel: 8, tipologia: "2 ambientes", orientacion: "Frente" })).toBe(null);
+    expect(planoDe("lerma-439", { nivel: 9, tipologia: "2 ambientes", orientacion: "Frente", codigo: "9A" })).toBe("/api/proyectos/lerma-439/imagenes/plano-9a.png");
   });
 });
 

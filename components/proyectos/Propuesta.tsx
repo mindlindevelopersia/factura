@@ -2,12 +2,15 @@
 
 /* eslint-disable @next/next/no-img-element -- las imágenes del PDF van como <img> para que se impriman tal cual. */
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { nombreMes, sumarMeses } from "@/lib/finanzas/ingresos";
 import { IMAGENES, planoDe } from "@/lib/proyectos/planos";
 import { calcularPropuesta, nombreDelPdf, parametrosIniciales, propuestaAUrl, propuestaDeUrl, resumenPropuesta, type ParametrosPropuesta, type Propuesta as CalculoPropuesta } from "@/lib/proyectos/propuesta";
+import { mensajePropuesta, whatsappPropuesta, type PropuestaGuardada } from "@/lib/proyectos/propuestasGuardadas";
 import { proyecto as buscarProyecto } from "@/lib/modulos";
+import { leerJson } from "../formato";
 import { Icono } from "../Icono";
 import { useDolarHoy } from "../indicadores/Dolar";
 import { useCrm } from "../crm/datos";
@@ -119,6 +122,7 @@ export function Propuesta() {
   const proyecto = buscarProyecto(id);
   const q = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
   const { datos, error } = useComercial();
   const dolar = useDolarHoy();
   const contactoId = q.get("contacto");
@@ -126,6 +130,10 @@ export function Propuesta() {
   const contacto = contactoId ? crm.contactos.find((c) => c.id === contactoId) ?? null : null;
   const [p, setP] = useState<ParametrosPropuesta | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  // La propuesta guardada que se está editando (si viene de la lista o ya se guardó) y lo último guardado.
+  const [guardadaId, setGuardadaId] = useState<string | null>(q.get("id"));
+  const [guardado, setGuardado] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
 
   const disponibles = useMemo(() => (datos?.comercial.unidades ?? []).filter((u) => !u.esCochera && (u.estado === "libre" || u.reventa)), [datos]);
   const mep = dolar.de("mep")?.venta ?? null;
@@ -144,7 +152,9 @@ export function Propuesta() {
       hoy,
       entrega: ENTREGA[id] ?? sumarMeses(hoy.slice(0, 7), 18),
     });
-    setP(propuestaDeUrl(q, base));
+    const inicial = propuestaDeUrl(q, base);
+    setP(inicial);
+    if (q.get("id")) setGuardado(propuestaAUrl(inicial));
   }, [p, datos, mep, dolar.error, q, contacto, disponibles, id]);
 
   const r = useMemo(() => (p ? calcularPropuesta(p) : null), [p]);
@@ -152,7 +162,41 @@ export function Propuesta() {
   const img = IMAGENES[id];
   const plano = u ? planoDe(id, u) : null;
   const poner = <K extends keyof ParametrosPropuesta>(k: K, v: ParametrosPropuesta[K]) => setP((x) => (x ? { ...x, [k]: v } : x));
-  const link = p ? `${typeof window !== "undefined" ? window.location.origin : ""}${window.location.pathname}?${propuestaAUrl(p)}${contactoId ? `&contacto=${contactoId}` : ""}` : "";
+  const consulta = (x: ParametrosPropuesta, idGuardada = guardadaId) => `${idGuardada ? `id=${idGuardada}&` : ""}${propuestaAUrl(x)}${contactoId ? `&contacto=${contactoId}` : ""}`;
+  const link = p ? `${typeof window !== "undefined" ? window.location.origin : ""}${typeof window !== "undefined" ? window.location.pathname : ""}?${consulta(p)}` : "";
+  const sinGuardar = p ? guardado !== propuestaAUrl(p) : false;
+
+  // Desde la lista, "PDF" abre la propuesta y la manda a imprimir sola (una vez, con las imágenes cargadas).
+  const imprimio = useRef(false);
+  useEffect(() => {
+    if (!r || imprimio.current || q.get("imprimir") !== "1") return;
+    imprimio.current = true;
+    const t = setTimeout(() => window.print(), 1200);
+    return () => clearTimeout(t);
+  }, [r, q]);
+
+  async function guardar(): Promise<string | null> {
+    if (!p || !r) return null;
+    setGuardando(true);
+    setAviso(null);
+    try {
+      const cuerpo = JSON.stringify({ cliente: p.cliente, contactoId: contactoId ?? "", unidad: p.unidad, precioUsd: p.precioUsd, totalArs: r.totalArs, vence: r.hasta, parametros: propuestaAUrl(p) });
+      const base = `/api/proyectos/${id}/propuestas`;
+      const { propuesta } = await leerJson<{ propuesta: PropuestaGuardada }>(
+        await fetch(guardadaId ? `${base}/${guardadaId}` : base, { method: guardadaId ? "PUT" : "POST", headers: { "content-type": "application/json" }, body: cuerpo }),
+      );
+      setGuardadaId(propuesta.id);
+      setGuardado(propuesta.parametros);
+      router.replace(`?${consulta(p, propuesta.id)}`, { scroll: false });
+      setAviso("Guardada: está en la lista de propuestas.");
+      return propuesta.id;
+    } catch (e) {
+      setAviso(e instanceof Error ? e.message : String(e));
+      return null;
+    } finally {
+      setGuardando(false);
+    }
+  }
 
   // El nombre del PDF sale del título de la página: "UF 2C - LERMA 439 - Virginia Alegre by Mindlin Developers".
   const titulo = p ? nombreDelPdf(p, proyecto?.nombre ?? id) : null;
@@ -167,6 +211,8 @@ export function Propuesta() {
 
   async function registrar() {
     if (!p || !r || !contacto) return;
+    const idGuardada = sinGuardar || !guardadaId ? await guardar() : guardadaId;
+    if (!idGuardada) return;
     setAviso(null);
     try {
       const hoy = p.fecha;
@@ -180,7 +226,7 @@ export function Propuesta() {
           proximoPaso: `Seguimiento de la propuesta de la ${p.unidad} (vence el ${r.hasta.split("-").reverse().join("/")})`,
           proximaFecha: d.toISOString().slice(0, 10),
         },
-        { tipo: "Nota", detalle: `${resumenPropuesta(p, r)} Ver: ${link}` },
+        { tipo: "Nota", detalle: `${resumenPropuesta(p, r)} Ver: ${window.location.origin}${window.location.pathname}?${consulta(p, idGuardada)}` },
       );
       setAviso("Listo: quedó en el historial del contacto, en Propuesta enviada, con seguimiento en 2 días.");
     } catch (e) {
@@ -197,15 +243,24 @@ export function Propuesta() {
   return (
     <div className="propuesta">
       <section className="card propuesta__editor solo-pantalla" aria-label="Armar la propuesta">
+        <Link href={pathname} className="btn btn--texto btn--chico propuesta__volver">
+          ← Todas las propuestas
+        </Link>
         <div className="propuesta__acciones">
-          <button type="button" className="btn btn--primario" onClick={() => window.print()}>
+          <button type="button" className="btn btn--primario" onClick={() => void guardar()} disabled={guardando || (!sinGuardar && !!guardadaId)}>
+            {guardando ? "Guardando…" : !sinGuardar && guardadaId ? "Guardada ✓" : guardadaId ? "Guardar cambios" : "Guardar"}
+          </button>
+          <button type="button" className="btn btn--borde btn--chico" onClick={() => window.print()}>
             <Icono nombre="imprimir" size={16} /> Descargar PDF
           </button>
+          <a className="btn btn--borde btn--chico" href={whatsappPropuesta(contacto?.telefono ?? "", mensajePropuesta(p, r, proyecto?.nombre.toUpperCase() ?? id))} target="_blank" rel="noreferrer">
+            WhatsApp
+          </a>
           <button
             type="button"
             className="btn btn--borde btn--chico"
             onClick={async () => {
-              router.replace(`?${propuestaAUrl(p)}${contactoId ? `&contacto=${contactoId}` : ""}`, { scroll: false });
+              router.replace(`?${consulta(p)}`, { scroll: false });
               await navigator.clipboard.writeText(link).catch(() => undefined);
               setAviso("Copié el link: abre esta misma propuesta.");
             }}
@@ -218,7 +273,10 @@ export function Propuesta() {
             </button>
           )}
         </div>
-        <p className="crm-ficha__sub">En &quot;Descargar PDF&quot; elegí <strong>Guardar como PDF</strong>, tamaño A4, sin encabezados.</p>
+        <p className="crm-ficha__sub">
+          En &quot;Descargar PDF&quot; elegí <strong>Guardar como PDF</strong>, tamaño A4, sin encabezados. WhatsApp abre el chat {contacto?.telefono ? `con ${contacto.nombre}` : "(elegís a quién)"} con el mensaje armado: adjuntale el PDF.
+          {sinGuardar && guardadaId && <strong> Hay cambios sin guardar.</strong>}
+        </p>
         {aviso && <p className="crm-ficha__aviso">{aviso}</p>}
         {r.problemas.map((x) => (
           <p key={x} className="oliver__error">
