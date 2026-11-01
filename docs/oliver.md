@@ -21,6 +21,7 @@ Una burbuja abajo a la derecha (en todas las páginas del hub) abre un chat con 
 | Finanzas · Egresos | Totales, rubros, meses, cada egreso y los avisos |
 | Cuentas corrientes | Cada cuenta (dólares y pesos de hoy, pagos, pendientes, avisos); en la ficha, el detalle de esa cuenta |
 | Cobranzas | Vencidos actualizados por CAC, lo de este mes y el próximo, qué revisar |
+| CRM | Contactos, alarmas, tablero, actividad reciente y unidades disponibles |
 | Administración | Todavía nada (los comprobantes se revisan en pantalla) |
 
 ## Configuración

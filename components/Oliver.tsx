@@ -45,10 +45,12 @@ const SUGERENCIAS: Record<string, string[]> = {
   ingresos: ["¿Cuánto falta cobrar?", "¿Qué está atrasado?"],
   indicadores: ["¿Subió más el CAC o el dólar?", "¿Conviene comprar hierro ahora?"],
   inicio: ["¿Qué puedo hacer en el hub?", "¿Cómo está el dólar hoy?"],
+  crm: ["¿A quién tengo que llamar hoy?", "¿Quién está más cerca de comprar?", "¿Quién busca un 2 ambientes?"],
 };
 
 function sugerenciasDe(ruta: string): string[] {
   if (ruta.includes("cuentas-corrientes")) return SUGERENCIAS["cuentas-corrientes"];
+  if (ruta.includes("/crm")) return SUGERENCIAS.crm;
   for (const k of ["cobranzas", "management", "egresos", "ingresos", "indicadores", "comercial"]) if (ruta.includes(k)) return SUGERENCIAS[k];
   if (/^\/proyectos\/[^/]+$/.test(ruta)) return SUGERENCIAS.comercial;
   return SUGERENCIAS.inicio;

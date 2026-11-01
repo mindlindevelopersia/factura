@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AREAS_EMPRESA, areasDeProyecto, PROYECTOS, rutaProyecto } from "@/lib/modulos";
+import { AREAS_EMPRESA, areasDeProyecto, PROYECTOS, rutaProyecto, SECCIONES_DE_PROYECTO } from "@/lib/modulos";
 import { Icono } from "./Icono";
 
 /** El nombre de cada ruta conocida del hub (inicio, áreas, proyectos y módulos). */
@@ -18,6 +18,7 @@ function nombres(): Map<string, string> {
       m.set(a.href, a.nombre);
       for (const mod of a.modulos) m.set(mod.href, mod.nombre);
     }
+    for (const s of SECCIONES_DE_PROYECTO) m.set(rutaProyecto(p.id, s.sub), s.nombre);
   }
   return m;
 }

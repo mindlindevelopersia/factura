@@ -23,6 +23,7 @@ import { PestaniaSimple } from "../google/pestania";
 import { proyecto as buscarProyecto, PROYECTO_PRINCIPAL } from "../modulos";
 import { armarComercial, leerVentas, type Comercial } from "../proyectos/comercial";
 import { leerFichasVentas } from "../proyectos/fichas";
+import type { UnidadDisponible } from "../crm/alarmas";
 import { analizarHq, desarrolladores, m2DesarrolladoresEnPlanilla, type Desarrolladores, type GastoHq } from "../proyectos/management";
 import { leerCaja, unir, type CajaEgresos } from "./egresos";
 import { colorDe, leerFlujo, mesDeHoy, type Celda, type FlujoIngresos } from "./ingresos";
@@ -374,4 +375,30 @@ export async function datosComercial(id: string, opciones?: { fresco?: boolean }
   }
   const { valor, leido } = await lector(opciones);
   return { ...valor, leido };
+}
+
+/** La pestaña "CRM" del Excel madre de un proyecto, para importarla al CRM del hub. */
+export async function filasCrmMadre(id: string): Promise<Celda[][]> {
+  const sheet = planillaMadre(id);
+  if (!sheet) throw new FlujoSinConfigurar("El proyecto no tiene configurado su Excel madre.");
+  return leerGrilla("CRM", "A1:H1100", false, sheet);
+}
+
+/** Las unidades que se pueden ofrecer (libres y en reventa), para el CRM. Vacío si no se puede leer el comercial. */
+export async function unidadesDisponibles(id: string): Promise<UnidadDisponible[]> {
+  try {
+    const { comercial } = await datosComercial(id);
+    return comercial.unidades
+      .filter((u) => !u.esCochera && (u.estado === "libre" || u.reventa))
+      .map((u) => ({
+        codigo: u.codigo,
+        tipologia: u.tipologia,
+        orientacion: u.orientacion,
+        m2: u.supTotal,
+        precioUsd: u.estado === "libre" ? u.precioLista : u.reventa!,
+        tipo: u.estado === "libre" ? ("libre" as const) : ("reventa" as const),
+      }));
+  } catch {
+    return [];
+  }
 }

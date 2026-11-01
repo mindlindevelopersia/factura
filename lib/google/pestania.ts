@@ -78,6 +78,17 @@ export class PestaniaSimple {
     return n ? Number(n) : null;
   }
 
+  /** Agrega varias filas de una vez (por ejemplo, al importar). */
+  async agregarVarias(filas: string[][]): Promise<void> {
+    if (!filas.length) return;
+    await this.preparar();
+    await this.client.request({
+      url: `${this.url(`A1:${this.ultima}1`)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
+      method: "POST",
+      data: { values: filas },
+    });
+  }
+
   async escribir(fila: number, valores: string[]): Promise<void> {
     await this.preparar();
     await this.client.request({
