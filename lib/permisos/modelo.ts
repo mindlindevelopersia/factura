@@ -45,7 +45,14 @@ export interface Rol {
   nombre: string;
   descripcion: string;
   claves: string[];
+  /** Viene con el sistema (se puede editar y volver a lo de fábrica); si no, lo creó el super administrador. */
+  deFabrica?: boolean;
+  /** Se cambió en Ajustes (para mostrar "volver a lo de fábrica"). */
+  modificado?: boolean;
 }
+
+/** Los que no se editan: el super administrador ve todo siempre y "Sin permisos" no ve nada. */
+export const ROLES_FIJOS = ["super", "sin-rol"];
 
 export const ROLES: Rol[] = [
   { id: "super", nombre: "Super administrador", descripcion: "Todo, incluido Ajustes y los roles. Solo Mati.", claves: todas },
@@ -68,7 +75,56 @@ export const ROLES: Rol[] = [
   { id: "sin-rol", nombre: "Sin permisos", descripcion: "Solo el inicio, hasta que se le asigne un rol.", claves: [] },
 ];
 
-export const rolDe = (id: string) => ROLES.find((r) => r.id === id) ?? ROLES.find((r) => r.id === "sin-rol")!;
+for (const r of ROLES) r.deFabrica = true;
+
+export const rolDe = (id: string, roles: Rol[] = ROLES) => roles.find((r) => r.id === id) ?? ROLES.find((r) => r.id === "sin-rol")!;
+
+/** Lo que se guarda de un rol cambiado o creado (pestaña "Roles" de la planilla del CRM). */
+export const COLUMNAS_ROLES = ["ID", "Nombre", "Descripción", "Permisos", "Actualizado"] as const;
+export const filaDeRol = (r: Pick<Rol, "id" | "nombre" | "descripcion" | "claves">, actualizado: string) => [r.id, r.nombre, r.descripcion, r.claves.join(","), actualizado];
+export const rolDeFila = (f: string[]): Rol => ({
+  id: (f[0] ?? "").trim(),
+  nombre: (f[1] ?? "").trim(),
+  descripcion: (f[2] ?? "").trim(),
+  claves: lista(f[3]).filter((c) => todas.includes(c)),
+});
+
+/** Los roles de fábrica con los cambios guardados, más los creados. Los fijos no cambian. */
+export function combinarRoles(guardados: Rol[]): Rol[] {
+  const r: Rol[] = ROLES.map((x) => ({ ...x }));
+  for (const g of guardados) {
+    if (!g.id || ROLES_FIJOS.includes(g.id)) continue;
+    const i = r.findIndex((x) => x.id === g.id);
+    const nuevo = { ...g, nombre: g.nombre || r[i]?.nombre || g.id };
+    if (i >= 0) r[i] = { ...r[i], ...nuevo, deFabrica: true, modificado: true };
+    else r.splice(r.length - 1, 0, { ...nuevo, deFabrica: false });
+  }
+  return r;
+}
+
+/** Revisa un rol que llega de Ajustes: el error, o el rol limpio (con un id nuevo si es uno creado). */
+export function validarRol(x: unknown, roles: Rol[]): { error: string } | { rol: Pick<Rol, "id" | "nombre" | "descripcion" | "claves"> } {
+  const o = (x ?? {}) as Record<string, unknown>;
+  const nombre = typeof o.nombre === "string" ? o.nombre.trim().slice(0, 60) : "";
+  if (!nombre) return { error: "El rol necesita un nombre." };
+  let id = typeof o.id === "string" ? o.id.trim() : "";
+  if (ROLES_FIJOS.includes(id)) return { error: "Ese rol no se puede editar." };
+  if (id && !roles.some((r) => r.id === id)) return { error: "Ese rol no existe." };
+  if (!id) {
+    const base =
+      nombre
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "rol";
+    id = base;
+    for (let n = 2; roles.some((r) => r.id === id) || ROLES_FIJOS.includes(id); n++) id = `${base}-${n}`;
+    if (roles.some((r) => r.nombre.toLowerCase() === nombre.toLowerCase())) return { error: "Ya hay un rol con ese nombre." };
+  }
+  const claves = Array.isArray(o.claves) ? [...new Set(o.claves.map(String).filter((c) => todas.includes(c)))] : [];
+  return { rol: { id, nombre, descripcion: typeof o.descripcion === "string" ? o.descripcion.trim().slice(0, 200) : "", claves } };
+}
 
 /** Lo que se guarda de cada usuario (pestaña "Usuarios" de la planilla del CRM). */
 export interface ConfigUsuario {
@@ -134,11 +190,11 @@ export interface Acceso {
 }
 
 /** Lo que puede ver alguien, con su configuración (o sin ella). */
-export function accesoDe(email: string, config: ConfigUsuario | undefined, esDelEquipo: boolean): Acceso {
+export function accesoDe(email: string, config: ConfigUsuario | undefined, esDelEquipo: boolean, roles: Rol[] = ROLES): Acceso {
   const e = email.trim().toLowerCase();
   if (e === SUPER_ADMIN) return { email: e, rol: "super", superAdmin: true, claves: todas, proyectos: null };
   const rol = config ? (config.rol === "super" ? "admin" : config.rol) : esDelEquipo ? "admin" : "sin-rol";
-  return { email: e, rol, superAdmin: false, claves: config?.claves ?? rolDe(rol).claves, proyectos: config?.proyectos ?? null };
+  return { email: e, rol, superAdmin: false, claves: config?.claves ?? rolDe(rol, roles).claves, proyectos: config?.proyectos ?? null };
 }
 
 export const veProyecto = (a: Acceso, proyecto: string) => a.superAdmin || !a.proyectos || a.proyectos.includes(proyecto);
@@ -186,14 +242,14 @@ export function puedeRuta(a: Acceso, ruta: string): boolean {
 export const proyectosQueVe = (a: Acceso) => PROYECTOS.filter((p) => veProyecto(a, p.id));
 
 /** Revisa lo que llega de Ajustes: el error, o la configuración limpia. */
-export function validarConfig(x: unknown, permitidos: string[], quienEdita: Acceso): { error: string } | { config: Omit<ConfigUsuario, "actualizado"> } {
+export function validarConfig(x: unknown, permitidos: string[], quienEdita: Acceso, roles: Rol[] = ROLES): { error: string } | { config: Omit<ConfigUsuario, "actualizado"> } {
   const o = (x ?? {}) as Record<string, unknown>;
   const texto = (k: string, max: number) => (typeof o[k] === "string" ? (o[k] as string).trim().slice(0, max) : "");
   const email = texto("email", 200).toLowerCase();
   if (!permitidos.includes(email)) return { error: "Ese mail no está habilitado para entrar al hub (ALLOWED_EMAILS en Vercel)." };
   if (email === SUPER_ADMIN && !quienEdita.superAdmin) return { error: "Al super administrador solo lo edita él mismo." };
   const rol = texto("rol", 30);
-  if (!ROLES.some((r) => r.id === rol) || rol === "super") return { error: "Elegí un rol." };
+  if (!roles.some((r) => r.id === rol) || rol === "super") return { error: "Elegí un rol." };
   const usuario = texto("usuario", 40).replace(/^@/, "");
   if (usuario && !/^[\p{L}\d._-]+$/u.test(usuario)) return { error: "El @usuario no puede tener espacios ni símbolos (sí puntos, guiones y _)." };
   const claves = o.claves === null || o.claves === undefined ? null : Array.isArray(o.claves) ? [...new Set(o.claves.map(String).filter((c) => todas.includes(c)))] : null;

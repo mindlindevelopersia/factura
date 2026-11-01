@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { CrmSinConfigurar } from "@/lib/crm/fuente";
 import { exigir } from "@/lib/permisos/api";
-import { guardarConfig, perfilDe } from "@/lib/permisos/fuente";
+import { guardarConfig, leerRoles, perfilDe } from "@/lib/permisos/fuente";
 import { PERMISOS, rolDe } from "@/lib/permisos/modelo";
 
 /** Mis datos, mi rol y lo que veo. */
@@ -18,7 +18,7 @@ export async function GET() {
     celular: p.config?.celular ?? "",
     horario: p.config?.horario ?? "",
     puesto: p.config?.puesto ?? "",
-    rol: acceso.superAdmin ? "Super administrador" : rolDe(acceso.rol).nombre,
+    rol: acceso.superAdmin ? "Super administrador" : rolDe(acceso.rol, await leerRoles().catch(() => undefined)).nombre,
     modulos: PERMISOS.filter((x) => acceso.claves.includes(x.clave)).map((x) => (x.nombre === x.area ? x.nombre : `${x.area} · ${x.nombre}`)),
     proyectos: acceso.proyectos,
   });

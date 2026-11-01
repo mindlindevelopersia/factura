@@ -3,7 +3,9 @@
 **Ajustes** (abajo en el menú; solo super administrador y administradores) tiene dos pestañas:
 
 - **Usuarios**: los mails habilitados para entrar (`ALLOWED_EMAILS` en Vercel). En la ficha de cada uno: nombre, apellido, **@usuario** (con el que se lo menciona; el apodo de siempre, Mati o Tade, también sigue andando), celular, horario de trabajo, puesto, **rol**, **permisos a medida** (una grilla por área y módulo que reemplaza los del rol) y **proyectos** (todos o algunos).
-- **Roles**: la tabla de qué ve cada rol de entrada.
+- **Roles**: la tabla de qué ve cada rol de entrada. **Solo el super administrador** los edita: tocando el nombre de un rol se cambian su nombre, descripción y módulos; "+ Nuevo rol" crea uno (por ejemplo, Obra). Los de fábrica tienen "Volver a lo de fábrica"; los creados se pueden borrar (quien lo tenía queda sin permisos). "Super administrador" y "Sin permisos" no se editan. Los cambios van en la pestaña **"Roles"** de la planilla del CRM.
+
+De fábrica:
 
 | Rol | Qué ve |
 | --- | --- |
