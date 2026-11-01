@@ -60,6 +60,9 @@ describe("bot de Telegram", () => {
       revisar(h.input_schema as Record<string, unknown>);
     }
     expect(new Set(HERRAMIENTAS.map((h) => h.name)).size).toBe(HERRAMIENTAS.length);
+    // La API rechaza más de 16 campos con "anyOf" o tipos múltiples entre todas las herramientas estrictas.
+    const uniones = JSON.stringify(HERRAMIENTAS).match(/"anyOf"|"type":\[/g) ?? [];
+    expect(uniones.length).toBeLessThanOrEqual(16);
   });
 
   it("crear_tarea: la carga, avisa al responsable y pasa el link", async () => {

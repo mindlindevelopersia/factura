@@ -45,16 +45,16 @@ export interface ResultadoHerramienta {
 
 // ——— Esquemas (estrictos: todos los campos, null cuando no se dijo) ———
 const texto = (description: string) => ({ type: "string", description });
-const textoONull = (description: string) => ({ anyOf: [{ type: "string" }, { type: "null" }], description });
-const numeroONull = (description: string) => ({ anyOf: [{ type: "number" }, { type: "null" }], description });
+// Sin campos que acepten "null": la API permite pocos en total entre todas las herramientas
+// estrictas (16). "No se dijo" es texto vacío, 0 o la opción "".
+const numero = (description: string) => ({ type: "number", description });
 const lista = (vals: readonly string[], description: string) => ({ type: "string", enum: [...vals], description });
-const listaONull = (vals: readonly string[], description: string) => ({ anyOf: [{ type: "string", enum: [...vals] }, { type: "null" }], description });
 const objeto = (props: Record<string, object>) => ({ type: "object" as const, properties: props, required: Object.keys(props), additionalProperties: false });
 
 const IDS_PROYECTOS = PROYECTOS.map((p) => p.id);
 const proyectoTarea = lista(["", PROYECTO_PRODUCTO, ...IDS_PROYECTOS], 'El proyecto: el id ("lerma-439"), "" para algo general de la empresa, o "producto" para un feature del hub.');
 const proyectoComercial = lista(IDS_PROYECTOS, "El id del proyecto.");
-const fecha = (d: string) => textoONull(`${d} En formato AAAA-MM-DD, calculada desde hoy. null si no se dijo.`);
+const fecha = (d: string) => texto(`${d} En formato AAAA-MM-DD, calculada desde hoy. Vacío si no se dijo.`);
 
 export const HERRAMIENTAS: Anthropic.Beta.BetaTool[] = [
   {
@@ -62,9 +62,9 @@ export const HERRAMIENTAS: Anthropic.Beta.BetaTool[] = [
     description: "Busca tareas del hub (y features de Producto). Sirve para \"¿qué tengo pendiente?\", \"las tareas de Eliana\" o para encontrar una tarea antes de cambiarla.",
     strict: true,
     input_schema: objeto({
-      texto: textoONull("Palabras a buscar en el título, la descripción o con quién; null para todas."),
-      responsable: textoONull("El @usuario del responsable; null para todos."),
-      proyecto: textoONull('Id de proyecto, "" (generales) o "producto"; null para todos.'),
+      texto: texto("Palabras a buscar en el título, la descripción o con quién; vacío para todas."),
+      responsable: texto("El @usuario del responsable; vacío para todos."),
+      proyecto: texto('Id de proyecto, "general" (las de la empresa) o "producto"; vacío para todos.'),
       incluir_cerradas: { type: "boolean", description: "true para incluir las hechas y canceladas." },
     }),
   },
@@ -77,7 +77,7 @@ export const HERRAMIENTAS: Anthropic.Beta.BetaTool[] = [
       descripcion: texto("Detalles y contexto. Vacío si no hay."),
       responsable: texto("El @usuario de quien la tiene que hacer (de la lista del equipo)."),
       vence: fecha("Para cuándo."),
-      hora: textoONull("HH:MM si se dijo; null si no."),
+      hora: texto("HH:MM si se dijo; vacío si no."),
       prioridad: lista(PRIORIDADES, "Normal, salvo que se diga importante (Alta) o urgente (Urgente)."),
       tipo: lista(TIPOS, "El tipo de tarea."),
       proyecto: proyectoTarea,
@@ -92,12 +92,12 @@ export const HERRAMIENTAS: Anthropic.Beta.BetaTool[] = [
     strict: true,
     input_schema: objeto({
       id: texto("El id de la tarea."),
-      estado: listaONull(ESTADOS, "Nuevo estado; null si no cambia."),
-      responsable: textoONull("Nuevo responsable (@usuario); null si no cambia."),
-      vence: textoONull('Nueva fecha AAAA-MM-DD, "" para sacarle la fecha; null si no cambia.'),
-      prioridad: listaONull(PRIORIDADES, "Nueva prioridad; null si no cambia."),
-      titulo: textoONull("Nuevo título; null si no cambia."),
-      comentario: textoONull("Un comentario para dejar en la tarea; null si no."),
+      estado: lista(["", ...ESTADOS], "Nuevo estado; vacío si no cambia."),
+      responsable: texto("Nuevo responsable (@usuario); vacío si no cambia."),
+      vence: texto('Nueva fecha AAAA-MM-DD, "sin" para sacarle la fecha; vacío si no cambia.'),
+      prioridad: lista(["", ...PRIORIDADES], "Nueva prioridad; vacío si no cambia."),
+      titulo: texto("Nuevo título; vacío si no cambia."),
+      comentario: texto("Un comentario para dejar en la tarea; vacío si no."),
     }),
   },
   {
@@ -118,11 +118,11 @@ export const HERRAMIENTAS: Anthropic.Beta.BetaTool[] = [
       referido: texto("Quién lo refirió; vacío si no."),
       proyecto: proyectoComercial,
       unidades: { type: "array", items: { type: "string" }, description: 'Unidades que le interesan ("2C"); vacío si no.' },
-      presupuesto_usd: numeroONull("Presupuesto en dólares; null si no se dijo."),
+      presupuesto_usd: numero("Presupuesto en dólares; 0 si no se dijo."),
       notas: texto("Lo que se sabe de la persona. Vacío si no hay."),
       proximo_paso: texto("Qué hay que hacer con él. Vacío si no se dijo."),
       proxima_fecha: fecha("Cuándo es el próximo paso."),
-      responsable: textoONull("Quién lo atiende (@usuario); null para quien escribe."),
+      responsable: texto("Quién lo atiende (@usuario); vacío para quien escribe."),
     }),
   },
   {
@@ -133,8 +133,8 @@ export const HERRAMIENTAS: Anthropic.Beta.BetaTool[] = [
       contacto_id: texto("El id del contacto (de buscar_contactos)."),
       tipo: lista(TIPOS_ACTIVIDAD.filter((t) => t !== "Cambio de etapa"), "Qué fue."),
       detalle: texto("Qué pasó."),
-      etapa: listaONull(ETAPAS, "Nueva etapa; null si no cambia."),
-      proximo_paso: textoONull("Nuevo próximo paso; null si no cambia."),
+      etapa: lista(["", ...ETAPAS], "Nueva etapa; vacío si no cambia."),
+      proximo_paso: texto("Nuevo próximo paso; vacío si no cambia."),
       proxima_fecha: fecha("Fecha del próximo paso."),
     }),
   },
@@ -152,15 +152,15 @@ export const HERRAMIENTAS: Anthropic.Beta.BetaTool[] = [
       proyecto: proyectoComercial,
       unidad: texto('Código de la unidad ("2C").'),
       cliente: texto("Nombre del cliente."),
-      contacto_id: textoONull("El id del contacto del CRM si está cargado; null si no."),
-      precio_usd: numeroONull("Precio en dólares si se dijo uno distinto al de lista; null para el de lista."),
+      contacto_id: texto("El id del contacto del CRM si está cargado; vacío si no."),
+      precio_usd: numero("Precio en dólares si se dijo uno distinto al de lista; 0 para el de lista."),
     }),
   },
   {
     name: "buscar_ideas",
     description: "Busca ideas del tablero de Producto (mejoras y módulos nuevos para el hub). Usala antes de cargar una idea, para no repetirla, o para comentar una.",
     strict: true,
-    input_schema: objeto({ texto: textoONull("Palabras a buscar; null para las últimas.") }),
+    input_schema: objeto({ texto: texto("Palabras a buscar; vacío para las últimas.") }),
   },
   {
     name: "crear_idea",
@@ -214,8 +214,8 @@ export async function ejecutar(nombre: string, entrada: Record<string, unknown>,
       const l = tareas
         .filter((t) => puedeTarea(ctx.acceso, t))
         .filter((t) => entrada.incluir_cerradas === true || abierta(t))
-        .filter((t) => typeof entrada.responsable !== "string" || sinTildes(t.responsable) === sinTildes(entrada.responsable))
-        .filter((t) => typeof entrada.proyecto !== "string" || t.proyecto === entrada.proyecto)
+        .filter((t) => !entrada.responsable || sinTildes(t.responsable) === sinTildes(String(entrada.responsable)))
+        .filter((t) => !entrada.proyecto || t.proyecto === (entrada.proyecto === "general" ? "" : entrada.proyecto))
         .filter((t) => !q || q.split(/\s+/).every((p) => sinTildes(`${t.titulo} ${t.descripcion} ${t.con}`).includes(p)))
         .sort((a, b) => (a.vence ?? "9999").localeCompare(b.vence ?? "9999"));
       return { contenido: json({ hoy: hoyBA(), total: l.length, tareas: l.slice(0, 15).map(resumenTarea) }) };
@@ -253,7 +253,7 @@ export async function ejecutar(nombre: string, entrada: Record<string, unknown>,
       if (!puedeTarea(ctx.acceso, actual)) return error("No tiene permiso para cambiar esa tarea.");
       const cambios: Record<string, unknown> = {};
       for (const k of ["estado", "responsable", "prioridad", "titulo"] as const) if (typeof entrada[k] === "string" && entrada[k]) cambios[k] = entrada[k];
-      if (entrada.vence === "") cambios.vence = null;
+      if (entrada.vence === "sin") cambios.vence = null;
       else if (fechaOk(entrada.vence)) cambios.vence = entrada.vence;
       const v = validarCambios(cambios, false);
       if ("error" in v) return error(v.error);
@@ -287,7 +287,7 @@ export async function ejecutar(nombre: string, entrada: Record<string, unknown>,
         origen: String(entrada.origen ?? ""),
         referido: String(entrada.referido ?? ""),
         unidades: Array.isArray(entrada.unidades) ? entrada.unidades.map(String) : [],
-        presupuestoUsd: typeof entrada.presupuesto_usd === "number" ? entrada.presupuesto_usd : null,
+        presupuestoUsd: typeof entrada.presupuesto_usd === "number" && entrada.presupuesto_usd > 0 ? entrada.presupuesto_usd : null,
         notas: String(entrada.notas ?? ""),
         proximoPaso: String(entrada.proximo_paso ?? ""),
         proximaFecha: fechaOk(entrada.proxima_fecha),
@@ -310,7 +310,7 @@ export async function ejecutar(nombre: string, entrada: Record<string, unknown>,
       if (!puedeComercial(ctx.acceso, proyecto, "comercial/crm")) return error("No tiene permiso para ese contacto.");
       const cambios: CambiosContacto = {};
       if (typeof entrada.etapa === "string" && (ETAPAS as readonly string[]).includes(entrada.etapa)) cambios.etapa = entrada.etapa as Etapa;
-      if (typeof entrada.proximo_paso === "string") cambios.proximoPaso = entrada.proximo_paso;
+      if (typeof entrada.proximo_paso === "string" && entrada.proximo_paso) cambios.proximoPaso = entrada.proximo_paso;
       if (fechaOk(entrada.proxima_fecha)) cambios.proximaFecha = fechaOk(entrada.proxima_fecha);
       const e = validarContacto(cambios, false);
       if (e) return error(e);

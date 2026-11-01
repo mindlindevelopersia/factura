@@ -1,4 +1,5 @@
 import "server-only";
+import Anthropic from "@anthropic-ai/sdk";
 import { agregarNota, ultimoDelChat, type Servicios } from "../cola/servicio";
 import { hoyBA } from "../crm/alarmas";
 import { EQUIPO_APODOS } from "../equipo";
@@ -29,4 +30,12 @@ export async function atenderConAsistente(o: { s: Servicios; chat: number; email
   });
   await guardarConversacion(o.chat, o.email, [...historial, { rol: "user", texto: o.texto }, turnoBot(r.texto, r.acciones)]).catch((e) => console.error("bot: guardar charla", e));
   return r;
+}
+
+/** Lo que se le dice a la persona cuando algo falla (el detalle técnico queda en el log). */
+export function motivoAmable(e: unknown): string {
+  if (e instanceof Anthropic.RateLimitError) return "la IA está con mucha demanda. Probá de nuevo en un minuto.";
+  if (e instanceof Anthropic.AuthenticationError) return "la clave de la IA no anda (revisá ANTHROPIC_API_KEY en Vercel).";
+  if (e instanceof Anthropic.APIError) return "la IA no respondió bien. Probá de nuevo en un rato; si sigue, avisale a quien mantiene el hub.";
+  return e instanceof Error && e.message.length < 200 ? e.message : "algo falló. Probá de nuevo en un rato.";
 }
