@@ -168,6 +168,19 @@ describe("CRM: importar una base de contactos", () => {
     f("Pedro", "Ríos", "pedro@x.com", "", "", ""),
     f("", "", "sin@nombre.com", "", "", ""),
   ];
+  it("como la planilla de Mati: referencia como referido, el resto a las notas, sin #ERROR!", () => {
+    const filas = [
+      f("Apellido", "NOMBRE", "OCUPACION + REFERENCIA", "Categoría de inversor", "Referencia - Fuente", "TELEFONO", "Contacto por Mati", "Respuesta?"),
+      f("", "Persona Inventada", "Dueño de depto", "Cat B (+ USD 50.000)", "Un Referido", "\u202d+54 9 11 0000 0001\u202c", "SI", "Le interesa"),
+      f("", "Otra Inventada", "", "", "", "#ERROR!", "NO", ""),
+    ];
+    const r = importarBase(filas, [], AHORA);
+    expect(r.nuevos.map((c) => [c.nombre, c.referido, c.telefono, c.notas])).toEqual([
+      ["Persona Inventada", "Un Referido", "+54 9 11 0000 0001", "OCUPACION + REFERENCIA: Dueño de depto · Categoría de inversor: Cat B (+ USD 50.000) · Contacto por Mati: SI · Respuesta: Le interesa"],
+      ["Otra Inventada", "", "", ""],
+    ]);
+  });
+
   it("reconoce las columnas por el título", () => {
     expect(detectarColumnas(FILAS)?.campos).toEqual({ nombre: 0, apellido: 1, mail: 2, telefono: 3, empresa: 4, notas: 5 });
     expect(claveTelefono("+54 9 11 5555-1234")).toBe(claveTelefono("011 15 5555-1234"));
@@ -175,7 +188,7 @@ describe("CRM: importar una base de contactos", () => {
   it("saca duplicados (en la planilla y contra el CRM) y completa lo que falta", () => {
     const existentes = [{ ...contacto(), telefono: "", mail: "" }, { ...contacto({ id: "c2", nombre: "Otra", mail: "pedro@x.com", telefono: "" }) }];
     const r = importarBase(FILAS, existentes, AHORA);
-    expect(r.nuevos.map((c) => [c.nombre, c.etapa, c.origen, c.notas])).toEqual([["Ana Gómez", "Dormido", "Base de inversores", "Empresa: Gómez SA. Le interesa invertir"]]);
+    expect(r.nuevos.map((c) => [c.nombre, c.etapa, c.origen, c.notas])).toEqual([["Ana Gómez", "Dormido", "Base de inversores", "Empresa: Gómez SA. · Le interesa invertir"]]);
     expect(r.repetidosEnPlanilla).toBe(1);
     expect(r.yaEstaban).toEqual([
       { nombre: "Juana Pérez", existente: "Juana Pérez", por: "nombre" },
