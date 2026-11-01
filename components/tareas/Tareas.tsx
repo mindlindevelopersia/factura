@@ -21,6 +21,7 @@ import {
 } from "@/lib/tareas/modelo";
 import { leerJson } from "../formato";
 import { Icono } from "../Icono";
+import { ConDictado, sumarDictado, useDictado } from "../Dictado";
 import { CampoMenciones, ConMenciones } from "../Menciones";
 import { useBaseProyecto } from "../proyecto";
 import { useProyectoId } from "../proyectos/datos";
@@ -105,6 +106,9 @@ export function Tareas({ modo = "proyecto" }: { modo?: ModoTareas }) {
   const [cargandoLista, setCargandoLista] = useState(false);
   const [abiertaId, setAbiertaId] = useState<string | null>(null);
   const [nueva, setNueva] = useState(false);
+  // Una tarea dictada: sus campos, para abrir la ficha ya completa.
+  const [dictando, setDictando] = useState(false);
+  const [dictada, setDictada] = useState<CambiosTarea | null>(null);
   const [quien, setQuien] = useState("");
   const [buscar, setBuscar] = useState("");
   const [empresa, setEmpresa] = useState(false);
@@ -153,8 +157,11 @@ export function Tareas({ modo = "proyecto" }: { modo?: ModoTareas }) {
   return (
     <>
       <div className="tareas__barra">
-        <button type="button" className="btn btn--primario" onClick={() => setNueva(true)}>
+        <button type="button" className="btn btn--primario" onClick={() => (setDictada(null), setNueva(true))}>
           {producto ? "+ Nuevo feature" : "+ Nueva tarea"}
+        </button>
+        <button type="button" className="btn btn--borde" onClick={() => setDictando(true)}>
+          <Icono nombre="microfono" size={16} /> {producto ? "Dictar feature" : "Dictar tarea"}
         </button>
         {producto && !d.tareas.length && (
           <button
@@ -196,6 +203,19 @@ export function Tareas({ modo = "proyecto" }: { modo?: ModoTareas }) {
         </span>
       </div>
       {(error || h.error) && <p className="alerta alerta--error">{error ?? h.error}</p>}
+      {dictando && (
+        <DictarTarea
+          equipo={d.equipo}
+          producto={producto}
+          cerrar={() => setDictando(false)}
+          lista={(c) => {
+            setDictando(false);
+            setDictada(c);
+            setAbiertaId(null);
+            setNueva(true);
+          }}
+        />
+      )}
       <div className="crm-embudo tareas__tablero">
         {COLUMNAS_TABLERO.map((col) => {
           const lista = visibles.filter((t) => columnaDe(t, d.tareas) === col).sort(ordenar);
@@ -229,8 +249,9 @@ export function Tareas({ modo = "proyecto" }: { modo?: ModoTareas }) {
         <FichaTarea
           h={h}
           tarea={abiertaId ? (d.tareas.find((x) => x.id === abiertaId) ?? null) : null}
-          cerrar={() => (setAbiertaId(null), setNueva(false))}
-          creada={(id) => (setNueva(false), setAbiertaId(id))}
+          inicial={abiertaId ? null : dictada}
+          cerrar={() => (setAbiertaId(null), setNueva(false), setDictada(null))}
+          creada={(id) => (setNueva(false), setDictada(null), setAbiertaId(id))}
         />
       )}
     </>
@@ -294,10 +315,11 @@ function TarjetaTarea({ t, todas, hoy, comentarios, abrir, empresa }: { t: Tarea
 const VACIA: CambiosTarea = { titulo: "", descripcion: "", tipo: "Otro", estado: "Por hacer", prioridad: "Normal", responsable: "", vence: null, hora: "", relacion: "Interna", con: "", contactoId: "", bloqueadaPor: [], motivoBloqueo: "", subtareas: [] };
 
 /** La ficha de una tarea (o el alta de una nueva): todo editable, con subtareas, bloqueos y comentarios. */
-function FichaTarea({ h, tarea, cerrar, creada }: { h: Hook; tarea: Tarea | null; cerrar: () => void; creada: (id: string) => void }) {
+function FichaTarea({ h, tarea, inicial, cerrar, creada }: { h: Hook; tarea: Tarea | null; inicial?: CambiosTarea | null; cerrar: () => void; creada: (id: string) => void }) {
   const d = h.datos!;
   const base = useBaseProyecto();
-  const [f, setF] = useState<CambiosTarea>(() => (tarea ? { ...tarea } : { ...VACIA, responsable: d.usuario, proyecto: h.proyecto }));
+  // Nueva: vacía, o con lo dictado (si no se dijo quién, queda para quien la carga).
+  const [f, setF] = useState<CambiosTarea>(() => (tarea ? { ...tarea } : { ...VACIA, proyecto: h.proyecto, ...inicial, responsable: inicial?.responsable || d.usuario }));
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [subtarea, setSubtarea] = useState("");
@@ -373,7 +395,9 @@ function FichaTarea({ h, tarea, cerrar, creada }: { h: Hook; tarea: Tarea | null
           <section className="crm-ficha__seccion">
             <label className="campo">
               Título
-              <input value={f.titulo ?? ""} onChange={(e) => poner("titulo", e.target.value)} placeholder="¿Qué hay que hacer?" autoFocus={!tarea} />
+              <ConDictado linea valor={f.titulo ?? ""} onCambio={(v) => poner("titulo", v)}>
+                <input value={f.titulo ?? ""} onChange={(e) => poner("titulo", e.target.value)} placeholder="¿Qué hay que hacer?" autoFocus={!tarea && !inicial} />
+              </ConDictado>
             </label>
             <div className="tarea-ficha__opciones" role="group" aria-label="Tipo">
               {TIPOS.map((t) => (
@@ -613,5 +637,70 @@ function FichaTarea({ h, tarea, cerrar, creada }: { h: Hook; tarea: Tarea | null
         </div>
       </aside>
     </div>
+  );
+}
+
+/**
+ * Dictar una tarea: se habla ("mañana llamar a la constructora por el hormigón, que lo haga Eliana,
+ * es urgente"), se ve lo que entendió (se puede corregir) y Claude la ordena en sus campos. Se
+ * abre la ficha completa para revisarla antes de crearla.
+ */
+function DictarTarea({ equipo, producto, cerrar, lista }: { equipo: string[]; producto: boolean; cerrar: () => void; lista: (c: CambiosTarea) => void }) {
+  const [texto, setTexto] = useState("");
+  const [armando, setArmando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const dic = useDictado((t) => setTexto((x) => sumarDictado(x, t)));
+  const { soportado, empezar } = dic;
+  // Arranca a escuchar apenas se abre.
+  useEffect(() => {
+    if (soportado) empezar();
+  }, [soportado, empezar]);
+
+  async function armar() {
+    dic.parar();
+    setArmando(true);
+    setError(null);
+    try {
+      const { tarea } = await leerJson<{ tarea: CambiosTarea }>(await fetch("/api/tareas/dictado", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ texto, equipo }) }));
+      lista(tarea);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setArmando(false);
+    }
+  }
+
+  return (
+    <section className="card dictar-tarea" aria-label={producto ? "Dictar un feature" : "Dictar una tarea"}>
+      <div className="dictar-tarea__cabeza">
+        <button
+          type="button"
+          className={`dictar-tarea__mic${dic.escuchando ? " dictar-tarea__mic--escuchando" : ""}`}
+          onClick={dic.alternar}
+          disabled={!soportado || armando}
+          aria-pressed={dic.escuchando}
+          aria-label={dic.escuchando ? "Dejar de escuchar" : "Escuchar"}
+        >
+          <Icono nombre={dic.escuchando ? "detener" : "microfono"} size={26} />
+        </button>
+        <div>
+          <strong>{dic.escuchando ? "Te escucho…" : texto ? "Listo para armar" : "Contá la tarea"}</strong>
+          <p className="crm-ficha__sub">
+            {soportado
+              ? "Decí qué hay que hacer, quién, para cuándo y si es urgente. Ej.: “mañana llamar a la constructora por el hormigón, que lo haga Eliana, es urgente”."
+              : "Este navegador no tiene dictado (usá Chrome o Safari). Podés escribirla acá y la ordenamos igual."}
+          </p>
+        </div>
+      </div>
+      <textarea rows={3} value={dic.parcial ? sumarDictado(texto, dic.parcial) : texto} onChange={(e) => setTexto(e.target.value)} placeholder="Lo que digas aparece acá (lo podés corregir)." aria-label="Lo dictado" />
+      {(error || dic.error) && <p className="alerta alerta--error">{error ?? dic.error}</p>}
+      <div className="tarea-ficha__acciones">
+        <button type="button" className="btn btn--primario btn--chico" disabled={!texto.trim() || armando} onClick={() => void armar()}>
+          {armando ? "Armando la tarea…" : "Armar la tarea"}
+        </button>
+        <button type="button" className="btn btn--texto btn--chico" onClick={() => (dic.parar(), cerrar())}>
+          Cancelar
+        </button>
+      </div>
+    </section>
   );
 }

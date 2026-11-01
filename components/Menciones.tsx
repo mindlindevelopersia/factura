@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { BotonDictar } from "./Dictado";
 import { leerJson } from "./formato";
 
 export interface UsuarioMencion {
@@ -37,10 +38,12 @@ type Props = {
   className?: string;
   "aria-label"?: string;
   autoFocus?: boolean;
+  /** Sin el micrófono para dictar. */
+  sinDictado?: boolean;
 };
 
 /** Un campo de texto donde escribir @ abre la lista de usuarios para mencionarlos (y les llega una notificación). */
-export function CampoMenciones({ value, onChange, placeholder, rows = 3, linea, className, autoFocus, ...resto }: Props) {
+export function CampoMenciones({ value, onChange, placeholder, rows = 3, linea, className, autoFocus, sinDictado, ...resto }: Props) {
   const usuarios = useUsuarios();
   const ref = useRef<HTMLTextAreaElement & HTMLInputElement>(null);
   const [busqueda, setBusqueda] = useState<{ desde: number; texto: string } | null>(null);
@@ -102,8 +105,9 @@ export function CampoMenciones({ value, onChange, placeholder, rows = 3, linea, 
   };
 
   return (
-    <span className="menciones">
+    <span className={`menciones${sinDictado ? "" : " con-dictado"}${linea ? " con-dictado--linea" : ""}`}>
       {linea ? <input {...comunes} /> : <textarea {...comunes} rows={rows} />}
+      {!sinDictado && <BotonDictar valor={value} onCambio={onChange} className="dictar--en-campo" />}
       {opciones.length > 0 && (
         <ul className="menciones__lista" role="listbox" aria-label="Mencionar a">
           {opciones.map((u, i) => (
