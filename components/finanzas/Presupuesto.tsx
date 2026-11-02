@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { DatosPresupuesto } from "@/lib/presupuesto/fuente";
-import { ESTADOS_ITEM, NOMBRE_ESTADO, type ItemCalculado, type PagoCaja } from "@/lib/presupuesto/modelo";
-import { GRUPOS_PRESUPUESTO, type GrupoPresupuesto } from "@/lib/presupuesto/rubros";
+import { ESTADOS_ITEM, NOMBRE_ESTADO, posiblesTerminados, rubrosFaltantes, type ItemCalculado, type PagoCaja } from "@/lib/presupuesto/modelo";
+import { GRUPOS_PRESUPUESTO, RUBROS_BASE, type GrupoPresupuesto } from "@/lib/presupuesto/rubros";
 import { ExportarExcel } from "../ExportarExcel";
 import { leerJson } from "../formato";
 import { Icono } from "../Icono";
@@ -24,6 +24,15 @@ export function Presupuesto() {
   const [cargando, setCargando] = useState(false);
   const [abierto, setAbierto] = useState<string | "nuevo" | null>(null);
   const [verSinItem, setVerSinItem] = useState<GrupoPresupuesto | null>(null);
+  const [ocultos, setOcultos] = useState<string[]>([]);
+  const [marcando, setMarcando] = useState(false);
+  useEffect(() => {
+    try {
+      setOcultos(JSON.parse(localStorage.getItem("presupuesto-rubros-ocultos") ?? "[]"));
+    } catch {
+      /* nada guardado */
+    }
+  }, []);
 
   const cargar = useCallback(
     async (fresco = false) => {
@@ -69,6 +78,10 @@ export function Presupuesto() {
   }
 
   const desvio = p.total.costoFinalUsd - p.total.presupuestoUsd;
+  const terminados = posiblesTerminados(p.items);
+  const faltantes = rubrosFaltantes(p.items).filter((x) => !ocultos.includes(x));
+  // Terminado: vale lo pagado. Si no tenía presupuesto, lo pagado queda como presupuesto (en dólares).
+  const usarLoPagado = (i: ItemCalculado) => pedir(`${base}/${i.id}`, "PATCH", { estado: "terminado", faltaUsd: null, ...(i.monto == null ? { moneda: "USD", monto: Math.round(i.pagadoUsd), baseCac: null } : {}) });
   return (
     <div className="ingresos presupuesto">
       <BarraLectura
@@ -144,6 +157,71 @@ export function Presupuesto() {
         {p.sinPresupuesto ? ` ${p.sinPresupuesto} ítems todavía sin monto.` : ""}
         {p.sinMep ? ` ${p.sinMep} pagos sin MEP del día (no suman en dólares).` : ""}
       </p>
+
+      {terminados.length > 0 && (
+        <section className="card presupuesto__aviso" aria-label="Ítems que parecen terminados">
+          <div>
+            <strong>
+              {terminados.length === 1 ? "1 ítem parece terminado" : `${terminados.length} ítems parecen terminados`}
+            </strong>
+            <span className="ficha__nota">Ya tienen pagos y, o no tenían presupuesto, o se pagó casi todo. Marcalos como terminados para que valga lo pagado (lo que falta queda en cero).</span>
+          </div>
+          <ul>
+            {terminados.map((i) => (
+              <li key={i.id}>
+                <span>
+                  {i.nombre}: pagado <strong>{usd(i.pagadoUsd)}</strong>
+                  {i.presupuestoUsd != null ? ` de ${usd(i.presupuestoUsd)} presupuestado` : " (sin presupuesto)"}
+                </span>
+                <button type="button" className="btn btn--borde btn--chico" disabled={marcando} onClick={() => void usarLoPagado(i).catch((e) => setError(e instanceof Error ? e.message : String(e)))}>
+                  Usar lo pagado
+                </button>
+              </li>
+            ))}
+          </ul>
+          {terminados.length > 1 && (
+            <button
+              type="button"
+              className="btn btn--primario btn--chico"
+              disabled={marcando}
+              onClick={async () => {
+                setMarcando(true);
+                try {
+                  for (const i of terminados) await usarLoPagado(i);
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : String(e));
+                } finally {
+                  setMarcando(false);
+                }
+              }}
+            >
+              {marcando ? "Marcando…" : `Marcar los ${terminados.length} como terminados`}
+            </button>
+          )}
+        </section>
+      )}
+      {faltantes.length > 0 && (
+        <p className="alerta alerta--aviso presupuesto__faltantes">
+          <span>
+            Hay rubros nuevos en la plantilla: <strong>{faltantes.map((x) => RUBROS_BASE.find((r) => r.id === x)?.nombre).join(", ")}</strong>.
+          </span>
+          <button type="button" className="btn btn--borde btn--chico" onClick={() => void pedir(base, "POST", { faltantes: true }).catch((e) => setError(e instanceof Error ? e.message : String(e)))}>
+            Agregarlos
+          </button>
+          <button
+            type="button"
+            className="btn btn--texto btn--chico"
+            onClick={() => {
+              const l = [...ocultos, ...faltantes];
+              setOcultos(l);
+              localStorage.setItem("presupuesto-rubros-ocultos", JSON.stringify(l));
+            }}
+          >
+            No
+          </button>
+        </p>
+      )}
+      {error && <p className="alerta alerta--error">{error}</p>}
 
       <div className="tareas__barra">
         <button type="button" className="btn btn--primario btn--chico" onClick={() => setAbierto("nuevo")}>
@@ -232,6 +310,7 @@ export function Presupuesto() {
             setAbierto(null);
           }}
           borrar={item ? async () => (await pedir(`${base}/${item.id}`, "DELETE"), setAbierto(null)) : undefined}
+          usarLoPagado={item && item.pagos.length && item.estado !== "terminado" ? async () => (await usarLoPagado(item), setAbierto(null)) : undefined}
           asignar={(x, destino) => pedir(`${base}/asignar`, "POST", { clave: x.clave, item: destino, descripcion: x.descripcion })}
         />
       )}
@@ -268,7 +347,7 @@ function Fila({ i, abrir }: { i: ItemCalculado; abrir: () => void }) {
       </td>
       <td data-etiqueta="Falta" className="tabla__numero">
         {vacio ? "—" : usd(i.faltaCalculadaUsd)}
-        {i.faltaUsd != null && <span className="tabla__sub">a mano</span>}
+        {i.estado === "terminado" ? <span className="tabla__sub">terminado</span> : i.faltaUsd != null && <span className="tabla__sub">a mano</span>}
       </td>
       <td data-etiqueta="Costo final" className="tabla__numero">
         {vacio ? "—" : <strong>{usd(i.costoFinalUsd)}</strong>}
@@ -326,12 +405,14 @@ function FichaItem({
   guardar,
   borrar,
   asignar,
+  usarLoPagado,
 }: {
   item: ItemCalculado | null;
   items: ItemCalculado[];
   cerrar: () => void;
   guardar: (c: Record<string, unknown>) => Promise<void>;
   borrar?: () => Promise<void>;
+  usarLoPagado?: () => Promise<void>;
   asignar: (p: PagoCaja, item: string) => Promise<void>;
 }) {
   const [f, setF] = useState({
@@ -436,6 +517,11 @@ function FichaItem({
               <button type="button" className="btn btn--primario btn--chico" disabled={guardando || !f.nombre.trim()} onClick={() => void enviar()}>
                 {guardando ? "Guardando…" : item ? "Guardar" : "Agregar"}
               </button>
+              {usarLoPagado && (
+                <button type="button" className="btn btn--borde btn--chico" disabled={guardando} onClick={() => void usarLoPagado().catch((e) => setError(e instanceof Error ? e.message : String(e)))} title="Marca el ítem como terminado: vale lo pagado y no falta nada">
+                  <Icono nombre="check" size={14} /> Terminado: usar lo pagado ({usd(item?.pagadoUsd ?? 0)})
+                </button>
+              )}
               {borrar && (
                 <button type="button" className="btn btn--texto btn--chico" onClick={() => window.confirm(`¿Borrar "${item?.nombre}"? Sus pagos quedan sin ítem.`) && void borrar()}>
                   Borrar ítem

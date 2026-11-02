@@ -4,7 +4,8 @@
  * Por ítem: el presupuesto (en dólares, o en pesos con su mes base de CAC para actualizarlo), lo
  * pagado (los pagos de la caja de egresos que van a ese ítem, en dólares al MEP del día), lo que
  * falta (presupuesto − pagado, o un número a mano) y el costo final estimado (pagado + falta).
- * La suma da el costo total del proyecto y el costo del m².
+ * La suma da el costo total del proyecto y el costo del m². Un ítem "terminado" vale lo pagado:
+ * no falta nada (el presupuesto queda para ver el desvío).
  *
  * Los pesos se llevan a hoy con el CAC general (mes base → último publicado) y se pasan a dólares
  * al MEP de hoy. Puro.
@@ -13,9 +14,9 @@
 import { GRUPOS_PRESUPUESTO, grupoDeRubroCaja, RUBROS_BASE, type GrupoPresupuesto } from "./rubros";
 
 export type MonedaPresupuesto = "USD" | "ARS";
-export const ESTADOS_ITEM = ["estimado", "cotizado", "contratado"] as const;
+export const ESTADOS_ITEM = ["estimado", "cotizado", "contratado", "terminado"] as const;
 export type EstadoItem = (typeof ESTADOS_ITEM)[number];
-export const NOMBRE_ESTADO: Record<EstadoItem, string> = { estimado: "Estimado", cotizado: "Cotizado", contratado: "Contratado" };
+export const NOMBRE_ESTADO: Record<EstadoItem, string> = { estimado: "Estimado", cotizado: "Cotizado", contratado: "Contratado", terminado: "Terminado" };
 
 export interface ItemPresupuesto {
   id: string;
@@ -141,7 +142,7 @@ export function calcularPresupuesto(items: ItemPresupuesto[], pagos: PagoCaja[],
     const hoy = presupuestoHoy(i, ctx);
     const ps = (porItem.get(i.id) ?? []).sort((a, b) => (a.fecha ?? "").localeCompare(b.fecha ?? ""));
     const pagadoUsd = suma(ps);
-    const faltaCalculadaUsd = i.faltaUsd ?? Math.max(0, (hoy.usd ?? 0) - pagadoUsd);
+    const faltaCalculadaUsd = i.estado === "terminado" ? 0 : (i.faltaUsd ?? Math.max(0, (hoy.usd ?? 0) - pagadoUsd));
     const costoFinalUsd = pagadoUsd + faltaCalculadaUsd;
     return { ...i, presupuestoUsd: hoy.usd, arsAjustado: hoy.arsAjustado, factorCac: hoy.factorCac, pagadoUsd, pagos: ps, faltaCalculadaUsd, costoFinalUsd, desvioUsd: hoy.usd == null ? null : costoFinalUsd - hoy.usd };
   });
@@ -177,12 +178,13 @@ export function calcularPresupuesto(items: ItemPresupuesto[], pagos: PagoCaja[],
  * La plantilla para arrancar: los rubros base, con el monto del cash flow del Excel madre cuando
  * hay una línea que les corresponde (en dólares, como "estimado").
  */
-export function plantilla(proyecto: string, lineasExcel: { nombre: string; usd: number }[], por: string, ahora: string): ItemPresupuesto[] {
+export function plantilla(proyecto: string, lineasExcel: { nombre: string; usd: number }[], por: string, ahora: string, soloIds?: string[]): ItemPresupuesto[] {
   const excel = new Map(lineasExcel.map((l) => [normalizarTexto(l.nombre).replace(/\s+/g, " ").trim(), l.usd]));
-  return RUBROS_BASE.map((r, n) => {
+  return RUBROS_BASE.flatMap((r, n) => {
+    if (soloIds && !soloIds.includes(r.id)) return [];
     const montos = (r.delExcel ?? []).map((x) => excel.get(normalizarTexto(x).replace(/\s+/g, " ").trim())).filter((x): x is number => x != null);
     const monto = montos.length ? Math.round(montos.reduce((s, x) => s + x, 0)) : null;
-    return {
+    return [{
       id: r.id,
       proyecto,
       grupo: r.grupo,
@@ -197,7 +199,7 @@ export function plantilla(proyecto: string, lineasExcel: { nombre: string; usd: 
       notas: monto != null ? "Monto inicial del cash flow del Excel madre." : "",
       actualizado: ahora,
       por,
-    };
+    } satisfies ItemPresupuesto];
   });
 }
 
@@ -263,3 +265,20 @@ export const itemDeFila = (f: string[]): ItemPresupuesto => ({
   actualizado: f[12] ?? "",
   por: f[13] ?? "",
 });
+
+/**
+ * Los ítems que parecen terminados: tienen pagos y, o no tenían presupuesto, o ya se pagó casi todo
+ * (95% o más). Se sugiere usar lo pagado.
+ */
+export function posiblesTerminados(items: ItemCalculado[]): ItemCalculado[] {
+  return items.filter((i) => i.estado !== "terminado" && !RECURRENTES.has(i.id) && i.grupo !== "impuestos" && i.pagadoUsd > 0 && (i.presupuestoUsd == null || i.pagadoUsd >= i.presupuestoUsd * 0.95));
+}
+
+/** Los que se pagan todos los meses hasta el final de la obra: no se sugieren como terminados. */
+const RECURRENTES = new Set(["seguros", "direccion", "ejecucion", "imprevistos"]);
+
+/** Los rubros de la plantilla que el proyecto todavía no tiene (los que se sumaron después). */
+export function rubrosFaltantes(items: Pick<ItemPresupuesto, "id">[]): string[] {
+  const ya = new Set(items.map((i) => i.id));
+  return RUBROS_BASE.filter((r) => !ya.has(r.id)).map((r) => r.id);
+}

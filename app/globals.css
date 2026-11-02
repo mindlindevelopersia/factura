@@ -8464,3 +8464,39 @@ html[data-privado-simple] dd {
   font: inherit;
   font-size: 12px;
 }
+.presupuesto__aviso {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 16px 20px;
+  border: 1px dashed var(--lima-oscuro);
+  background: #fafbea;
+}
+.presupuesto__aviso > div {
+  display: grid;
+  gap: 2px;
+}
+.presupuesto__aviso ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.presupuesto__aviso li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.presupuesto__aviso > .btn {
+  justify-self: start;
+}
+.presupuesto__faltantes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}

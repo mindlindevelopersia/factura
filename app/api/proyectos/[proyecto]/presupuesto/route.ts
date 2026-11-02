@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { errorCrm, preparar } from "@/lib/crm/api";
 import { nuevoId } from "@/lib/crm/modelo";
 import { validarItem, type ItemPresupuesto } from "@/lib/presupuesto/modelo";
-import { cargarPlantilla, guardarItem, leerItems, presupuestoProyecto } from "@/lib/presupuesto/fuente";
+import { cargarFaltantes, cargarPlantilla, guardarItem, leerItems, presupuestoProyecto } from "@/lib/presupuesto/fuente";
 
 /** El presupuesto del proyecto contra lo pagado. ?fresco=1 vuelve a leer las planillas. */
 export async function GET(req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
@@ -17,14 +17,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ proyecto
 
 /**
  * { plantilla: true } carga los rubros base (con los montos del Excel madre) si todavía no hay
- * presupuesto. { item: {...} } agrega un ítem nuevo.
+ * presupuesto; { faltantes: true } suma los rubros nuevos de la plantilla; { item: {...} } agrega
+ * un ítem nuevo.
  */
 export async function POST(req: Request, { params }: { params: Promise<{ proyecto: string }> }) {
   const ctx = await preparar((await params).proyecto, "finanzas/presupuesto");
   if (ctx instanceof NextResponse) return ctx;
-  const body = (await req.json().catch(() => ({}))) as { plantilla?: boolean; item?: unknown };
+  const body = (await req.json().catch(() => ({}))) as { plantilla?: boolean; faltantes?: boolean; item?: unknown };
   try {
     if (body.plantilla) return NextResponse.json({ cargados: await cargarPlantilla(ctx.proyecto.id, ctx.usuario) });
+    if (body.faltantes) return NextResponse.json({ cargados: await cargarFaltantes(ctx.proyecto.id, ctx.usuario) });
     const v = validarItem(body.item);
     if ("error" in v) return NextResponse.json({ error: v.error }, { status: 400 });
     if (!v.cambios.nombre) return NextResponse.json({ error: "El ítem necesita un nombre." }, { status: 400 });
