@@ -5,7 +5,7 @@ import { cajaEgresos, datosComercial, dolarHoy, grillaCashFlow, historicoMep, se
 import { googleClient } from "../google/auth";
 import { PestaniaSimple } from "../google/pestania";
 import { proyecto as buscarProyecto } from "../modulos";
-import { calcularPresupuesto, COLUMNAS_PRESUPUESTO, filaDeItem, itemDeFila, plantilla, type ContextoPrecios, type ItemPresupuesto, type PagoCaja, type Presupuesto } from "./modelo";
+import { calcularPresupuesto, COLUMNAS_PRESUPUESTO, filaDeItem, itemDeFila, plantilla, rubrosFaltantes, type ContextoPrecios, type ItemPresupuesto, type PagoCaja, type Presupuesto } from "./modelo";
 
 /**
  * El presupuesto de cada proyecto vive en la planilla del CRM (la que el hub puede escribir):
@@ -72,6 +72,15 @@ async function lineasExcel(id: string): Promise<{ nombre: string; usd: number }[
 export async function cargarPlantilla(proyecto: string, por: string): Promise<number> {
   if ((await leerItems(proyecto)).length) return 0;
   const items = plantilla(proyecto, await lineasExcel(proyecto).catch(() => []), por, new Date().toISOString());
+  await pestanias().items.agregarVarias(items.map(filaDeItem));
+  return items.length;
+}
+
+/** Suma los rubros de la plantilla que el proyecto todavía no tiene (los que se agregaron después). */
+export async function cargarFaltantes(proyecto: string, por: string): Promise<number> {
+  const faltan = rubrosFaltantes(await leerItems(proyecto));
+  if (!faltan.length) return 0;
+  const items = plantilla(proyecto, await lineasExcel(proyecto).catch(() => []), por, new Date().toISOString(), faltan);
   await pestanias().items.agregarVarias(items.map(filaDeItem));
   return items.length;
 }

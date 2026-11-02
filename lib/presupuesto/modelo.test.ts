@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asignarPago, calcularPresupuesto, filaDeItem, itemDeFila, plantilla, presupuestoHoy, validarItem, type ContextoPrecios, type ItemPresupuesto, type PagoCaja } from "./modelo";
+import { asignarPago, calcularPresupuesto, filaDeItem, itemDeFila, plantilla, posiblesTerminados, presupuestoHoy, rubrosFaltantes, validarItem, type ContextoPrecios, type ItemPresupuesto, type PagoCaja } from "./modelo";
 import { RUBROS_BASE } from "./rubros";
 
 const ctx: ContextoPrecios = { cac: (m) => ({ "2026-06": 100, "2026-09": 110 })[m] ?? null, cacHoy: { mes: "2026-09", indice: 110 }, mepHoy: 1500 };
@@ -42,6 +42,31 @@ describe("presupuesto de obra", () => {
     expect(r.total.costoFinalUsd).toBe(585_000);
     expect(r.costoM2).toBe(585);
     expect(r.sinMep).toBe(1);
+  });
+
+  it("terminado: vale lo pagado (no falta nada) y queda el desvío contra el presupuesto", () => {
+    const items = [item("demolicion", { monto: 10_000, estado: "terminado" }), item("estructura", { monto: 100_000 }), item("derechos", { grupo: "soft" }), item("pintura", { monto: 20_000 })];
+    const pagos = [pago("1", "Demolición casa vieja", "servicios", 12_500), pago("2", "Hormigón", "hormigon", 97_000), pago("3", "Derechos de construcción", "derechos", 3_000)];
+    const r = calcularPresupuesto(items, pagos, {}, ctx, 100);
+    const de = (id: string) => r.items.find((i) => i.id === id)!;
+    expect(de("demolicion")).toMatchObject({ pagadoUsd: 12_500, faltaCalculadaUsd: 0, costoFinalUsd: 12_500, desvioUsd: 2_500 });
+    // Sugeridos como terminados: con pagos y sin presupuesto, o con casi todo pagado (no los ya terminados ni los sin pagos).
+    expect(posiblesTerminados(r.items).map((i) => i.id)).toEqual(["estructura", "derechos"]);
+    // Los recurrentes (impuestos, seguros…) no se sugieren aunque tengan pagos.
+    const r2 = calcularPresupuesto([item("iibb", { grupo: "impuestos" }), item("seguros", { grupo: "soft" })], [pago("4", "IIBB", "impuestos", 100), pago("5", "Seguro de obra", "seguros", 100)], {}, ctx, 100);
+    expect(posiblesTerminados(r2.items)).toEqual([]);
+  });
+
+  it("la plusvalía va a su propio ítem, no a derechos", () => {
+    const items = [item("plusvalia", { grupo: "soft" }), item("derechos", { grupo: "soft" })];
+    expect(asignarPago(pago("p", "VEP plusvalía Lerma", "derechos", 1), items, {})).toBe("plusvalia");
+    expect(asignarPago(pago("d", "Derechos de construcción", "derechos", 1), items, {})).toBe("derechos");
+  });
+
+  it("los rubros que se sumaron a la plantilla después", () => {
+    const tiene = plantilla("lerma-439", [], "Mati", "x").filter((i) => i.id !== "plusvalia");
+    expect(rubrosFaltantes(tiene)).toEqual(["plusvalia"]);
+    expect(plantilla("lerma-439", [], "Mati", "x", ["plusvalia"]).map((i) => i.id)).toEqual(["plusvalia"]);
   });
 
   it("la plantilla toma los montos del cash flow del Excel madre", () => {

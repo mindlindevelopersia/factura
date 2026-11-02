@@ -65,7 +65,8 @@ export const RUBROS_BASE: RubroBase[] = [
   { id: "varios", nombre: "Varios de obra", grupo: "hard", claves: /varios de obra/, delExcel: ["Otros gastos generales"] },
   // ——— Soft ———
   { id: "imprevistos", nombre: "Imprevistos", grupo: "soft" },
-  { id: "derechos", nombre: "Derechos y aprobaciones municipales", grupo: "soft", claves: /derechos?|permiso de obra|inicio de obra|aprobaci|municipal|plusval/, rubrosCaja: ["derechos"] },
+  { id: "plusvalia", nombre: "Plusvalía", grupo: "soft", claves: /plusval/ },
+  { id: "derechos", nombre: "Derechos y aprobaciones municipales", grupo: "soft", claves: /derechos?|permiso de obra|inicio de obra|aprobaci|municipal/, rubrosCaja: ["derechos"] },
   { id: "proyecto", nombre: "Proyecto (honorarios)", grupo: "soft", claves: /proyecto|arquitect|renderista/ },
   { id: "direccion", nombre: "Dirección de obra (honorarios)", grupo: "soft", claves: /direcci\w* de obra/ },
   { id: "ejecucion", nombre: "Ejecución", grupo: "soft", claves: /ejecuci|jefe de obra|capataz/ },

@@ -32,7 +32,23 @@ dólares y como "estimado". La plusvalía no va. Se pueden agregar, cambiar y bo
 | **Costo final** | Pagado + falta. |
 | **Desvío** | Costo final − presupuesto (en rojo si se pasa). |
 
-Cada ítem también tiene estado (estimado / cotizado / contratado), proveedor y notas.
+Cada ítem también tiene estado (estimado / cotizado / contratado / **terminado**), proveedor y
+notas.
+
+**Terminado: vale lo pagado.**
+
+- El costo final es lo pagado según las cajas y lo que falta queda en cero.
+- El presupuesto original se mantiene, para ver el desvío. Si no tenía presupuesto, lo pagado queda
+  como presupuesto (en dólares).
+- Se marca con **"Terminado: usar lo pagado"** en la ficha.
+- Arriba aparecen los ítems que **parecen terminados** (tienen pagos y, o no tenían presupuesto, o
+  ya se pagó el 95% o más), para marcarlos de a uno o todos juntos. No se sugieren los que se pagan
+  todos los meses: impuestos, seguros, dirección, ejecución e imprevistos.
+- Si lo de la caja no está bien asignado, el monto y lo que falta se siguen corrigiendo a mano.
+
+**Plusvalía:** tiene su propio ítem en costo soft, y sus pagos van ahí y no a "Derechos
+municipales". A los proyectos que ya cargaron la plantilla les aparece el aviso **"Hay rubros
+nuevos en la plantilla"** con el botón **Agregarlos**.
 
 ## Cómo se asignan los pagos a cada ítem
 
