@@ -30,8 +30,6 @@ export const GRUPOS: { clave: string; nombre: string; tipo: TipoPartida }[] = [
   { clave: "honorarios", nombre: "Honorarios y gestiones (soft costs)", tipo: "egreso" },
   { clave: "otros", nombre: "Impuestos, seguros y otros", tipo: "egreso" },
   { clave: "iva", nombre: "IVA e ingresos brutos", tipo: "egreso" },
-  { clave: "devoluciones", nombre: "Devoluciones", tipo: "egreso" },
-  { clave: "prestamos", nombre: "Préstamos (se devuelven)", tipo: "egreso" },
   { clave: "sin-clasificar", nombre: "Sin clasificar", tipo: "egreso" },
 ];
 

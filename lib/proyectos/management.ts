@@ -47,17 +47,12 @@ export interface EgresoHq {
 }
 
 /** Por qué un egreso marcado como HQ está en duda. */
-export type DudaHq = "banco" | "obra" | "prestamo" | "grande";
+export type DudaHq = "banco" | "obra" | "grande";
 
 export const DUDAS_HQ: Record<DudaHq, { titulo: string; queHacer: string }> = {
   obra: {
     titulo: "Parecen de la obra",
     queHacer: 'Materiales, hormigón, constructora: son de Lerma. Cambiar "Corresponde" a Lerma 439.',
-  },
-  prestamo: {
-    titulo: "Préstamos",
-    queHacer:
-      "Plata prestada que después se devolvió (a Borok: US$ 125.000 en dos pagos): no es gasto de HQ ni de Lerma. Van todos, estén marcados como HQ o no. Marcarlos como préstamo y anotar al lado la fila de la devolución.",
   },
   grande: {
     titulo: "Grandes en dólares",
@@ -75,11 +70,11 @@ export interface EgresoHqEnDuda extends EgresoHq {
 
 export interface GastoHq extends MontoHq {
   /**
-   * Lo que está en duda, para que lo revise Tadeo en el Excel, en el orden de DUDAS_HQ: los marcados
-   * como HQ y, además, todos los préstamos (estén marcados como HQ o no).
+   * Lo que está en duda de lo marcado como HQ, para que lo revise Tadeo en el Excel, en el orden de
+   * DUDAS_HQ. (Los préstamos y las devoluciones no existen para el hub: se descartan al leer la caja.)
    */
   revisar: EgresoHqEnDuda[];
-  /** Cuántos de los marcados como HQ están en duda (incluye los préstamos marcados como HQ). */
+  /** Cuántos de los marcados como HQ están en duda. */
   enDudaHq: number;
   /** Lo que no está en duda: gastos de oficina (honorarios, sueldos, servicios…). */
   oficina: MontoHq;
@@ -89,7 +84,6 @@ export interface GastoHq extends MontoHq {
 const RUBROS_DE_OBRA = new Set(["terreno", "constructora", "hormigon", "hierro", "derechos", "electricidad", "materiales"]);
 
 function dudaDe(e: EgresoHq): DudaHq | null {
-  if (e.rubro === "prestamos") return "prestamo";
   if (RUBROS_DE_OBRA.has(e.rubro)) return "obra";
   if (e.moneda === "USD" && e.monto >= 5000) return "grande";
   if (e.rubro === "impuestos" || e.rubro === "bancarios") return "banco";
@@ -113,10 +107,8 @@ export function analizarHq(egresos: EgresoHq[]): GastoHq {
   const revisar = [
     ...deHq.flatMap((e) => {
       const duda = dudaDe(e);
-      return duda && duda !== "prestamo" ? [{ ...e, duda }] : [];
+      return duda ? [{ ...e, duda }] : [];
     }),
-    // Los préstamos van todos: el de Borok, por ejemplo, tiene una parte marcada como HQ y otra sin proyecto.
-    ...egresos.filter((e) => e.rubro === "prestamos").map((e) => ({ ...limpio(e), duda: "prestamo" as const })),
   ].sort((a, b) => orden.indexOf(a.duda) - orden.indexOf(b.duda) || a.pestania.localeCompare(b.pestania) || a.fila - b.fila);
   return { ...sumarHq(deHq), revisar, enDudaHq: deHq.filter((e) => dudaDe(e)).length, oficina: sumarHq(deHq.filter((e) => !dudaDe(e))) };
 }

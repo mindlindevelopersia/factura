@@ -3,6 +3,7 @@ import { cashFlowProyecto } from "@/lib/finanzas/cashflowFuente";
 import { cuentasCorrientes, datosComercial, FlujoSinConfigurar } from "@/lib/finanzas/fuente";
 import { PROYECTO_PRINCIPAL, proyecto as buscar, rutaProyecto } from "@/lib/modulos";
 import { exigir } from "@/lib/permisos/api";
+import { presupuestoProyecto } from "@/lib/presupuesto/fuente";
 import { esCostoDelProyecto, type DatosHonorarios, type PartidaCosto } from "@/lib/proyectos/honorarios";
 
 /**
@@ -19,7 +20,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ proyecto
   if (id !== PROYECTO_PRINCIPAL.id) return NextResponse.json({ error: "Por ahora los cobros están cargados solo para Lerma 439." }, { status: 404 });
   const fresco = new URL(req.url).searchParams.get("fresco") === "1";
   try {
-    const [cc, com, cf] = await Promise.all([cuentasCorrientes({ fresco }), datosComercial(id, { fresco }), cashFlowProyecto(id, { fresco })]);
+    const [cc, com, cf, pres] = await Promise.all([
+      cuentasCorrientes({ fresco }),
+      datosComercial(id, { fresco }),
+      cashFlowProyecto(id, { fresco }),
+      presupuestoProyecto(id, { fresco }).catch((e: unknown) => (console.error("honorarios: presupuesto", e), null)),
+    ]);
     const unidades = com.comercial.unidades;
 
     // Lo cobrado: todos los pagos de todas las cuentas (formales e informales), en dólares del día.
@@ -39,18 +45,26 @@ export async function GET(req: Request, { params }: { params: Promise<{ proyecto
     const sumar = (usd: Record<string, number>) => Object.values(usd).reduce((s, x) => s + x, 0);
     const egresos = (ps: typeof cf.actualizado) => ps.filter((x) => x.tipo === "egreso").map((x): PartidaCosto => ({ nombre: x.nombre, grupo: x.grupo, usd: sumar(x.usd) }));
     const actualizados = egresos(cf.actualizado);
+    // El costo: del presupuesto de obra si está cargado (pagado + lo que falta, por ítem); si no, del cash flow.
+    const conPresupuesto = !!pres?.presupuesto.items.length;
+    const costosPresupuesto: PartidaCosto[] = conPresupuesto
+      ? [
+          ...pres!.presupuesto.items.map((i) => ({ nombre: i.nombre, grupo: i.grupo, usd: i.costoFinalUsd })),
+          ...pres!.presupuesto.grupos.filter((g) => g.sinItemUsd > 0).map((g) => ({ nombre: `Pagado sin ítem (${g.nombre})`, grupo: g.id, usd: g.sinItemUsd })),
+        ]
+      : [];
     const datos: DatosHonorarios = {
       parte: p.management.parteM2,
       cobradoUsd,
       firmadoUsd,
       libres,
       m2Venta: com.desarrolladores?.m2Venta ?? unidades.filter((u) => !u.esCochera).reduce((s, u) => s + u.supVenta, 0),
-      costos: actualizados.filter(esCostoDelProyecto).filter((x) => x.usd > 0),
-      gastadoUsd: egresos(cf.real).filter(esCostoDelProyecto).reduce((s, x) => s + x.usd, 0),
-      excluidos: actualizados.filter((x) => !esCostoDelProyecto(x) && x.usd > 0),
+      costos: conPresupuesto ? costosPresupuesto.filter((x) => x.usd > 0) : actualizados.filter(esCostoDelProyecto).filter((x) => x.usd > 0),
+      gastadoUsd: conPresupuesto ? pres!.presupuesto.total.pagadoUsd : egresos(cf.real).filter(esCostoDelProyecto).reduce((s, x) => s + x.usd, 0),
+      excluidos: conPresupuesto ? [] : actualizados.filter((x) => !esCostoDelProyecto(x) && x.usd > 0),
     };
     const costoProyectadoOriginalUsd = egresos(cf.proyectado).filter(esCostoDelProyecto).reduce((s, x) => s + x.usd, 0);
-    return NextResponse.json({ datos, vendidas, costoProyectadoOriginalUsd, mesActual: cf.mesActual, avisos: cf.avisos, leido: com.leido });
+    return NextResponse.json({ datos, vendidas, costoProyectadoOriginalUsd, fuenteCosto: conPresupuesto ? "presupuesto" : "cash-flow", mesActual: cf.mesActual, avisos: cf.avisos, leido: com.leido });
   } catch (e) {
     const mensaje = e instanceof Error ? e.message : String(e);
     console.error("honorarios", e);

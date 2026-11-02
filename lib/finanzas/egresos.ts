@@ -259,6 +259,8 @@ export function leerCaja(filas: Celda[][], moneda: Moneda, pestania: string, mes
       pestania,
       fila: nro,
     };
+    // Los préstamos (Borok) y las devoluciones no existen para el hub (Mati, 02/11/2026): no se cuentan en nada.
+    if (e.rubro === "prestamos" || e.rubro === "devoluciones") continue;
     if (interno) {
       internos.push({ ...e, tipo: interno });
       continue;

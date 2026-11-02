@@ -70,7 +70,7 @@ describe("cash flow", () => {
         { fecha: "2025-05-06", moneda: "USD", monto: 5000, concepto: "Refuerzo", formal: false, inversor: "Persona Inventada", unidad: "3B" },
         { fecha: "2025-05-07", moneda: "USD", monto: 1000, concepto: "Aporte inicial", formal: true, inversor: "Persona Inventada", unidad: "3B" },
       ],
-      egresos: [egreso("hormigon", 100000), egreso("honorarios", 50, "USD"), egreso("prestamos", 1000)],
+      egresos: [egreso("hormigon", 100000), egreso("honorarios", 50, "USD")],
       nombreRubro: (id) => id,
       mep,
     });
@@ -79,7 +79,6 @@ describe("cash flow", () => {
     expect(de("r-ref-negro")).toMatchObject({ grupo: "refuerzos", ars: { "2025-05": 5_000_000 } });
     expect(de("r-hormigon")).toMatchObject({ grupo: "obra", usd: { "2025-05": 100 } });
     expect(de("r-honorarios").grupo).toBe("honorarios");
-    expect(de("r-prestamos").grupo).toBe("prestamos");
     expect(de("r-anticipos").grupo).toBe("anticipos");
     expect(de("r-cuotas").movimientos![0].texto).toContain("Persona Inventada · 3B");
   });

@@ -229,6 +229,12 @@ const AREAS_DE_PROYECTO: { sub: string; nombre: string; descripcion: string; ico
         beta: true,
       },
       {
+        sub: "finanzas/presupuesto",
+        nombre: "Presupuesto",
+        descripcion: "El presupuesto de obra por rubro (en dólares, o en pesos con base CAC) contra lo pagado: cuánto falta, el costo final y el costo del m².",
+        beta: true,
+      },
+      {
         sub: "finanzas/egresos",
         nombre: "Egresos",
         descripcion: "Lo que se pagó en pesos y en dólares, por rubro, proyecto y blanco o negro: en qué se va la plata.",
