@@ -11,12 +11,16 @@ interface Respuesta {
   datos: DatosHonorarios;
   vendidas: { codigo: string; inversor: string; precioUsd: number; contrato: boolean }[];
   costoProyectadoOriginalUsd: number;
+  fuenteCosto: "presupuesto" | "cash-flow";
   mesActual: string;
   avisos: string[];
 }
 
 const NOMBRE_GRUPO: Record<string, string> = {
   terreno: "Terreno",
+  hard: "Costo hard",
+  soft: "Costo soft",
+  impuestos: "Impuestos y gastos",
   obra: "Obra",
   equipamiento: "Equipamiento y ascensores",
   honorarios: "Honorarios y gestiones",
@@ -135,11 +139,20 @@ export function Honorarios() {
               </dd>
             </div>
           </dl>
-          <Origen texto={`Ingresos: lo firmado en los boletos más las unidades libres a precio de lista. Costo: el cash flow "actualizado" (lo real hasta ${r.mesActual} y lo proyectado del Excel madre de ahí en más). El Excel madre solo, sin lo real, daba ${usd(r.costoProyectadoOriginalUsd)}.`} />
+          <Origen
+            texto={
+              r.fuenteCosto === "presupuesto"
+                ? "Ingresos: lo firmado en los boletos más las unidades libres a precio de lista. Costo: el presupuesto de obra (Finanzas → Presupuesto): lo pagado más lo que falta de cada ítem."
+                : `Ingresos: lo firmado en los boletos más las unidades libres a precio de lista. Costo: el cash flow "actualizado" (lo real hasta ${r.mesActual} y lo proyectado del Excel madre de ahí en más), porque todavía no hay presupuesto cargado. El Excel madre solo daba ${usd(r.costoProyectadoOriginalUsd)}.`
+            }
+          />
         </section>
 
         <section className="card ingresos__seccion">
           <h3>De dónde sale el costo del m²</h3>
+          <p className="ficha__nota">
+            {r.fuenteCosto === "presupuesto" ? "Del presupuesto de obra (pagado + lo que falta)." : "Del cash flow del Excel madre: cargá el presupuesto en Finanzas → Presupuesto para que sea real."}
+          </p>
           <table className="tabla tabla--compacta">
             <tbody>
               {porGrupo.map(([g, v]) => (

@@ -12,7 +12,7 @@ const monto = (moneda: "ARS" | "USD", n: number) => `${moneda === "USD" ? "US$" 
 const fecha = (f: string | null) => (f ? f.split("-").reverse().join("/") : "sin fecha");
 
 /** Los grupos que se muestran abiertos; los del banco son cientos de filas chicas: van cerrados. */
-const ABIERTOS: DudaHq[] = ["obra", "prestamo", "grande"];
+const ABIERTOS: DudaHq[] = ["obra", "grande"];
 
 /** Baja la lista como CSV para abrir en Excel (separado por ";" y con coma decimal, como lo espera Excel en castellano). */
 function descargar(hq: GastoHq) {
@@ -51,7 +51,7 @@ export function RevisionHq({ hq }: { hq: GastoHq }) {
         <div>
           <h2>HQ para revisar con Tadeo</h2>
           <p className="ficha__nota">
-            {hq.enDudaHq} de {hq.movimientos} egresos marcados como HQ están en duda (los préstamos van todos, estén marcados como HQ o no). Quedan {hq.oficina.movimientos} de oficina ({plata(hq.oficina)}). Cada fila dice en qué pestaña y fila del Excel
+            {hq.enDudaHq} de {hq.movimientos} egresos marcados como HQ están en duda. Quedan {hq.oficina.movimientos} de oficina ({plata(hq.oficina)}). Cada fila dice en qué pestaña y fila del Excel
             está.
           </p>
         </div>

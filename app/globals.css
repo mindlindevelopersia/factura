@@ -8373,3 +8373,94 @@ html[data-privado-simple] dd {
   font-weight: 700;
   color: var(--negro);
 }
+
+/* Finanzas · Presupuesto de obra */
+.presupuesto__vacio {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 24px;
+}
+.presupuesto__vacio h2,
+.presupuesto__vacio p {
+  margin: 0;
+}
+.presupuesto__tabla {
+  padding: 0;
+}
+.presupuesto__grupo td {
+  padding-top: 18px;
+  background: #f1eefb;
+  color: var(--texto-suave);
+  font-size: 12px;
+}
+.presupuesto__grupo strong {
+  color: #4b3a8c;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.presupuesto__fila {
+  cursor: pointer;
+}
+.presupuesto__fila:hover {
+  background: var(--gris-claro);
+}
+.presupuesto__sin-item td {
+  background: #fff8e6;
+}
+.presupuesto__total td {
+  background: var(--negro);
+  color: var(--lima);
+}
+.presupuesto--mal {
+  color: var(--rojo);
+}
+.presupuesto__estado {
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.presupuesto__estado--estimado {
+  background: var(--gris-claro);
+  color: var(--texto-suave);
+}
+.presupuesto__estado--cotizado {
+  background: #e1edf8;
+  color: #00508a;
+}
+.presupuesto__estado--contratado {
+  background: var(--lima);
+  color: var(--negro);
+}
+.presupuesto__pagos ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.presupuesto__pagos li {
+  display: grid;
+  grid-template-columns: 1fr minmax(160px, 240px);
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--borde);
+  font-size: 13px;
+}
+.presupuesto__pagos li > span {
+  display: grid;
+}
+.presupuesto__pagos small {
+  color: var(--texto-suave);
+}
+.presupuesto__pagos select {
+  padding: 6px 8px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo);
+  background: var(--blanco);
+  font: inherit;
+  font-size: 12px;
+}

@@ -49,12 +49,18 @@ const DOLARES: Celda[][] = [
   fila(ABRIL, "Egreso", "Pago Miranda C5", "Servicios de terceros", "Lerma 439", "Negro", 20),
   fila(ABRIL, "Egreso", "Venta dólares", "Caja", "HQ", "Negro", 40),
   fila(ABRIL, "Egreso", "Pago sin legalidad", "Honorarios", "HQ", "", 5),
+  fila(ABRIL, "Egreso", "Tranf a Borok", "Caja", "HQ", "Blanco", 50000),
+  fila(ABRIL, "Egreso", "Devolución inversor", "Caja", "Lerma 439", "Blanco", 1000),
 ];
 
 const caja = unir(leerCaja(PESOS, "ARS", "Caja Flujos en Pesos", "2026-10"), leerCaja(DOLARES, "USD", "Caja Flujos en Dólares Global", "2026-10"));
 const pesos = caja.egresos.filter((e) => e.moneda === "ARS");
 
 describe("leerCaja", () => {
+  it("los préstamos (Borok) y las devoluciones no existen para el hub", () => {
+    expect(caja.egresos.some((e) => /borok|devoluci/i.test(e.descripcion))).toBe(false);
+  });
+
   it("toma solo los egresos, en positivo, con fecha, mes, proyecto y blanco/negro", () => {
     expect(pesos[0]).toMatchObject({ fecha: "2026-03-01", mes: "2026-03", descripcion: "Pago Hormigonera", rubro: "hormigon", proyecto: "Lerma 439", bn: "blanco", monto: 1000, fila: 2 });
     expect(caja.egresos.some((e) => e.descripcion === "Depósito")).toBe(false);
